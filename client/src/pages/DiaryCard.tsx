@@ -8,6 +8,7 @@ import { startOfWeek, endOfWeek, format, addDays, isSameDay, isToday } from "dat
 import { ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProgressRing } from "@/components/ui/progress-ring";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   Popover,

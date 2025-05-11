@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, isToday } from "date-fns";
 import { TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -70,15 +70,26 @@ const defaultDiaryCardData: DiaryCardData = {
   }
 };
 
-const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({ weekDates, currentWeekStart }) => {
+const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({ 
+  weekDates, 
+  currentWeekStart,
+  selectedDate,
+  viewMode
+}) => {
   const [diaryData, setDiaryData] = useState<DiaryCardData>(defaultDiaryCardData);
   
-  // Create day abbreviations for the table headers
-  const dayHeaders = weekDates.map(date => ({
-    full: format(date, "EEEE"),
-    abbr: format(date, "EEE"),
-    date: format(date, "yyyy-MM-dd")
-  }));
+  // Create headers based on view mode
+  const dayHeaders = viewMode === 'week' 
+    ? weekDates.map(date => ({
+        full: format(date, "EEEE"),
+        abbr: format(date, "EEE"),
+        date: format(date, "yyyy-MM-dd")
+      }))
+    : [{ // Single day mode shows only selected date
+        full: format(selectedDate, "EEEE"),
+        abbr: format(selectedDate, "EEE"),
+        date: format(selectedDate, "yyyy-MM-dd")
+      }];
   
   // Save diary data to local storage when it changes
   useEffect(() => {
@@ -219,7 +230,12 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({ weekDates, cu
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-4">
                 <Badge variant="outline" className="bg-primary/10 border-primary">Quality of Sleep</Badge>
-                <div className="text-xs text-muted-foreground ml-auto">Record daily to track patterns</div>
+                <div className="text-xs text-muted-foreground ml-auto">
+                  {viewMode === 'day' 
+                    ? `For ${isToday(selectedDate) ? 'today' : format(selectedDate, 'MMMM d')}` 
+                    : 'Record daily to track patterns'
+                  }
+                </div>
               </div>
               
               <ScrollArea className="h-[calc(100vh-300px)]">
@@ -227,139 +243,230 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({ weekDates, cu
                   {/* Hours slept section */}
                   <div>
                     <h4 className="text-sm font-medium mb-3 text-primary">Number of hours slept</h4>
-                    <div className="grid grid-cols-7 gap-2">
-                      {dayHeaders.map(day => {
-                        const today = new Date();
-                        const isToday = isSameDay(new Date(day.date), today);
-                        return (
-                          <div 
-                            key={day.date} 
-                            className={cn(
-                              "flex flex-col items-center",
-                              isToday ? "bg-primary/5 rounded-lg p-1" : ""
-                            )}
-                          >
-                            <div className="text-xs text-muted-foreground mb-1">{day.abbr}</div>
-                            <Input 
-                              type="text" 
-                              className="h-10 text-center text-lg font-medium"
-                              placeholder="hrs"
-                              value={getSleepValue(day.date, 'hoursSlept')}
-                              onChange={(e) => handleSleepChange(day.date, 'hoursSlept', e.target.value)}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {viewMode === 'day' ? (
+                      // Single day view - larger input
+                      <div className="flex flex-col items-center p-6 bg-muted/30 rounded-xl mb-4">
+                        <div className="text-sm font-medium mb-2 text-muted-foreground">
+                          {format(selectedDate, "EEEE, MMMM d")}
+                        </div>
+                        <Input 
+                          type="text" 
+                          className="h-14 text-center text-2xl font-medium w-24 mt-2"
+                          placeholder="hrs"
+                          value={getSleepValue(format(selectedDate, "yyyy-MM-dd"), 'hoursSlept')}
+                          onChange={(e) => handleSleepChange(format(selectedDate, "yyyy-MM-dd"), 'hoursSlept', e.target.value)}
+                        />
+                        <div className="text-xs text-muted-foreground mt-3">Hours of sleep</div>
+                      </div>
+                    ) : (
+                      // Week view - grid of days
+                      <div className="grid grid-cols-7 gap-2">
+                        {dayHeaders.map(day => {
+                          const today = new Date();
+                          const isCurrentDay = isSameDay(new Date(day.date), today);
+                          return (
+                            <div 
+                              key={day.date} 
+                              className={cn(
+                                "flex flex-col items-center",
+                                isCurrentDay ? "bg-primary/5 rounded-lg p-1" : ""
+                              )}
+                            >
+                              <div className="text-xs text-muted-foreground mb-1">{day.abbr}</div>
+                              <Input 
+                                type="text" 
+                                className="h-10 text-center text-lg font-medium"
+                                placeholder="hrs"
+                                value={getSleepValue(day.date, 'hoursSlept')}
+                                onChange={(e) => handleSleepChange(day.date, 'hoursSlept', e.target.value)}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                   
                   {/* Sleep issues section with Apple Health-inspired cards */}
                   <div>
                     <h4 className="text-sm font-medium mb-3 text-primary">Sleep Issues</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Trouble falling asleep */}
-                      <Card className="rounded-xl overflow-hidden">
-                        <CardContent className="p-3">
-                          <h5 className="text-sm font-medium mb-2">Trouble falling asleep</h5>
-                          <div className="grid grid-cols-7 gap-1">
-                            {dayHeaders.map(day => (
-                              <div key={day.date} className="flex flex-col items-center">
-                                <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
-                                <Select 
-                                  value={getSleepValue(day.date, 'troubleFalling')}
-                                  onValueChange={(value) => handleSleepChange(day.date, 'troubleFalling', value)}
-                                >
-                                  <SelectTrigger className="h-8 w-full border-dashed">
-                                    <SelectValue placeholder="-" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {yesNoOptions.map(option => (
-                                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      {/* Trouble staying asleep */}
-                      <Card className="rounded-xl overflow-hidden">
-                        <CardContent className="p-3">
-                          <h5 className="text-sm font-medium mb-2">Trouble staying asleep</h5>
-                          <div className="grid grid-cols-7 gap-1">
-                            {dayHeaders.map(day => (
-                              <div key={day.date} className="flex flex-col items-center">
-                                <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
-                                <Select 
-                                  value={getSleepValue(day.date, 'troubleStaying')}
-                                  onValueChange={(value) => handleSleepChange(day.date, 'troubleStaying', value)}
-                                >
-                                  <SelectTrigger className="h-8 w-full border-dashed">
-                                    <SelectValue placeholder="-" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {yesNoOptions.map(option => (
-                                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      {/* Trouble waking up */}
-                      <Card className="rounded-xl overflow-hidden">
-                        <CardContent className="p-3">
-                          <h5 className="text-sm font-medium mb-2">Trouble waking up</h5>
-                          <div className="grid grid-cols-7 gap-1">
-                            {dayHeaders.map(day => (
-                              <div key={day.date} className="flex flex-col items-center">
-                                <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
-                                <Select 
-                                  value={getSleepValue(day.date, 'troubleWaking')}
-                                  onValueChange={(value) => handleSleepChange(day.date, 'troubleWaking', value)}
-                                >
-                                  <SelectTrigger className="h-8 w-full border-dashed">
-                                    <SelectValue placeholder="-" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {yesNoOptions.map(option => (
-                                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
+                    {viewMode === 'day' ? (
+                      // Day view - vertical stacked cards
+                      <div className="space-y-4">
+                        {/* Trouble falling asleep */}
+                        <Card className="rounded-xl overflow-hidden">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-center">
+                              <h5 className="text-base font-medium">Trouble falling asleep</h5>
+                              <Select 
+                                value={getSleepValue(format(selectedDate, "yyyy-MM-dd"), 'troubleFalling')}
+                                onValueChange={(value) => handleSleepChange(format(selectedDate, "yyyy-MM-dd"), 'troubleFalling', value)}
+                              >
+                                <SelectTrigger className="w-24 h-9">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {yesNoOptions.map(option => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        {/* Trouble staying asleep */}
+                        <Card className="rounded-xl overflow-hidden">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-center">
+                              <h5 className="text-base font-medium">Trouble staying asleep</h5>
+                              <Select 
+                                value={getSleepValue(format(selectedDate, "yyyy-MM-dd"), 'troubleStaying')}
+                                onValueChange={(value) => handleSleepChange(format(selectedDate, "yyyy-MM-dd"), 'troubleStaying', value)}
+                              >
+                                <SelectTrigger className="w-24 h-9">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {yesNoOptions.map(option => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        {/* Trouble waking up */}
+                        <Card className="rounded-xl overflow-hidden">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-center">
+                              <h5 className="text-base font-medium">Trouble waking up</h5>
+                              <Select 
+                                value={getSleepValue(format(selectedDate, "yyyy-MM-dd"), 'troubleWaking')}
+                                onValueChange={(value) => handleSleepChange(format(selectedDate, "yyyy-MM-dd"), 'troubleWaking', value)}
+                              >
+                                <SelectTrigger className="w-24 h-9">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {yesNoOptions.map(option => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ) : (
+                      // Week view - horizontal grid of cards
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Trouble falling asleep */}
+                        <Card className="rounded-xl overflow-hidden">
+                          <CardContent className="p-3">
+                            <h5 className="text-sm font-medium mb-2">Trouble falling asleep</h5>
+                            <div className="grid grid-cols-7 gap-1">
+                              {dayHeaders.map(day => (
+                                <div key={day.date} className="flex flex-col items-center">
+                                  <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
+                                  <Select 
+                                    value={getSleepValue(day.date, 'troubleFalling')}
+                                    onValueChange={(value) => handleSleepChange(day.date, 'troubleFalling', value)}
+                                  >
+                                    <SelectTrigger className="h-8 w-full border-dashed">
+                                      <SelectValue placeholder="-" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {yesNoOptions.map(option => (
+                                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        {/* Trouble staying asleep */}
+                        <Card className="rounded-xl overflow-hidden">
+                          <CardContent className="p-3">
+                            <h5 className="text-sm font-medium mb-2">Trouble staying asleep</h5>
+                            <div className="grid grid-cols-7 gap-1">
+                              {dayHeaders.map(day => (
+                                <div key={day.date} className="flex flex-col items-center">
+                                  <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
+                                  <Select 
+                                    value={getSleepValue(day.date, 'troubleStaying')}
+                                    onValueChange={(value) => handleSleepChange(day.date, 'troubleStaying', value)}
+                                  >
+                                    <SelectTrigger className="h-8 w-full border-dashed">
+                                      <SelectValue placeholder="-" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {yesNoOptions.map(option => (
+                                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        {/* Trouble waking up */}
+                        <Card className="rounded-xl overflow-hidden">
+                          <CardContent className="p-3">
+                            <h5 className="text-sm font-medium mb-2">Trouble waking up</h5>
+                            <div className="grid grid-cols-7 gap-1">
+                              {dayHeaders.map(day => (
+                                <div key={day.date} className="flex flex-col items-center">
+                                  <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
+                                  <Select 
+                                    value={getSleepValue(day.date, 'troubleWaking')}
+                                    onValueChange={(value) => handleSleepChange(day.date, 'troubleWaking', value)}
+                                  >
+                                    <SelectTrigger className="h-8 w-full border-dashed">
+                                      <SelectValue placeholder="-" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {yesNoOptions.map(option => (
+                                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Medication section */}
                   <div>
                     <h4 className="text-sm font-medium mb-3 text-primary">Taking medication as prescribed</h4>
-                    <div className="grid grid-cols-7 gap-2">
-                      {dayHeaders.map(day => {
-                        const medicationValue = getMedicationValue(day.date);
-                        const selected = medicationValue !== '';
-                        return (
-                          <div key={day.date} className="flex flex-col items-center">
-                            <div className="text-xs text-muted-foreground mb-1">{day.abbr}</div>
+                    {viewMode === 'day' ? (
+                      // Day view - single medication selector
+                      <Card className="rounded-xl overflow-hidden">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <h5 className="text-base font-medium">Medication taken as prescribed?</h5>
                             <Select 
-                              value={medicationValue}
-                              onValueChange={(value) => handleMedicationChange(day.date, value)}
+                              value={getMedicationValue(format(selectedDate, "yyyy-MM-dd"))}
+                              onValueChange={(value) => handleMedicationChange(format(selectedDate, "yyyy-MM-dd"), value)}
                             >
                               <SelectTrigger 
                                 className={cn(
-                                  "h-10 w-full text-center",
-                                  selected && medicationValue === 'Yes' ? "bg-success/10 border-success text-success" : 
-                                  selected && medicationValue === 'No' ? "bg-destructive/10 border-destructive text-destructive" : 
-                                  ""
+                                  "w-24 h-9",
+                                  getMedicationValue(format(selectedDate, "yyyy-MM-dd")) === 'Yes' 
+                                    ? "bg-success/10 border-success text-success" 
+                                    : getMedicationValue(format(selectedDate, "yyyy-MM-dd")) === 'No'
+                                      ? "bg-destructive/10 border-destructive text-destructive"
+                                      : ""
                                 )}
                               >
                                 <SelectValue placeholder="Select" />
@@ -371,9 +478,42 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({ weekDates, cu
                               </SelectContent>
                             </Select>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      // Week view - grid
+                      <div className="grid grid-cols-7 gap-2">
+                        {dayHeaders.map(day => {
+                          const medicationValue = getMedicationValue(day.date);
+                          const selected = medicationValue !== '';
+                          return (
+                            <div key={day.date} className="flex flex-col items-center">
+                              <div className="text-xs text-muted-foreground mb-1">{day.abbr}</div>
+                              <Select 
+                                value={medicationValue}
+                                onValueChange={(value) => handleMedicationChange(day.date, value)}
+                              >
+                                <SelectTrigger 
+                                  className={cn(
+                                    "h-10 w-full text-center",
+                                    selected && medicationValue === 'Yes' ? "bg-success/10 border-success text-success" : 
+                                    selected && medicationValue === 'No' ? "bg-destructive/10 border-destructive text-destructive" : 
+                                    ""
+                                  )}
+                                >
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {yesNoOptions.map(option => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </ScrollArea>
@@ -400,93 +540,235 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({ weekDates, cu
               
               <ScrollArea className="h-[calc(100vh-300px)]">
                 <div className="space-y-6">
-                  {/* Positive emotions section */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-3 text-green-500">Positive Emotions</h4>
-                    <div className="grid grid-cols-1 gap-4">
-                      {['Joy / Happiness', 'Peace / Contentment'].map(emotion => (
-                        <Card key={emotion} className="rounded-xl overflow-hidden">
-                          <CardContent className="p-3">
-                            <h5 className="text-sm font-medium mb-2">{emotion}</h5>
-                            <div className="grid grid-cols-7 gap-1">
-                              {dayHeaders.map(day => {
-                                const value = getEmotionValue(day.date, emotion);
-                                const numValue = parseInt(value || '0');
-                                return (
-                                  <div key={day.date} className="flex flex-col items-center">
-                                    <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
-                                    <Select 
-                                      value={value}
-                                      onValueChange={(value) => handleEmotionChange(day.date, emotion, value)}
-                                    >
-                                      <SelectTrigger 
-                                        className={cn(
-                                          "h-9 w-full text-center",
-                                          numValue >= 7 ? "bg-success/20 border-success text-success" : 
-                                          numValue >= 3 ? "bg-success/10 border-success text-success" : ""
-                                        )}
-                                      >
-                                        <SelectValue placeholder="-" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {scaleOptions.map(option => (
-                                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                  {viewMode === 'day' ? (
+                    // Day view - more focus on the selected day
+                    <>
+                      <div className="text-sm text-center text-muted-foreground mb-4">
+                        {isToday(selectedDate) ? "Today" : format(selectedDate, "EEEE, MMMM d")}
+                      </div>
+                      
+                      {/* Positive emotions section */}
+                      <div>
+                        <h4 className="text-sm font-medium mb-3 text-green-500 flex items-center">
+                          <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                          Positive Emotions
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {['Joy / Happiness', 'Peace / Contentment'].map(emotion => {
+                            const dateStr = format(selectedDate, "yyyy-MM-dd");
+                            const value = getEmotionValue(dateStr, emotion);
+                            const numValue = parseInt(value || '0');
+                            return (
+                              <Card key={emotion} className={cn(
+                                "rounded-xl overflow-hidden border",
+                                numValue >= 7 ? "border-success bg-success/5" : 
+                                numValue >= 3 ? "border-success/50" : ""
+                              )}>
+                                <CardContent className="p-4">
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h5 className="text-base font-medium">{emotion}</h5>
+                                    <div className={cn(
+                                      "flex items-center justify-center w-8 h-8 rounded-full",
+                                      numValue >= 7 ? "bg-success text-white" : 
+                                      numValue >= 3 ? "bg-success/20 text-success" : 
+                                      "bg-muted text-muted-foreground"
+                                    )}>
+                                      {value || '0'}
+                                    </div>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Distressing emotions section */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-3 text-destructive">Distressing Emotions</h4>
-                    <div className="grid grid-cols-1 gap-4">
-                      {['Anxiety', 'Sadness', 'Guilt', 'Anger', 'Fear'].map(emotion => (
-                        <Card key={emotion} className="rounded-xl overflow-hidden">
-                          <CardContent className="p-3">
-                            <h5 className="text-sm font-medium mb-2">{emotion}</h5>
-                            <div className="grid grid-cols-7 gap-1">
-                              {dayHeaders.map(day => {
-                                const value = getEmotionValue(day.date, emotion);
-                                const numValue = parseInt(value || '0');
-                                return (
-                                  <div key={day.date} className="flex flex-col items-center">
-                                    <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
-                                    <Select 
-                                      value={value}
-                                      onValueChange={(value) => handleEmotionChange(day.date, emotion, value)}
-                                    >
-                                      <SelectTrigger 
-                                        className={cn(
-                                          "h-9 w-full text-center",
-                                          numValue >= 7 ? "bg-destructive/20 border-destructive text-destructive" : 
-                                          numValue >= 3 ? "bg-destructive/10 border-destructive text-destructive" : ""
-                                        )}
-                                      >
-                                        <SelectValue placeholder="-" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {scaleOptions.map(option => (
-                                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                                  <div className="mt-1">
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-xs text-muted-foreground">None</span>
+                                      <span className="text-xs text-muted-foreground">Very Strong</span>
+                                    </div>
+                                    <input 
+                                      type="range" 
+                                      min="0" 
+                                      max="10" 
+                                      step="1" 
+                                      value={numValue} 
+                                      onChange={(e) => handleEmotionChange(dateStr, emotion, e.target.value)}
+                                      className="w-full accent-success"
+                                    />
+                                    <div className="flex justify-between mt-1">
+                                      {[0, 1, 3, 5, 7, 10].map(val => (
+                                        <div 
+                                          key={val} 
+                                          className={cn(
+                                            "text-xs cursor-pointer px-1",
+                                            numValue === val ? "font-bold text-success" : "text-muted-foreground"
+                                          )}
+                                          onClick={() => handleEmotionChange(dateStr, emotion, val.toString())}
+                                        >
+                                          {val}
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      {/* Distressing emotions section */}
+                      <div>
+                        <h4 className="text-sm font-medium mb-3 text-destructive flex items-center">
+                          <span className="inline-block w-3 h-3 rounded-full bg-destructive mr-2"></span>
+                          Distressing Emotions
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {['Anxiety', 'Sadness', 'Guilt', 'Anger', 'Fear'].map(emotion => {
+                            const dateStr = format(selectedDate, "yyyy-MM-dd");
+                            const value = getEmotionValue(dateStr, emotion);
+                            const numValue = parseInt(value || '0');
+                            return (
+                              <Card key={emotion} className={cn(
+                                "rounded-xl overflow-hidden border",
+                                numValue >= 7 ? "border-destructive bg-destructive/5" : 
+                                numValue >= 3 ? "border-destructive/50" : ""
+                              )}>
+                                <CardContent className="p-4">
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h5 className="text-base font-medium">{emotion}</h5>
+                                    <div className={cn(
+                                      "flex items-center justify-center w-8 h-8 rounded-full",
+                                      numValue >= 7 ? "bg-destructive text-white" : 
+                                      numValue >= 3 ? "bg-destructive/20 text-destructive" : 
+                                      "bg-muted text-muted-foreground"
+                                    )}>
+                                      {value || '0'}
+                                    </div>
+                                  </div>
+                                  <div className="mt-1">
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-xs text-muted-foreground">None</span>
+                                      <span className="text-xs text-muted-foreground">Very Strong</span>
+                                    </div>
+                                    <input 
+                                      type="range" 
+                                      min="0" 
+                                      max="10" 
+                                      step="1" 
+                                      value={numValue} 
+                                      onChange={(e) => handleEmotionChange(dateStr, emotion, e.target.value)}
+                                      className="w-full accent-destructive"
+                                    />
+                                    <div className="flex justify-between mt-1">
+                                      {[0, 1, 3, 5, 7, 10].map(val => (
+                                        <div 
+                                          key={val} 
+                                          className={cn(
+                                            "text-xs cursor-pointer px-1",
+                                            numValue === val ? "font-bold text-destructive" : "text-muted-foreground"
+                                          )}
+                                          onClick={() => handleEmotionChange(dateStr, emotion, val.toString())}
+                                        >
+                                          {val}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    // Week view - grid of days
+                    <>
+                      {/* Positive emotions section */}
+                      <div>
+                        <h4 className="text-sm font-medium mb-3 text-green-500">Positive Emotions</h4>
+                        <div className="grid grid-cols-1 gap-4">
+                          {['Joy / Happiness', 'Peace / Contentment'].map(emotion => (
+                            <Card key={emotion} className="rounded-xl overflow-hidden">
+                              <CardContent className="p-3">
+                                <h5 className="text-sm font-medium mb-2">{emotion}</h5>
+                                <div className="grid grid-cols-7 gap-1">
+                                  {dayHeaders.map(day => {
+                                    const value = getEmotionValue(day.date, emotion);
+                                    const numValue = parseInt(value || '0');
+                                    return (
+                                      <div key={day.date} className="flex flex-col items-center">
+                                        <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
+                                        <Select 
+                                          value={value}
+                                          onValueChange={(value) => handleEmotionChange(day.date, emotion, value)}
+                                        >
+                                          <SelectTrigger 
+                                            className={cn(
+                                              "h-9 w-full text-center",
+                                              numValue >= 7 ? "bg-success/20 border-success text-success" : 
+                                              numValue >= 3 ? "bg-success/10 border-success text-success" : ""
+                                            )}
+                                          >
+                                            <SelectValue placeholder="-" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {scaleOptions.map(option => (
+                                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Distressing emotions section */}
+                      <div>
+                        <h4 className="text-sm font-medium mb-3 text-destructive">Distressing Emotions</h4>
+                        <div className="grid grid-cols-1 gap-4">
+                          {['Anxiety', 'Sadness', 'Guilt', 'Anger', 'Fear'].map(emotion => (
+                            <Card key={emotion} className="rounded-xl overflow-hidden">
+                              <CardContent className="p-3">
+                                <h5 className="text-sm font-medium mb-2">{emotion}</h5>
+                                <div className="grid grid-cols-7 gap-1">
+                                  {dayHeaders.map(day => {
+                                    const value = getEmotionValue(day.date, emotion);
+                                    const numValue = parseInt(value || '0');
+                                    return (
+                                      <div key={day.date} className="flex flex-col items-center">
+                                        <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
+                                        <Select 
+                                          value={value}
+                                          onValueChange={(value) => handleEmotionChange(day.date, emotion, value)}
+                                        >
+                                          <SelectTrigger 
+                                            className={cn(
+                                              "h-9 w-full text-center",
+                                              numValue >= 7 ? "bg-destructive/20 border-destructive text-destructive" : 
+                                              numValue >= 3 ? "bg-destructive/10 border-destructive text-destructive" : ""
+                                            )}
+                                          >
+                                            <SelectValue placeholder="-" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {scaleOptions.map(option => (
+                                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>

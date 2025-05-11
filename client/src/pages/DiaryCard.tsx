@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import DBTDiaryCardTracker from "@/components/DBTDiaryCardTracker";
+import DBTDiaryCardTracker from "../components/DBTDiaryCardTracker";
 import { startOfWeek, endOfWeek, format, addDays, isSameDay, isToday } from "date-fns";
 import { ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,10 +62,16 @@ const DiaryCard: React.FC = () => {
         }
         
         // Check urge entries
-        if (data.urges[dateStr] && Object.values(data.urges[dateStr]).some(urge => 
-          Object.values(urge).some(val => val)
-        )) {
-          filledFields++;
+        if (data.urges[dateStr] && Object.keys(data.urges[dateStr]).length > 0) {
+          const urgeValues = Object.values(data.urges[dateStr]);
+          if (urgeValues.some(urge => {
+            if (urge && typeof urge === 'object') {
+              return Object.values(urge as any).some(val => val);
+            }
+            return false;
+          })) {
+            filledFields++;
+          }
         }
         
         // Check event entry
@@ -102,10 +108,16 @@ const DiaryCard: React.FC = () => {
         
         // Count urge entries
         for (const date in data.urges) {
-          if (Object.values(data.urges[date]).some(urge => 
-            Object.values(urge).some(val => val)
-          )) {
-            filledFields++;
+          if (data.urges[date] && Object.keys(data.urges[date]).length > 0) {
+            const urgeValues = Object.values(data.urges[date]);
+            if (urgeValues.some(urge => {
+              if (urge && typeof urge === 'object') {
+                return Object.values(urge as any).some(val => val);
+              }
+              return false;
+            })) {
+              filledFields++;
+            }
           }
         }
         

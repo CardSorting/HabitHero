@@ -9,6 +9,7 @@ import Progress from "@/pages/Progress";
 import Calendar from "@/pages/Calendar";
 import Settings from "@/pages/Settings";
 import Analytics from "@/pages/Analytics";
+import DiaryCard from "@/pages/DiaryCard";
 import BottomNav from "@/components/BottomNav";
 import { AnimatePresence } from "framer-motion";
 
@@ -23,6 +24,7 @@ function Router() {
           <Route path="/progress" component={Progress} />
           <Route path="/calendar" component={Calendar} />
           <Route path="/analytics" component={Analytics} />
+          <Route path="/diary-card" component={DiaryCard} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>

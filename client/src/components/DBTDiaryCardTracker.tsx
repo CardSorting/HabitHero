@@ -1082,17 +1082,28 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
       
       {/* Skills Tab */}
       <TabsContent value="skills" className="space-y-4">
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-lg font-medium mb-4">DBT Skills Used</h3>
-            <div className="text-sm text-muted-foreground mb-4">
-              Place a checkmark on any skills you used the previous day.
-            </div>
-            <ScrollArea className="h-[calc(100vh-300px)]">
-              <div className="space-y-8">
-                {/* Mindfulness Skills */}
-                <div>
-                  <h4 className="text-base font-medium mb-2">MINDFULNESS SKILLS</h4>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="rounded-xl overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Badge variant="outline" className="bg-violet-500/10 border-violet-500 text-violet-700">DBT Skills</Badge>
+                <div className="text-xs text-muted-foreground ml-auto">
+                  {viewMode === 'day' 
+                    ? `For ${isToday(selectedDate) ? 'today' : format(selectedDate, 'MMMM d')}` 
+                    : 'Track which DBT skills you used this week'
+                  }
+                </div>
+              </div>
+              
+              <ScrollArea className="h-[calc(100vh-300px)]">
+                <div className="space-y-8">
+                  {/* Mindfulness Skills */}
+                  <div>
+                    <h4 className="text-base font-medium mb-2">MINDFULNESS SKILLS</h4>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1236,6 +1247,7 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
             </ScrollArea>
           </CardContent>
         </Card>
+        </motion.div>
       </TabsContent>
       
       {/* Events Tab */}

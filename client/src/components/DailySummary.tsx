@@ -4,52 +4,32 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { useHabits } from "@/lib/useHabits";
 import { format, isSameDay } from "date-fns";
-import { Award, Calendar, Clock, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DailySummary: React.FC = () => {
   const { habits, isLoading } = useHabits();
+  const today = new Date();
+  
+  // Count completed habits for today
+  const completedHabits = habits.filter(habit => 
+    habit.completionRecords.some(
+      record => isSameDay(new Date(record.date), today) && record.completed
+    )
+  ).length;
+  
+  const completionRate = habits.length > 0 
+    ? Math.round((completedHabits / habits.length) * 100) 
+    : 0;
+  
+  // Get the longest current streak across all habits
+  const longestStreak = habits.reduce((max, habit) => 
+    habit.streak > max ? habit.streak : max, 0);
   
   if (isLoading) {
     return (
-      <Card className="rounded-[12px] bg-muted/30 h-40 animate-pulse" />
+      <Card className="rounded-[12px] bg-muted/30 h-48 animate-pulse" />
     );
   }
-  
-  // Calculate today's metrics
-  const today = new Date();
-  
-  const todayFormatted = format(today, "yyyy-MM-dd");
-  const dayOfWeek = format(today, "EEEE");
-  const dateFormatted = format(today, "MMMM d");
-  
-  // Get habits completed today
-  const todayCompletions = habits.map(habit => {
-    const isCompleted = habit.completionRecords.some(
-      record => isSameDay(new Date(record.date), today) && record.completed
-    );
-    return {
-      ...habit,
-      isCompleted
-    };
-  });
-  
-  const completedCount = todayCompletions.filter(h => h.isCompleted).length;
-  const totalHabits = habits.length;
-  const completionRate = totalHabits > 0 ? Math.round((completedCount / totalHabits) * 100) : 0;
-  
-  // Calculate longest current streak
-  const longestStreak = Math.max(0, ...habits.map(habit => habit.streak));
-  
-  // Find the habit with the most consistency
-  const mostConsistentHabit = habits.length > 0 
-    ? habits.reduce((prev, current) => 
-        (current.streak > prev.streak) ? current : prev
-      ) 
-    : null;
-  
-  // Find next habit to complete (one that isn't completed yet)
-  const nextHabit = todayCompletions.find(h => !h.isCompleted);
   
   return (
     <motion.div
@@ -59,141 +39,103 @@ const DailySummary: React.FC = () => {
       className="mb-8"
     >
       <Card className="rounded-[12px] overflow-hidden">
-        <CardContent className="p-0">
-          <div className="bg-primary/10 p-4 pb-0">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h2 className="text-lg font-semibold text-primary">{dayOfWeek}</h2>
-                <p className="text-sm text-muted-foreground">{dateFormatted}</p>
-              </div>
-              <div className="flex items-center">
-                <Clock className="mr-1 h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  {format(today, "h:mm a")}
-                </span>
+        <CardContent className="p-6">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <h2 className="text-2xl font-semibold mb-1">
+                {format(today, "EEEE")}
+              </h2>
+              <p className="text-muted-foreground">
+                {format(today, "MMMM d, yyyy")}
+              </p>
+              
+              <div className="flex items-center mt-6 gap-8">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Completion</p>
+                  <div className="flex items-baseline">
+                    <span className="text-3xl font-semibold mr-1">{completedHabits}</span>
+                    <span className="text-muted-foreground">/{habits.length}</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Best Streak</p>
+                  <div className="flex items-center">
+                    <span className="text-3xl font-semibold">{longestStreak}</span>
+                    <span className="text-muted-foreground ml-1">days</span>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div className="flex justify-center -mb-12">
+            <div className="relative ml-4">
               <ProgressRing 
                 value={completionRate} 
-                size={130} 
+                size={120} 
                 strokeWidth={12}
-                fgColor="hsl(var(--primary))"
-                bgColor="rgba(255, 255, 255, 0.3)"
+                fgColor={getColorByCompletion(completionRate)}
                 showLabel={true}
                 animate={true}
               />
+              <div className="absolute bottom-0 right-0 transform translate-x-1/4 translate-y-1/4">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center border-2",
+                  completionRate >= 100 
+                    ? "border-success bg-success text-white" 
+                    : "border-muted-foreground bg-background text-muted-foreground"
+                )}>
+                  {completionRate >= 100 ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
           
-          <div className="pt-16 pb-4 px-4">
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="flex flex-col items-center text-center">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 mb-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                </div>
-                <span className="text-xl font-medium">{completedCount}/{totalHabits}</span>
-                <span className="text-xs text-muted-foreground">Habits Completed</span>
-              </div>
-              
-              <div className="flex flex-col items-center text-center">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-success/10 mb-2">
-                  <TrendingUp className="h-5 w-5 text-success" />
-                </div>
-                <span className="text-xl font-medium">{longestStreak}</span>
-                <span className="text-xs text-muted-foreground">Longest Streak</span>
-              </div>
-            </div>
-            
-            {/* Highlights Section */}
-            <div className="space-y-3">
-              {mostConsistentHabit && (
-                <div className="flex items-center px-3 py-2.5 bg-primary/5 rounded-lg">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 mr-3">
-                    <Award className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium">Best Streak</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {mostConsistentHabit.name} - {mostConsistentHabit.streak} days
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              {nextHabit && (
-                <div className="flex items-center px-3 py-2.5 bg-primary/5 rounded-lg">
-                  <div className={cn(
-                    "flex items-center justify-center w-8 h-8 rounded-full mr-3",
-                    completedCount === totalHabits 
-                      ? "bg-success/10" 
-                      : "bg-primary/10"
-                  )}>
-                    <Clock className={cn(
-                      "h-4 w-4",
-                      completedCount === totalHabits 
-                        ? "text-success" 
-                        : "text-primary"
-                    )} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium">
-                      {completedCount === totalHabits 
-                        ? "All Done!" 
-                        : "Up Next"}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      {completedCount === totalHabits 
-                        ? "You've completed all your habits for today" 
-                        : nextHabit.name}
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              {/* Dynamic Insight */}
-              <div className="flex items-center px-3 py-2.5 bg-primary/5 rounded-lg">
-                <div className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-full mr-3",
-                  completionRate >= 70 
-                    ? "bg-success/10" 
-                    : completionRate >= 30 
-                      ? "bg-primary/10" 
-                      : "bg-destructive/10"
-                )}>
-                  <TrendingUp className={cn(
-                    "h-4 w-4",
-                    completionRate >= 70 
-                      ? "text-success" 
-                      : completionRate >= 30 
-                        ? "text-primary" 
-                        : "text-destructive"
-                  )} />
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium">
-                    {completionRate >= 70 
-                      ? "Excellent Progress!" 
-                      : completionRate >= 30 
-                        ? "Making Progress" 
-                        : "Getting Started"}
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    {completionRate >= 70 
-                      ? "Keep up the great work with your habits" 
-                      : completionRate >= 30 
-                        ? "You're building momentum with your habits" 
-                        : "Start small and build consistency"}
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Summary message based on completion */}
+          <div className="mt-6 pt-4 border-t">
+            {habits.length === 0 ? (
+              <p className="text-muted-foreground">
+                Add your first habit to start tracking your progress
+              </p>
+            ) : completionRate === 100 ? (
+              <p className="text-success">
+                Excellent! You've completed all your habits for today.
+              </p>
+            ) : completionRate >= 50 ? (
+              <p className="text-primary">
+                Good progress! Keep going to complete your remaining habits.
+              </p>
+            ) : completedHabits > 0 ? (
+              <p className="text-muted-foreground">
+                You're making progress. Focus on completing more habits today.
+              </p>
+            ) : (
+              <p className="text-muted-foreground">
+                Time to start your day. Complete your first habit!
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
     </motion.div>
   );
 };
+
+// Helper function to get color based on completion rate
+function getColorByCompletion(rate: number): string {
+  if (rate >= 100) return "hsl(var(--success))";
+  if (rate >= 75) return "hsl(var(--primary))";
+  if (rate >= 50) return "hsl(var(--primary))";
+  if (rate >= 25) return "hsl(var(--warning, 38 92% 50%))";
+  return "hsl(var(--muted-foreground))";
+}
 
 export default DailySummary;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -15,63 +15,97 @@ interface ProgressRingProps {
 
 export function ProgressRing({
   value,
-  size = 64,
+  size = 60,
   strokeWidth = 6,
   className,
   bgColor = "hsl(var(--muted))",
   fgColor = "hsl(var(--primary))",
-  showLabel = true,
-  animate = true,
+  showLabel = false,
+  animate = true
 }: ProgressRingProps) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const valueInRange = Math.min(100, Math.max(0, value));
-  const offset = circumference - (valueInRange / 100) * circumference;
+  const [progress, setProgress] = useState(0);
   
-  const center = size / 2;
-
+  // Animation effect
+  useEffect(() => {
+    if (animate) {
+      const timeout = setTimeout(() => {
+        setProgress(value);
+      }, 300);
+      
+      return () => clearTimeout(timeout);
+    } else {
+      setProgress(value);
+    }
+  }, [value, animate]);
+  
+  // Clamp value between 0-100
+  const clampedValue = Math.min(100, Math.max(0, progress));
+  
+  // Calculate radius and other properties
+  const normalizedSize = size;
+  const normalizedStrokeWidth = strokeWidth;
+  const radius = (normalizedSize - normalizedStrokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (clampedValue / 100) * circumference;
+  
   return (
-    <div className={cn("relative h-16 w-16 flex items-center justify-center", className)}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="transform -rotate-90"
+    <div 
+      className={cn("relative inline-flex items-center justify-center", className)} 
+      style={{ width: normalizedSize, height: normalizedSize }}
+    >
+      {/* Background circle */}
+      <svg 
+        width={normalizedSize} 
+        height={normalizedSize} 
+        viewBox={`0 0 ${normalizedSize} ${normalizedSize}`}
+        className="absolute"
       >
-        {/* Background circle */}
         <circle
-          cx={center}
-          cy={center}
+          cx={normalizedSize / 2}
+          cy={normalizedSize / 2}
           r={radius}
           fill="none"
           stroke={bgColor}
-          strokeWidth={strokeWidth}
-        />
-        
-        {/* Foreground circle */}
-        <motion.circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke={fgColor}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: animate ? offset : circumference }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          strokeWidth={normalizedStrokeWidth}
         />
       </svg>
       
+      {/* Foreground circle (progress) */}
+      <svg 
+        width={normalizedSize} 
+        height={normalizedSize} 
+        viewBox={`0 0 ${normalizedSize} ${normalizedSize}`}
+        className="absolute"
+        style={{ transform: "rotate(-90deg)" }}
+      >
+        <motion.circle
+          cx={normalizedSize / 2}
+          cy={normalizedSize / 2}
+          r={radius}
+          fill="none"
+          stroke={fgColor}
+          strokeWidth={normalizedStrokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset }}
+          transition={{ duration: animate ? 1 : 0, ease: "easeOut" }}
+          style={{ 
+            transformOrigin: "center",
+          }}
+        />
+      </svg>
+      
+      {/* Label in the center */}
       {showLabel && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <motion.span 
-            className="text-lg font-semibold"
+        <div className="text-center font-medium">
+          <motion.span
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.5, duration: 0.3 }}
+            className="text-xl"
           >
-            {valueInRange}%
+            {Math.round(clampedValue)}%
           </motion.span>
         </div>
       )}

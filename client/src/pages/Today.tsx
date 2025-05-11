@@ -35,7 +35,8 @@ const Today: React.FC = () => {
         toast({
           title: "Habit completed!",
           description: "Keep up the good work!",
-          variant: "success",
+          variant: "default",
+          className: "bg-success text-white",
         });
       }
     } catch (error) {
@@ -53,7 +54,8 @@ const Today: React.FC = () => {
       toast({
         title: "Habit created",
         description: "Your new habit has been added",
-        variant: "success",
+        variant: "default",
+        className: "bg-success text-white",
       });
     } catch (error) {
       toast({

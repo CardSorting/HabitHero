@@ -23,9 +23,9 @@ export function useAnalytics() {
   const { habits, isLoading: habitsLoading } = useHabits();
   
   // Fetch analytics data from the API
-  const { data: analyticsData, isLoading: analyticsLoading } = useQuery<AnalyticsData>({
+  const { data: analyticsData, isLoading: analyticsLoading, error } = useQuery<AnalyticsData>({
     queryKey: ["/api/analytics"],
-    enabled: !habitsLoading && habits.length > 0
+    enabled: !habitsLoading
   });
 
   // Calculate trend data based on timeframe
@@ -147,6 +147,7 @@ export function useAnalytics() {
   return {
     analyticsData,
     isLoading: habitsLoading || analyticsLoading,
+    error,
     getTrendData,
     getHabitPerformance,
     getHeatmapData

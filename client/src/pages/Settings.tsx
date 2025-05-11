@@ -20,7 +20,8 @@ const Settings: React.FC = () => {
         toast({
           title: "Success",
           description: "All habits have been reset",
-          variant: "success",
+          variant: "default",
+          className: "bg-success text-white",
         });
       } catch (error) {
         toast({

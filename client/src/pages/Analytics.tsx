@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import Header from "@/components/Header";
 import { motion } from "framer-motion";
 import { useHabits } from "@/lib/useHabits";
+import { useAnalytics } from "@/lib/useAnalytics";
+import AdvancedAnalytics from "@/components/AdvancedAnalytics";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 

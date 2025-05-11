@@ -131,7 +131,7 @@ Based on this reflection, provide brief, supportive feedback that acknowledges s
       ],
     });
 
-    return response.content[0].text;
+    return response.content[0].type === 'text' ? response.content[0].text : 'No text response received';
   } catch (error) {
     console.error("Error analyzing daily reflection:", error);
     throw new Error("Unable to analyze daily reflection");

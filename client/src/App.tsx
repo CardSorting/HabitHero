@@ -10,6 +10,7 @@ import Calendar from "@/pages/Calendar";
 import Settings from "@/pages/Settings";
 import Analytics from "@/pages/Analytics";
 import DiaryCard from "@/pages/DiaryCard";
+import TherapyCompanion from "@/pages/TherapyCompanion";
 import AuthPage from "@/pages/auth-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import BottomNav from "@/components/BottomNav";
@@ -30,6 +31,7 @@ function Router() {
           <ProtectedRoute path="/calendar" component={Calendar} />
           <ProtectedRoute path="/analytics" component={Analytics} />
           <ProtectedRoute path="/diary-card" component={DiaryCard} />
+          <ProtectedRoute path="/therapy" component={TherapyCompanion} />
           <ProtectedRoute path="/settings" component={Settings} />
           <Route path="/auth" component={AuthPage} />
           <Route component={NotFound} />

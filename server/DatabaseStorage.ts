@@ -1,242 +1,281 @@
+import { eq, sql, and, desc } from 'drizzle-orm';
+import { db, pool } from './db';
 import { 
-  habits as habitsTable, 
-  habitCompletions as habitCompletionsTable, 
-  dailyGoals as dailyGoalsTable,
-  dbtSleep as dbtSleepTable,
-  dbtEmotions as dbtEmotionsTable,
-  dbtUrges as dbtUrgesTable,
-  dbtSkills as dbtSkillsTable,
-  dbtEvents as dbtEventsTable,
-  type Habit, 
-  type InsertHabit,
-  type HabitCompletion,
-  type InsertHabitCompletion,
-  type DailyGoal,
-  type InsertDailyGoal,
-  type DbtSleep,
-  type DbtEmotion,
-  type DbtUrge,
-  type DbtSkill,
-  type DbtEvent
-} from "@shared/schema";
-import { db } from "./db";
-import { eq, and, desc, gte, lte, sql, between } from "drizzle-orm";
-import { startOfDay, subDays, format, addDays, parseISO, isAfter, isBefore } from "date-fns";
-import { IStorage, HabitWithCompletions } from "./storage";
+  habits, 
+  habitCompletions, 
+  dailyGoals, 
+  dbtSleep, 
+  dbtEmotions, 
+  dbtUrges, 
+  dbtSkills, 
+  dbtEvents,
+  users,
+  Habit, 
+  HabitCompletion, 
+  InsertHabit, 
+  InsertHabitCompletion,
+  DailyGoal,
+  InsertDailyGoal,
+  DbtSleep,
+  DbtEmotion,
+  DbtUrge,
+  DbtSkill,
+  DbtEvent,
+  User,
+  InsertUser
+} from '@shared/schema';
+import { IStorage, HabitWithCompletions } from './storage';
 
 export class DatabaseStorage implements IStorage {
-  // Helper function to get completions for a habit
-  private async getCompletionsForHabit(habitId: number): Promise<HabitCompletion[]> {
-    return db.select().from(habitCompletionsTable).where(eq(habitCompletionsTable.habitId, habitId));
+  pool: any;
+
+  constructor() {
+    this.pool = pool;
   }
 
-  // Helper function to calculate streak
+  // User authentication methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  private async getCompletionsForHabit(habitId: number): Promise<HabitCompletion[]> {
+    return await db.select()
+      .from(habitCompletions)
+      .where(eq(habitCompletions.habitId, habitId))
+      .orderBy(desc(habitCompletions.date));
+  }
+
   private calculateStreak(completions: HabitCompletion[]): number {
-    if (!completions || completions.length === 0) return 0;
+    if (completions.length === 0) return 0;
     
-    const sortedCompletions = [...completions]
-      .filter(completion => completion.completed)
-      .sort((a, b) => {
-        const dateA = a.date instanceof Date ? a.date : new Date(a.date);
-        const dateB = b.date instanceof Date ? b.date : new Date(b.date);
-        return dateB.getTime() - dateA.getTime();
-      });
+    let streak = 0;
+    const sortedCompletions = [...completions].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
     
-    if (sortedCompletions.length === 0) return 0;
-    
-    let streak = 1;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const mostRecentDate = new Date(sortedCompletions[0].date);
-    mostRecentDate.setHours(0, 0, 0, 0);
+    let currentDate = new Date(today);
     
-    // If the most recent completion is not today or yesterday, streak is broken
-    const daysDiff = Math.floor((today.getTime() - mostRecentDate.getTime()) / (1000 * 60 * 60 * 24));
-    if (daysDiff > 1) return 0;
-    
-    // Count consecutive days
-    for (let i = 0; i < sortedCompletions.length - 1; i++) {
-      const currentDate = new Date(sortedCompletions[i].date);
-      const nextDate = new Date(sortedCompletions[i + 1].date);
+    for (const completion of sortedCompletions) {
+      const completionDate = new Date(completion.date);
+      completionDate.setHours(0, 0, 0, 0);
       
-      currentDate.setHours(0, 0, 0, 0);
-      nextDate.setHours(0, 0, 0, 0);
-      
-      const diffTime = currentDate.getTime() - nextDate.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 1) {
-        streak++;
-      } else {
+      // If the completion is not for the current date we're looking at, or it's not completed, break the streak
+      if (completionDate.getTime() !== currentDate.getTime() || !completion.completed) {
         break;
       }
+      
+      streak++;
+      currentDate.setDate(currentDate.getDate() - 1);
     }
     
     return streak;
   }
 
-  // Helper function to convert habit to HabitWithCompletions
   private async habitToHabitWithCompletions(habit: Habit): Promise<HabitWithCompletions> {
     const completions = await this.getCompletionsForHabit(habit.id);
+    const completionRecords = completions.map(completion => ({
+      date: new Date(completion.date).toISOString().split('T')[0],
+      completed: completion.completed
+    }));
+    
+    const streak = this.calculateStreak(completions);
+    
     return {
       ...habit,
-      completionRecords: completions.map(completion => ({
-        date: format(new Date(completion.date), "yyyy-MM-dd"),
-        completed: completion.completed
-      }))
+      streak,
+      completionRecords
     };
   }
 
-  async getHabits(): Promise<HabitWithCompletions[]> {
-    const habits = await db.select().from(habitsTable);
+  async getHabits(userId?: number): Promise<HabitWithCompletions[]> {
+    const habitsData = userId 
+      ? await db.select().from(habits).where(eq(habits.userId, userId))
+      : await db.select().from(habits);
     
-    // Get completions and convert to HabitWithCompletions
-    const habitsWithCompletions: HabitWithCompletions[] = await Promise.all(
-      habits.map(habit => this.habitToHabitWithCompletions(habit))
+    const habitsWithCompletions = await Promise.all(
+      habitsData.map(habit => this.habitToHabitWithCompletions(habit))
     );
     
     return habitsWithCompletions;
   }
 
   async getHabit(id: number): Promise<HabitWithCompletions | undefined> {
-    const [habit] = await db.select().from(habitsTable).where(eq(habitsTable.id, id));
+    const [habit] = await db.select().from(habits).where(eq(habits.id, id));
     if (!habit) return undefined;
     
     return this.habitToHabitWithCompletions(habit);
   }
 
   async createHabit(insertHabit: InsertHabit): Promise<HabitWithCompletions> {
-    const [habit] = await db.insert(habitsTable).values({
-      name: insertHabit.name,
-      description: insertHabit.description || "",
-      frequency: insertHabit.frequency || "daily",
-      reminder: insertHabit.reminder,
-      streak: 0
-    }).returning();
-    
+    const [habit] = await db.insert(habits).values(insertHabit).returning();
     return this.habitToHabitWithCompletions(habit);
   }
 
   async updateHabit(id: number, habitUpdate: Partial<Habit>): Promise<HabitWithCompletions> {
-    const [updatedHabit] = await db.update(habitsTable)
+    const [updatedHabit] = await db
+      .update(habits)
       .set(habitUpdate)
-      .where(eq(habitsTable.id, id))
+      .where(eq(habits.id, id))
       .returning();
-    
-    if (!updatedHabit) {
-      throw new Error(`Habit with id ${id} not found`);
-    }
     
     return this.habitToHabitWithCompletions(updatedHabit);
   }
 
   async deleteHabit(id: number): Promise<boolean> {
-    // Delete related completions first
-    await db.delete(habitCompletionsTable).where(eq(habitCompletionsTable.habitId, id));
+    // First, delete all completions for this habit
+    await db.delete(habitCompletions).where(eq(habitCompletions.habitId, id));
     
-    // Delete the habit
-    const result = await db.delete(habitsTable).where(eq(habitsTable.id, id)).returning();
-    return result.length > 0;
+    // Then delete the habit
+    const [deletedHabit] = await db
+      .delete(habits)
+      .where(eq(habits.id, id))
+      .returning();
+    
+    return !!deletedHabit;
   }
 
   async toggleHabitCompletion(habitId: number, dateStr: string, completed: boolean): Promise<HabitWithCompletions> {
-    // Check if habit exists
-    const [habit] = await db.select().from(habitsTable).where(eq(habitsTable.id, habitId));
-    if (!habit) {
-      throw new Error(`Habit with id ${habitId} not found`);
-    }
-    
     const date = new Date(dateStr);
     
-    // Check if there's already a record for this date
-    const existingCompletions = await db.select()
-      .from(habitCompletionsTable)
-      .where(and(
-        eq(habitCompletionsTable.habitId, habitId),
-        sql`DATE(${habitCompletionsTable.date}) = DATE(${date})`
-      ));
+    // Check if a completion record already exists for this habit and date
+    const [existingCompletion] = await db
+      .select()
+      .from(habitCompletions)
+      .where(
+        and(
+          eq(habitCompletions.habitId, habitId),
+          sql`DATE(${habitCompletions.date}) = DATE(${date})`
+        )
+      );
     
-    if (existingCompletions.length > 0) {
-      // Update existing record
-      await db.update(habitCompletionsTable)
+    if (existingCompletion) {
+      // Update the existing completion
+      await db
+        .update(habitCompletions)
         .set({ completed })
-        .where(eq(habitCompletionsTable.id, existingCompletions[0].id));
+        .where(eq(habitCompletions.id, existingCompletion.id));
     } else {
-      // Create new record - parse date as Date object since the schema expects Date
-      await db.insert(habitCompletionsTable)
+      // Create a new completion record
+      await db
+        .insert(habitCompletions)
         .values({
           habitId,
-          date: new Date(format(date, "yyyy-MM-dd")),
+          date,
           completed
         });
     }
     
-    // Get all completions to calculate streak
+    // Update the habit's streak
+    const habit = await this.getHabit(habitId);
+    if (!habit) throw new Error(`Habit with ID ${habitId} not found`);
+    
     const completions = await this.getCompletionsForHabit(habitId);
     const streak = this.calculateStreak(completions);
     
-    // Update streak count
-    const [updatedHabit] = await db.update(habitsTable)
+    await db
+      .update(habits)
       .set({ streak })
-      .where(eq(habitsTable.id, habitId))
-      .returning();
+      .where(eq(habits.id, habitId));
     
-    return this.habitToHabitWithCompletions(updatedHabit);
+    return {
+      ...habit,
+      streak
+    };
   }
 
   async clearAllHabits(): Promise<boolean> {
-    // Delete all completions first due to foreign key constraints
-    await db.delete(habitCompletionsTable);
-    
-    // Delete all habits
-    await db.delete(habitsTable);
-    
+    await db.delete(habitCompletions);
+    await db.delete(habits);
     return true;
   }
 
   async clearHabitCompletions(dateStr: string): Promise<boolean> {
     const date = new Date(dateStr);
     
-    // Delete completions for the specified date
-    await db.delete(habitCompletionsTable)
-      .where(sql`DATE(${habitCompletionsTable.date}) = DATE(${date})`);
+    await db
+      .delete(habitCompletions)
+      .where(sql`DATE(${habitCompletions.date}) = DATE(${date})`);
+    
+    // Reset streaks for all habits
+    const habitsData = await db.select().from(habits);
+    
+    for (const habit of habitsData) {
+      const completions = await this.getCompletionsForHabit(habit.id);
+      const streak = this.calculateStreak(completions);
+      
+      await db
+        .update(habits)
+        .set({ streak })
+        .where(eq(habits.id, habit.id));
+    }
     
     return true;
   }
 
-  // Daily Goals methods
-  async getDailyGoal(dateStr: string): Promise<DailyGoal | undefined> {
+  // Daily goals methods
+  async getDailyGoal(dateStr: string, userId: number): Promise<DailyGoal | undefined> {
     const date = new Date(dateStr);
     
-    const [goal] = await db.select().from(dailyGoalsTable)
-      .where(sql`DATE(${dailyGoalsTable.date}) = DATE(${date})`);
+    const [goal] = await db
+      .select()
+      .from(dailyGoals)
+      .where(
+        and(
+          eq(dailyGoals.userId, userId),
+          sql`DATE(${dailyGoals.date}) = DATE(${date})`
+        )
+      );
     
     return goal;
   }
 
-  async saveDailyGoal(dateStr: string, goalData: Omit<InsertDailyGoal, "date">): Promise<DailyGoal> {
+  async saveDailyGoal(dateStr: string, userId: number, goalData: Omit<InsertDailyGoal, "date" | "userId">): Promise<DailyGoal> {
     const date = new Date(dateStr);
     
-    // Check if goal for this date already exists
-    const existingGoal = await this.getDailyGoal(dateStr);
+    // Check if a goal already exists for this date
+    const [existingGoal] = await db
+      .select()
+      .from(dailyGoals)
+      .where(
+        and(
+          eq(dailyGoals.userId, userId),
+          sql`DATE(${dailyGoals.date}) = DATE(${date})`
+        )
+      );
     
     if (existingGoal) {
-      // Update existing goal
-      const [updatedGoal] = await db.update(dailyGoalsTable)
+      // Update the existing goal
+      const [updatedGoal] = await db
+        .update(dailyGoals)
         .set({
           ...goalData,
           updatedAt: new Date()
         })
-        .where(eq(dailyGoalsTable.id, existingGoal.id))
+        .where(eq(dailyGoals.id, existingGoal.id))
         .returning();
       
       return updatedGoal;
     } else {
-      // Create new goal
-      const [newGoal] = await db.insert(dailyGoalsTable)
+      // Create a new goal
+      const [newGoal] = await db
+        .insert(dailyGoals)
         .values({
-          date: new Date(format(date, "yyyy-MM-dd")),
+          userId,
+          date,
           ...goalData
         })
         .returning();
@@ -245,78 +284,112 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // DBT Diary Card methods
-  async getDbtSleepData(dateStr: string): Promise<DbtSleep | undefined> {
+  // DBT diary card methods - sleep
+  async getDbtSleepData(dateStr: string, userId: number): Promise<DbtSleep | undefined> {
     const date = new Date(dateStr);
     
-    const [sleepData] = await db.select().from(dbtSleepTable)
-      .where(sql`DATE(${dbtSleepTable.date}) = DATE(${date})`);
+    const [sleepData] = await db
+      .select()
+      .from(dbtSleep)
+      .where(
+        and(
+          eq(dbtSleep.userId, userId),
+          sql`DATE(${dbtSleep.date}) = DATE(${date})`
+        )
+      );
     
     return sleepData;
   }
 
-  async saveDbtSleepData(dateStr: string, data: {
-    hoursSlept?: string;
-    troubleFalling?: string;
-    troubleStaying?: string;
-    troubleWaking?: string;
+  async saveDbtSleepData(dateStr: string, userId: number, data: {
+    hoursSlept?: string,
+    troubleFalling?: string,
+    troubleStaying?: string,
+    troubleWaking?: string
   }): Promise<DbtSleep> {
     const date = new Date(dateStr);
     
-    // Check if data for this date already exists
-    const existingData = await this.getDbtSleepData(dateStr);
+    // Check if sleep data already exists for this date
+    const [existingSleepData] = await db
+      .select()
+      .from(dbtSleep)
+      .where(
+        and(
+          eq(dbtSleep.userId, userId),
+          sql`DATE(${dbtSleep.date}) = DATE(${date})`
+        )
+      );
     
-    if (existingData) {
-      // Update existing data
-      const [updatedData] = await db.update(dbtSleepTable)
+    if (existingSleepData) {
+      // Update the existing sleep data
+      const [updatedSleepData] = await db
+        .update(dbtSleep)
         .set(data)
-        .where(eq(dbtSleepTable.id, existingData.id))
+        .where(eq(dbtSleep.id, existingSleepData.id))
         .returning();
       
-      return updatedData;
+      return updatedSleepData;
     } else {
-      // Create new data
-      const [newData] = await db.insert(dbtSleepTable)
+      // Create new sleep data
+      const [newSleepData] = await db
+        .insert(dbtSleep)
         .values({
-          date: new Date(format(date, "yyyy-MM-dd")),
+          userId,
+          date,
           ...data
         })
         .returning();
       
-      return newData;
+      return newSleepData;
     }
   }
 
-  async getDbtEmotionsForDate(dateStr: string): Promise<DbtEmotion[]> {
+  // DBT diary card methods - emotions
+  async getDbtEmotionsForDate(dateStr: string, userId: number): Promise<DbtEmotion[]> {
     const date = new Date(dateStr);
     
-    return db.select().from(dbtEmotionsTable)
-      .where(sql`DATE(${dbtEmotionsTable.date}) = DATE(${date})`);
+    return await db
+      .select()
+      .from(dbtEmotions)
+      .where(
+        and(
+          eq(dbtEmotions.userId, userId),
+          sql`DATE(${dbtEmotions.date}) = DATE(${date})`
+        )
+      );
   }
 
-  async saveDbtEmotion(dateStr: string, emotion: string, intensity: string): Promise<DbtEmotion> {
+  async saveDbtEmotion(dateStr: string, userId: number, emotion: string, intensity: string): Promise<DbtEmotion> {
     const date = new Date(dateStr);
     
     // Check if this emotion already exists for this date
-    const existingEmotions = await db.select().from(dbtEmotionsTable)
-      .where(and(
-        sql`DATE(${dbtEmotionsTable.date}) = DATE(${date})`,
-        eq(dbtEmotionsTable.emotion, emotion)
-      ));
+    const [existingEmotion] = await db
+      .select()
+      .from(dbtEmotions)
+      .where(
+        and(
+          eq(dbtEmotions.userId, userId),
+          sql`DATE(${dbtEmotions.date}) = DATE(${date})`,
+          eq(dbtEmotions.emotion, emotion)
+        )
+      );
     
-    if (existingEmotions.length > 0) {
-      // Update existing emotion
-      const [updatedEmotion] = await db.update(dbtEmotionsTable)
+    if (existingEmotion) {
+      // Update the existing emotion
+      const [updatedEmotion] = await db
+        .update(dbtEmotions)
         .set({ intensity })
-        .where(eq(dbtEmotionsTable.id, existingEmotions[0].id))
+        .where(eq(dbtEmotions.id, existingEmotion.id))
         .returning();
       
       return updatedEmotion;
     } else {
-      // Create new emotion
-      const [newEmotion] = await db.insert(dbtEmotionsTable)
+      // Create a new emotion
+      const [newEmotion] = await db
+        .insert(dbtEmotions)
         .values({
-          date: new Date(format(date, "yyyy-MM-dd")),
+          userId,
+          date,
           emotion,
           intensity
         })
@@ -326,36 +399,52 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getDbtUrgesForDate(dateStr: string): Promise<DbtUrge[]> {
+  // DBT diary card methods - urges
+  async getDbtUrgesForDate(dateStr: string, userId: number): Promise<DbtUrge[]> {
     const date = new Date(dateStr);
     
-    return db.select().from(dbtUrgesTable)
-      .where(sql`DATE(${dbtUrgesTable.date}) = DATE(${date})`);
+    return await db
+      .select()
+      .from(dbtUrges)
+      .where(
+        and(
+          eq(dbtUrges.userId, userId),
+          sql`DATE(${dbtUrges.date}) = DATE(${date})`
+        )
+      );
   }
 
-  async saveDbtUrge(dateStr: string, urgeType: string, level: string, action: string): Promise<DbtUrge> {
+  async saveDbtUrge(dateStr: string, userId: number, urgeType: string, level: string, action: string): Promise<DbtUrge> {
     const date = new Date(dateStr);
     
     // Check if this urge already exists for this date
-    const existingUrges = await db.select().from(dbtUrgesTable)
-      .where(and(
-        sql`DATE(${dbtUrgesTable.date}) = DATE(${date})`,
-        eq(dbtUrgesTable.urgeType, urgeType)
-      ));
+    const [existingUrge] = await db
+      .select()
+      .from(dbtUrges)
+      .where(
+        and(
+          eq(dbtUrges.userId, userId),
+          sql`DATE(${dbtUrges.date}) = DATE(${date})`,
+          eq(dbtUrges.urgeType, urgeType)
+        )
+      );
     
-    if (existingUrges.length > 0) {
-      // Update existing urge
-      const [updatedUrge] = await db.update(dbtUrgesTable)
+    if (existingUrge) {
+      // Update the existing urge
+      const [updatedUrge] = await db
+        .update(dbtUrges)
         .set({ level, action })
-        .where(eq(dbtUrgesTable.id, existingUrges[0].id))
+        .where(eq(dbtUrges.id, existingUrge.id))
         .returning();
       
       return updatedUrge;
     } else {
-      // Create new urge
-      const [newUrge] = await db.insert(dbtUrgesTable)
+      // Create a new urge
+      const [newUrge] = await db
+        .insert(dbtUrges)
         .values({
-          date: new Date(format(date, "yyyy-MM-dd")),
+          userId,
+          date,
           urgeType,
           level,
           action
@@ -366,37 +455,53 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getDbtSkillsForDate(dateStr: string): Promise<DbtSkill[]> {
+  // DBT diary card methods - skills
+  async getDbtSkillsForDate(dateStr: string, userId: number): Promise<DbtSkill[]> {
     const date = new Date(dateStr);
     
-    return db.select().from(dbtSkillsTable)
-      .where(sql`DATE(${dbtSkillsTable.date}) = DATE(${date})`);
+    return await db
+      .select()
+      .from(dbtSkills)
+      .where(
+        and(
+          eq(dbtSkills.userId, userId),
+          sql`DATE(${dbtSkills.date}) = DATE(${date})`
+        )
+      );
   }
 
-  async toggleDbtSkill(dateStr: string, category: string, skill: string, used: boolean): Promise<DbtSkill> {
+  async toggleDbtSkill(dateStr: string, userId: number, category: string, skill: string, used: boolean): Promise<DbtSkill> {
     const date = new Date(dateStr);
     
     // Check if this skill already exists for this date
-    const existingSkills = await db.select().from(dbtSkillsTable)
-      .where(and(
-        sql`DATE(${dbtSkillsTable.date}) = DATE(${date})`,
-        eq(dbtSkillsTable.category, category),
-        eq(dbtSkillsTable.skill, skill)
-      ));
+    const [existingSkill] = await db
+      .select()
+      .from(dbtSkills)
+      .where(
+        and(
+          eq(dbtSkills.userId, userId),
+          sql`DATE(${dbtSkills.date}) = DATE(${date})`,
+          eq(dbtSkills.category, category),
+          eq(dbtSkills.skill, skill)
+        )
+      );
     
-    if (existingSkills.length > 0) {
-      // Update existing skill
-      const [updatedSkill] = await db.update(dbtSkillsTable)
+    if (existingSkill) {
+      // Update the existing skill
+      const [updatedSkill] = await db
+        .update(dbtSkills)
         .set({ used })
-        .where(eq(dbtSkillsTable.id, existingSkills[0].id))
+        .where(eq(dbtSkills.id, existingSkill.id))
         .returning();
       
       return updatedSkill;
     } else {
-      // Create new skill
-      const [newSkill] = await db.insert(dbtSkillsTable)
+      // Create a new skill
+      const [newSkill] = await db
+        .insert(dbtSkills)
         .values({
-          date: new Date(format(date, "yyyy-MM-dd")),
+          userId,
+          date,
           category,
           skill,
           used
@@ -407,34 +512,53 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getDbtEventForDate(dateStr: string): Promise<DbtEvent | undefined> {
+  // DBT diary card methods - events
+  async getDbtEventForDate(dateStr: string, userId: number): Promise<DbtEvent | undefined> {
     const date = new Date(dateStr);
     
-    const [event] = await db.select().from(dbtEventsTable)
-      .where(sql`DATE(${dbtEventsTable.date}) = DATE(${date})`);
+    const [event] = await db
+      .select()
+      .from(dbtEvents)
+      .where(
+        and(
+          eq(dbtEvents.userId, userId),
+          sql`DATE(${dbtEvents.date}) = DATE(${date})`
+        )
+      );
     
     return event;
   }
 
-  async saveDbtEvent(dateStr: string, eventDescription: string): Promise<DbtEvent> {
+  async saveDbtEvent(dateStr: string, userId: number, eventDescription: string): Promise<DbtEvent> {
     const date = new Date(dateStr);
     
-    // Check if event for this date already exists
-    const existingEvent = await this.getDbtEventForDate(dateStr);
+    // Check if an event already exists for this date
+    const [existingEvent] = await db
+      .select()
+      .from(dbtEvents)
+      .where(
+        and(
+          eq(dbtEvents.userId, userId),
+          sql`DATE(${dbtEvents.date}) = DATE(${date})`
+        )
+      );
     
     if (existingEvent) {
-      // Update existing event
-      const [updatedEvent] = await db.update(dbtEventsTable)
+      // Update the existing event
+      const [updatedEvent] = await db
+        .update(dbtEvents)
         .set({ eventDescription })
-        .where(eq(dbtEventsTable.id, existingEvent.id))
+        .where(eq(dbtEvents.id, existingEvent.id))
         .returning();
       
       return updatedEvent;
     } else {
-      // Create new event
-      const [newEvent] = await db.insert(dbtEventsTable)
+      // Create a new event
+      const [newEvent] = await db
+        .insert(dbtEvents)
         .values({
-          date: new Date(format(date, "yyyy-MM-dd")),
+          userId,
+          date,
           eventDescription
         })
         .returning();

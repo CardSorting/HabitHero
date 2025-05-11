@@ -1,10 +1,13 @@
 import { 
   habits as habitsTable, 
-  habitCompletions as habitCompletionsTable, 
+  habitCompletions as habitCompletionsTable,
+  users,
   type Habit, 
   type InsertHabit,
   type HabitCompletion,
-  type InsertHabitCompletion 
+  type InsertHabitCompletion,
+  type User,
+  type InsertUser
 } from "@shared/schema";
 import { startOfDay, subDays, format, addDays } from "date-fns";
 
@@ -17,7 +20,12 @@ export interface HabitWithCompletions extends Habit {
 }
 
 export interface IStorage {
-  getHabits(): Promise<HabitWithCompletions[]>;
+  pool: any;
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+
+  getHabits(userId?: number): Promise<HabitWithCompletions[]>;
   getHabit(id: number): Promise<HabitWithCompletions | undefined>;
   createHabit(habit: InsertHabit): Promise<HabitWithCompletions>;
   updateHabit(id: number, habit: Partial<Habit>): Promise<HabitWithCompletions>;
@@ -30,17 +38,54 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private habits: Map<number, Habit>;
   private habitCompletions: Map<number, HabitCompletion[]>;
+  private users: Map<number, User>;
+  private usernameToId: Map<string, number>;
+  pool: any;
+  
   currentHabitId: number;
   currentCompletionId: number;
+  currentUserId: number;
 
   constructor() {
     this.habits = new Map();
     this.habitCompletions = new Map();
+    this.users = new Map();
+    this.usernameToId = new Map();
+    this.pool = null;
+    
     this.currentHabitId = 1;
     this.currentCompletionId = 1;
+    this.currentUserId = 1;
     
     // Add some sample habits for testing
     this.initializeSampleHabits();
+  }
+  
+  async getUser(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const userId = this.usernameToId.get(username);
+    if (!userId) return undefined;
+    return this.users.get(userId);
+  }
+  
+  async createUser(user: InsertUser): Promise<User> {
+    const id = this.currentUserId++;
+    const now = new Date();
+    
+    const newUser: User = {
+      id,
+      username: user.username,
+      password: user.password,
+      createdAt: now
+    };
+    
+    this.users.set(id, newUser);
+    this.usernameToId.set(user.username, id);
+    
+    return newUser;
   }
   
   private initializeSampleHabits() {
@@ -195,6 +240,7 @@ export class MemStorage implements IStorage {
     
     const habit: Habit = {
       id,
+      userId: insertHabit.userId,
       name: insertHabit.name,
       description: insertHabit.description || "",
       frequency: insertHabit.frequency || "daily",

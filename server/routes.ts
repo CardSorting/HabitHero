@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -8,15 +8,40 @@ import {
   insertDbtEmotionSchema,
   insertDbtUrgeSchema,
   insertDbtSkillSchema,
-  insertDbtEventSchema
+  insertDbtEventSchema,
+  insertUserSchema
 } from "@shared/schema";
+import { setupAuth } from "./auth";
 import { z } from "zod";
 
+// Extend Request type with authenticated user
+interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    username: string;
+  }
+}
+
+// Middleware to check if user is authenticated
+function isAuthenticated(req: AuthRequest, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication routes and middleware
+  setupAuth(app);
   // Get all habits
-  app.get("/api/habits", async (req, res) => {
+  app.get("/api/habits", isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const habits = await storage.getHabits();
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const habits = await storage.getHabits(userId);
       res.json(habits);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -24,8 +49,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get a specific habit
-  app.get("/api/habits/:id", async (req, res) => {
+  app.get("/api/habits/:id", isAuthenticated, async (req: AuthRequest, res) => {
     try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const habitId = parseInt(req.params.id);
       if (isNaN(habitId)) {
         return res.status(400).json({ message: "Invalid habit ID" });
@@ -35,6 +65,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!habit) {
         return res.status(404).json({ message: "Habit not found" });
       }
+      
+      // Ensure the habit belongs to the authenticated user
+      if (habit.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
 
       res.json(habit);
     } catch (error: any) {
@@ -43,9 +78,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create a new habit
-  app.post("/api/habits", async (req, res) => {
+  app.post("/api/habits", isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const habitData = insertHabitSchema.parse(req.body);
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const habitData = insertHabitSchema.parse({
+        ...req.body,
+        userId
+      });
+      
       const newHabit = await storage.createHabit(habitData);
       res.status(201).json(newHabit);
     } catch (error: any) {

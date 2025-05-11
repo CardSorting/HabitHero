@@ -15,6 +15,8 @@ import { motion } from "framer-motion";
 interface DBTDiaryCardTrackerProps {
   weekDates: Date[];
   currentWeekStart: Date;
+  selectedDate: Date;
+  viewMode: 'day' | 'week';
 }
 
 type DiaryCardData = {

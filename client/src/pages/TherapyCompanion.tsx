@@ -6,10 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Loader2, Send, RefreshCw, MessageSquare, Sparkles, Brain, HeartHandshake } from "lucide-react";
 import Header from "@/components/Header";
+
+// Helper function for API requests
+async function apiClient<T>(url: string, options: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    },
+    credentials: 'include'
+  });
+  
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`${response.status}: ${text || response.statusText}`);
+  }
+  
+  return response.json();
+}
 
 // Types
 interface Message {
@@ -56,7 +74,7 @@ function TherapyCompanion() {
   // Chat mutation
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
-      return apiRequest("/api/therapy/chat", {
+      return apiClient<{response: string}>("/api/therapy/chat", {
         method: "POST",
         body: JSON.stringify({
           message,
@@ -64,10 +82,8 @@ function TherapyCompanion() {
         })
       });
     },
-    onSuccess: (data: any) => {
-      if (data?.response) {
-        setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
-      }
+    onSuccess: (data) => {
+      setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
     },
     onError: (error: Error) => {
       toast({
@@ -82,7 +98,7 @@ function TherapyCompanion() {
   // Coping strategy mutation
   const copingStrategyMutation = useMutation({
     mutationFn: async ({ emotion, intensity }: { emotion: string, intensity: string }) => {
-      return apiRequest("/api/therapy/coping-strategy", {
+      return apiClient<{ copingStrategy: string }>("/api/therapy/coping-strategy", {
         method: "POST",
         body: JSON.stringify({
           emotion,
@@ -90,18 +106,16 @@ function TherapyCompanion() {
         })
       });
     },
-    onSuccess: (data: any, variables) => {
-      if (data?.copingStrategy) {
-        setCopingStrategies(prev => [
-          { 
-            emotion: variables.emotion, 
-            intensity: variables.intensity, 
-            strategy: data.copingStrategy 
-          },
-          ...prev.slice(0, 4) // Keep only 5 most recent strategies
-        ]);
-        setEmotion("");
-      }
+    onSuccess: (data, variables) => {
+      setCopingStrategies(prev => [
+        { 
+          emotion: variables.emotion, 
+          intensity: variables.intensity, 
+          strategy: data.copingStrategy 
+        },
+        ...prev.slice(0, 4) // Keep only 5 most recent strategies
+      ]);
+      setEmotion("");
     },
     onError: (error: Error) => {
       toast({
@@ -116,7 +130,7 @@ function TherapyCompanion() {
   // Reflection analysis mutation
   const reflectionAnalysisMutation = useMutation({
     mutationFn: async (reflection: typeof reflectionData) => {
-      return apiRequest<{ analysis: string }>("/api/therapy/analyze-reflection", {
+      return apiClient<{ analysis: string }>("/api/therapy/analyze-reflection", {
         method: "POST",
         body: JSON.stringify({
           reflection
@@ -124,9 +138,7 @@ function TherapyCompanion() {
       });
     },
     onSuccess: (data) => {
-      if (data?.analysis) {
-        setReflectionAnalysis(data.analysis);
-      }
+      setReflectionAnalysis(data.analysis);
     },
     onError: (error: Error) => {
       toast({

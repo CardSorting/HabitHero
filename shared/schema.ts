@@ -1,7 +1,21 @@
-import { pgTable, text, serial, integer, boolean, timestamp, date, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, date, varchar, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
+
+// User table for authentication
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 50 }).notNull(),
+  password: text("password").notNull(),
+  email: varchar("email", { length: 100 }),
+  fullName: varchar("full_name", { length: 100 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    unqUsername: unique().on(table.username),
+  };
+});
 
 export const habitCompletions = pgTable("habit_completions", {
   id: serial("id").primaryKey(),
@@ -12,6 +26,7 @@ export const habitCompletions = pgTable("habit_completions", {
 
 export const habits = pgTable("habits", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
   frequency: text("frequency").notNull().default("daily"),
@@ -33,6 +48,7 @@ export const insertHabitCompletionSchema = createInsertSchema(habitCompletions).
 // New table for daily goals tracking
 export const dailyGoals = pgTable("daily_goals", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
   date: date("date").notNull(),
   todayGoal: text("today_goal"),
   tomorrowGoal: text("tomorrow_goal"),
@@ -46,6 +62,7 @@ export const dailyGoals = pgTable("daily_goals", {
 // New table for DBT diary card - sleep data
 export const dbtSleep = pgTable("dbt_sleep", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
   date: date("date").notNull(),
   hoursSlept: varchar("hours_slept", { length: 10 }),
   troubleFalling: varchar("trouble_falling", { length: 10 }),
@@ -57,6 +74,7 @@ export const dbtSleep = pgTable("dbt_sleep", {
 // New table for DBT diary card - emotions
 export const dbtEmotions = pgTable("dbt_emotions", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
   date: date("date").notNull(),
   emotion: varchar("emotion", { length: 50 }).notNull(),
   intensity: varchar("intensity", { length: 10 }),
@@ -66,6 +84,7 @@ export const dbtEmotions = pgTable("dbt_emotions", {
 // New table for DBT diary card - urges
 export const dbtUrges = pgTable("dbt_urges", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
   date: date("date").notNull(),
   urgeType: varchar("urge_type", { length: 50 }).notNull(),
   level: varchar("level", { length: 10 }),
@@ -76,6 +95,7 @@ export const dbtUrges = pgTable("dbt_urges", {
 // New table for DBT diary card - skills used
 export const dbtSkills = pgTable("dbt_skills", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
   date: date("date").notNull(),
   category: varchar("category", { length: 50 }).notNull(),
   skill: varchar("skill", { length: 100 }).notNull(),

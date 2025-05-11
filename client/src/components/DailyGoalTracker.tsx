@@ -44,12 +44,12 @@ const defaultData: DailyGoalData = {
   tomorrowGoal: "",
   todayHighlight: "",
   gratitude: "",
-  dbtSkillUsed: ""
+  dbtSkillUsed: "none"
 };
 
 // DBT skills for dropdown selection
 const dbtSkills = [
-  { value: "", label: "Select a skill" },
+  { value: "none", label: "Select a skill" },
   // Mindfulness
   { value: "wise-mind", label: "Wise Mind" },
   { value: "observe", label: "Observe: just notice" },
@@ -230,7 +230,7 @@ const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({ className = "" }) =
           </div>
         ) : (
           <div className="space-y-4">
-            {goals.todayGoal || goals.tomorrowGoal || goals.todayHighlight || goals.gratitude || goals.dbtSkillUsed ? (
+            {goals.todayGoal || goals.tomorrowGoal || goals.todayHighlight || goals.gratitude || (goals.dbtSkillUsed && goals.dbtSkillUsed !== "none") ? (
               <>
                 {goals.todayGoal && (
                   <motion.div 
@@ -292,7 +292,7 @@ const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({ className = "" }) =
                   </motion.div>
                 )}
                 
-                {goals.dbtSkillUsed && (
+                {goals.dbtSkillUsed && goals.dbtSkillUsed !== "none" && (
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -329,7 +329,7 @@ const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({ className = "" }) =
         )}
       </CardContent>
       
-      {!editing && (goals.todayGoal || goals.tomorrowGoal || goals.todayHighlight || goals.gratitude || goals.dbtSkillUsed) && (
+      {!editing && (goals.todayGoal || goals.tomorrowGoal || goals.todayHighlight || goals.gratitude || (goals.dbtSkillUsed && goals.dbtSkillUsed !== "none")) && (
         <CardFooter className="px-4 py-3 border-t bg-muted/10 flex justify-between">
           <div className="text-xs text-muted-foreground">
             {format(new Date(), "EEEE, MMMM d")}

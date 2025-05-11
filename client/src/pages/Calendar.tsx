@@ -2,15 +2,20 @@ import React, { useState } from "react";
 import Header from "@/components/Header";
 import { motion } from "framer-motion";
 import { useHabits } from "@/lib/useHabits";
-import { Card, CardContent } from "@/components/ui/card";
+import { useAnalytics } from "@/lib/useAnalytics";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { isSameDay, format } from "date-fns";
-import { Check } from "lucide-react";
+import { isSameDay, format, subMonths, addMonths } from "date-fns";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import HeatmapCalendar from "@/components/HeatmapCalendar";
 
 const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const { habits, isLoading } = useHabits();
+  const { getHeatmapData } = useAnalytics();
 
   const habitsForSelectedDate = selectedDate
     ? habits.map(habit => {
@@ -76,12 +81,38 @@ const Calendar: React.FC = () => {
           transition={{ duration: 0.4 }}
         >
           <Card className="rounded-[12px] mb-6">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">Calendar View</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium">
+                    {format(currentMonth, "MMMM yyyy")}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
             <CardContent className="p-3">
               <CalendarComponent
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 className="rounded-md"
+                month={currentMonth}
+                onMonthChange={setCurrentMonth}
                 modifiers={{
                   completed: completedDates,
                 }}
@@ -95,6 +126,20 @@ const Calendar: React.FC = () => {
               />
             </CardContent>
           </Card>
+        </motion.div>
+        
+        <motion.div
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-6"
+        >
+          <HeatmapCalendar 
+            data={getHeatmapData()} 
+            month={currentMonth}
+            title="Habit Completion Heatmap" 
+            description="Visual representation of your daily habit activity" 
+          />
         </motion.div>
 
         <motion.div

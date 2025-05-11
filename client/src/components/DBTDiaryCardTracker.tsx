@@ -1240,28 +1240,126 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
       
       {/* Events Tab */}
       <TabsContent value="events" className="space-y-4">
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-lg font-medium mb-4">EVENTS since yesterday that influenced my emotions</h3>
-            <ScrollArea className="h-[calc(100vh-300px)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dayHeaders.map(day => (
-                  <Card key={day.date}>
-                    <CardContent className="p-4">
-                      <h4 className="font-medium mb-2">{day.full}</h4>
-                      <Textarea 
-                        placeholder="Describe events that affected your emotions..."
-                        className="min-h-[120px]"
-                        value={diaryData.events[day.date] || ''}
-                        onChange={(e) => handleEventChange(day.date, e.target.value)}
-                      />
-                    </CardContent>
-                  </Card>
-                ))}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="rounded-xl overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Badge variant="outline" className="bg-blue-500/10 border-blue-500 text-blue-700">Daily Events</Badge>
+                <div className="text-xs text-muted-foreground ml-auto">
+                  {viewMode === 'day' 
+                    ? `For ${isToday(selectedDate) ? 'today' : format(selectedDate, 'MMMM d')}` 
+                    : 'Events that influenced your emotions'
+                  }
+                </div>
               </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+              
+              <ScrollArea className="h-[calc(100vh-300px)]">
+                {viewMode === 'day' ? (
+                  // Day view - more focused journal-style entry
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4 }}
+                    className="space-y-4"
+                  >
+                    <div className="text-sm text-center text-muted-foreground mb-4">
+                      {isToday(selectedDate) ? "Today" : format(selectedDate, "EEEE, MMMM d")}
+                    </div>
+                    
+                    <div className="bg-muted/30 p-5 rounded-xl">
+                      <div className="mb-3 flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <path d="M16 13H8"/>
+                            <path d="M16 17H8"/>
+                            <path d="M10 9H8"/>
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-medium">Events Journal</h3>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Record important events that influenced your emotions today. This helps identify patterns between situations and feelings.
+                      </p>
+                      
+                      <div className="relative">
+                        <Textarea 
+                          placeholder="Describe events that affected your emotions..."
+                          className="min-h-[200px] p-4 text-base border-dashed focus-visible:ring-blue-500"
+                          value={diaryData.events[format(selectedDate, "yyyy-MM-dd")] || ''}
+                          onChange={(e) => handleEventChange(format(selectedDate, "yyyy-MM-dd"), e.target.value)}
+                        />
+                        
+                        {/* Show a little animation badge when content changes */}
+                        {diaryData.events[format(selectedDate, "yyyy-MM-dd")] && (
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="absolute top-3 right-3 text-xs py-1 px-2 bg-blue-500/10 text-blue-600 rounded-full"
+                          >
+                            Entry saved
+                          </motion.div>
+                        )}
+                      </div>
+                      
+                      {/* Suggestions for meaningful journal entries */}
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                        <div className="p-2 bg-blue-50 rounded text-blue-600">
+                          Tip: Note down specific situations, not just feelings
+                        </div>
+                        <div className="p-2 bg-blue-50 rounded text-blue-600">
+                          Tip: Include both positive and negative experiences
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : (
+                  // Week view - grid of entries
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {dayHeaders.map((day, index) => (
+                      <motion.div
+                        key={day.date}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <Card 
+                          className={cn(
+                            "overflow-hidden border transition-all hover:shadow-md",
+                            isSameDay(new Date(day.date), selectedDate) && "border-blue-500/50 bg-blue-50/30"
+                          )}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-medium">{day.full}</h4>
+                              {diaryData.events[day.date] && (
+                                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+                                  Entry added
+                                </Badge>
+                              )}
+                            </div>
+                            <Textarea 
+                              placeholder="Describe events that affected your emotions..."
+                              className="min-h-[120px]"
+                              value={diaryData.events[day.date] || ''}
+                              onChange={(e) => handleEventChange(day.date, e.target.value)}
+                            />
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </motion.div>
       </TabsContent>
     </>
   );

@@ -1104,29 +1104,29 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
                   {/* Mindfulness Skills */}
                   <div>
                     <h4 className="text-base font-medium mb-2">MINDFULNESS SKILLS</h4>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-1/3">Skill</TableHead>
-                        {dayHeaders.map(day => (
-                          <TableHead key={day.date} className="px-1 text-center">
-                            <div className="font-medium">{day.abbr}</div>
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {['Wise Mind', 'Observe: just notice', 'Describe: put words on', 'Participate', 'Non-judgmental stance', 'One-mindfully: in the moment', 'Effectiveness: focus on what works'].map(skill => (
-                        <TableRow key={skill}>
-                          <TableCell className="font-medium">{skill}</TableCell>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-1/3">Skill</TableHead>
                           {dayHeaders.map(day => (
-                            <TableCell key={day.date} className="text-center">
-                              <Checkbox 
-                                checked={getSkillChecked('mindfulness', skill, day.date)}
-                                onCheckedChange={(checked) => handleSkillChange('mindfulness', skill, day.date, checked as boolean)}
-                              />
-                            </TableCell>
+                            <TableHead key={day.date} className="px-1 text-center">
+                              <div className="font-medium">{day.abbr}</div>
+                            </TableHead>
                           ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {['Wise Mind', 'Observe: just notice', 'Describe: put words on', 'Participate', 'Non-judgmental stance', 'One-mindfully: in the moment', 'Effectiveness: focus on what works'].map(skill => (
+                          <TableRow key={skill}>
+                            <TableCell className="font-medium">{skill}</TableCell>
+                            {dayHeaders.map(day => (
+                              <TableCell key={day.date} className="text-center">
+                                <Checkbox 
+                                  checked={getSkillChecked('mindfulness', skill, day.date)}
+                                  onCheckedChange={(checked) => handleSkillChange('mindfulness', skill, day.date, checked as boolean)}
+                                />
+                              </TableCell>
+                            ))}
                         </TableRow>
                       ))}
                     </TableBody>

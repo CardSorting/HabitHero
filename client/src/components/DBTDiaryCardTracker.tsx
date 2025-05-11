@@ -788,110 +788,291 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
               <div className="flex items-center gap-2 mb-4">
                 <Badge variant="outline" className="bg-destructive/10 border-destructive">Urges and Thoughts</Badge>
                 <div className="text-xs text-muted-foreground ml-auto">
-                  Track intensity and whether action was taken
+                  {viewMode === 'day' 
+                    ? `For ${isToday(selectedDate) ? 'today' : format(selectedDate, 'MMMM d')}` 
+                    : 'Track intensity and whether action was taken'
+                  }
                 </div>
               </div>
               
               <ScrollArea className="h-[calc(100vh-300px)]">
                 <div className="space-y-6">
-                  <div className="text-sm text-muted-foreground mb-2">
-                    <span className="bg-destructive/10 text-destructive px-2 py-0.5 rounded font-medium">Important</span>
-                    <span className="ml-2">If you're having thoughts of harming yourself, please reach out for help. Call a crisis line or speak with your therapist.</span>
+                  <div className="text-sm text-muted-foreground p-3 bg-destructive/5 border border-destructive/20 rounded-lg flex items-start">
+                    <div className="p-1 mr-3 bg-destructive/20 rounded-full">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-destructive">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <span className="font-medium text-destructive">Important:</span>
+                      <span className="ml-1 block sm:inline-block mt-1 sm:mt-0">If you're having thoughts of harming yourself, please reach out for help. Call a crisis line or speak with your therapist.</span>
+                    </div>
                   </div>
                   
-                  {/* Urges cards */}
-                  <div className="grid grid-cols-1 gap-6">
-                    {['Self-Harm', 'Suicide', 'Other'].map(urge => (
-                      <Card key={urge} className="rounded-xl overflow-hidden">
-                        <CardContent className="p-4">
-                          <h4 className="text-base font-medium mb-3 flex items-center justify-between">
-                            <span>Thoughts about {urge}</span>
-                            <Badge variant="outline" className="font-normal">
-                              0=none, 10=very strong
-                            </Badge>
-                          </h4>
+                  {viewMode === 'day' ? (
+                    // Day view - more focus on the selected day
+                    <>
+                      <div className="text-sm text-center text-muted-foreground mb-4">
+                        {isToday(selectedDate) ? "Today" : format(selectedDate, "EEEE, MMMM d")}
+                      </div>
+                      
+                      {/* Urge cards with sliders for day view */}
+                      <div className="space-y-6">
+                        {['Self-Harm', 'Suicide', 'Other'].map(urge => {
+                          const dateStr = format(selectedDate, "yyyy-MM-dd");
+                          const levelValue = getUrgeValue(dateStr, urge, 'level');
+                          const levelNumValue = parseInt(levelValue || '0');
+                          const actionValue = getUrgeValue(dateStr, urge, 'action');
                           
-                          {/* Intensity tracking */}
-                          <div className="mb-6">
-                            <h5 className="text-sm font-medium mb-2 text-muted-foreground">Intensity Level</h5>
-                            <div className="grid grid-cols-7 gap-2">
-                              {dayHeaders.map(day => {
-                                const value = getUrgeValue(day.date, urge, 'level');
-                                const numValue = parseInt(value || '0');
-                                return (
-                                  <div key={`${day.date}-level`} className="flex flex-col items-center">
-                                    <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "EEE")}</div>
-                                    <Select 
-                                      value={value}
-                                      onValueChange={(value) => handleUrgeChange(day.date, urge, 'level', value)}
-                                    >
-                                      <SelectTrigger 
+                          return (
+                            <motion.div 
+                              key={urge}
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: ['Self-Harm', 'Suicide', 'Other'].indexOf(urge) * 0.1 }}
+                            >
+                              <Card className={cn(
+                                "rounded-xl overflow-hidden border transition-all",
+                                levelNumValue >= 7 ? "border-destructive bg-destructive/5" : 
+                                levelNumValue >= 3 ? "border-destructive/50" : ""
+                              )}>
+                                <CardContent className="p-4">
+                                  <h4 className="text-base font-medium mb-3 flex items-center justify-between">
+                                    <span className="flex items-center">
+                                      <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: levelNumValue > 0 ? 1 : 0 }}
                                         className={cn(
-                                          "h-10 w-full text-center",
-                                          numValue >= 7 ? "bg-destructive/20 border-destructive text-destructive font-medium" : 
-                                          numValue >= 3 ? "bg-amber-500/20 border-amber-500 text-amber-700 font-medium" : 
-                                          numValue > 0 ? "bg-amber-300/20 border-amber-300 text-amber-600" : ""
+                                          "mr-2 w-3 h-3 rounded-full",
+                                          levelNumValue >= 7 ? "bg-destructive" : 
+                                          levelNumValue >= 3 ? "bg-destructive/70" : 
+                                          "bg-muted"
                                         )}
-                                      >
-                                        <SelectValue placeholder="-" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {scaleOptions.map(option => (
-                                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                                      />
+                                      <span>Thoughts about {urge}</span>
+                                    </span>
+                                    <div className={cn(
+                                      "flex items-center justify-center min-w-8 h-8 rounded-full",
+                                      levelNumValue >= 7 ? "bg-destructive text-white" : 
+                                      levelNumValue >= 3 ? "bg-destructive/20 text-destructive" : 
+                                      "bg-muted text-muted-foreground"
+                                    )}>
+                                      {levelValue || '0'}
+                                    </div>
+                                  </h4>
+                                  
+                                  {/* Intensity tracking with slider */}
+                                  <div className="mb-6">
+                                    <h5 className="text-sm font-medium mb-2 text-muted-foreground">Intensity Level</h5>
+                                    <div className="mt-1">
+                                      <div className="flex justify-between items-center mb-1">
+                                        <span className="text-xs text-muted-foreground">None</span>
+                                        <span className="text-xs text-muted-foreground">Very Strong</span>
+                                      </div>
+                                      <input 
+                                        type="range" 
+                                        min="0" 
+                                        max="10" 
+                                        step="1" 
+                                        value={levelNumValue} 
+                                        onChange={(e) => handleUrgeChange(dateStr, urge, 'level', e.target.value)}
+                                        className="w-full accent-destructive"
+                                      />
+                                      <div className="flex justify-between mt-1">
+                                        {[0, 1, 3, 5, 7, 10].map(val => (
+                                          <div 
+                                            key={val} 
+                                            className={cn(
+                                              "text-xs cursor-pointer px-1",
+                                              levelNumValue === val ? "font-bold text-destructive" : "text-muted-foreground"
+                                            )}
+                                            onClick={() => handleUrgeChange(dateStr, urge, 'level', val.toString())}
+                                          >
+                                            {val}
+                                          </div>
                                         ))}
-                                      </SelectContent>
-                                    </Select>
+                                      </div>
+                                    </div>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          
-                          {/* Action taken tracking */}
-                          <div>
-                            <h5 className="text-sm font-medium mb-2 text-muted-foreground">Action Taken?</h5>
-                            <div className="grid grid-cols-7 gap-2">
-                              {dayHeaders.map(day => {
-                                const value = getUrgeValue(day.date, urge, 'action');
-                                return (
-                                  <div key={`${day.date}-action`} className="flex flex-col items-center">
-                                    <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
-                                    <Select 
-                                      value={value}
-                                      onValueChange={(value) => handleUrgeChange(day.date, urge, 'action', value)}
-                                    >
-                                      <SelectTrigger 
+                                  
+                                  {/* Action taken with radio buttons */}
+                                  <div>
+                                    <h5 className="text-sm font-medium mb-3 text-muted-foreground">Did you act on this urge?</h5>
+                                    <div className="flex gap-4">
+                                      <div 
                                         className={cn(
-                                          "h-10 w-full text-center",
-                                          value === 'Yes' ? "bg-destructive/20 border-destructive text-destructive font-medium" : 
-                                          value === 'No' ? "bg-success/10 border-success text-success font-medium" : ""
+                                          "flex-1 cursor-pointer py-2 px-4 rounded-md text-center border transition-colors",
+                                          actionValue === 'Yes' 
+                                            ? "bg-destructive/10 border-destructive text-destructive" 
+                                            : "bg-muted/20 border-muted hover:bg-muted/30"
                                         )}
+                                        onClick={() => handleUrgeChange(dateStr, urge, 'action', 'Yes')}
                                       >
-                                        <SelectValue placeholder="-" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {yesNoOptions.map(option => (
-                                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                                        <div className="flex items-center justify-center gap-2">
+                                          <div className={cn(
+                                            "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                                            actionValue === 'Yes' ? "border-destructive" : "border-muted-foreground"
+                                          )}>
+                                            {actionValue === 'Yes' && (
+                                              <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                className="w-2 h-2 rounded-full bg-destructive"
+                                              />
+                                            )}
+                                          </div>
+                                          <span>Yes</span>
+                                        </div>
+                                      </div>
+                                      <div 
+                                        className={cn(
+                                          "flex-1 cursor-pointer py-2 px-4 rounded-md text-center border transition-colors",
+                                          actionValue === 'No' 
+                                            ? "bg-success/10 border-success text-success" 
+                                            : "bg-muted/20 border-muted hover:bg-muted/30"
+                                        )}
+                                        onClick={() => handleUrgeChange(dateStr, urge, 'action', 'No')}
+                                      >
+                                        <div className="flex items-center justify-center gap-2">
+                                          <div className={cn(
+                                            "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                                            actionValue === 'No' ? "border-success" : "border-muted-foreground"
+                                          )}>
+                                            {actionValue === 'No' && (
+                                              <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                className="w-2 h-2 rounded-full bg-success"
+                                              />
+                                            )}
+                                          </div>
+                                          <span>No</span>
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
-                                );
-                              })}
+                                  
+                                  {/* Safety reminder for suicide urge */}
+                                  {urge === 'Suicide' && (
+                                    <motion.div 
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: 'auto' }}
+                                      transition={{ duration: 0.3 }}
+                                      className="mt-4 bg-muted p-3 rounded-lg text-sm"
+                                    >
+                                      <p className="font-medium mb-1 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                        </svg>
+                                        Crisis Resources
+                                      </p>
+                                      <p className="text-muted-foreground">If in crisis, call 988 (US) for the Suicide & Crisis Lifeline or text HOME to 741741 for Crisis Text Line.</p>
+                                    </motion.div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    // Week view - grid of days
+                    <div className="grid grid-cols-1 gap-6">
+                      {['Self-Harm', 'Suicide', 'Other'].map(urge => (
+                        <Card key={urge} className="rounded-xl overflow-hidden">
+                          <CardContent className="p-4">
+                            <h4 className="text-base font-medium mb-3 flex items-center justify-between">
+                              <span>Thoughts about {urge}</span>
+                              <Badge variant="outline" className="font-normal">
+                                0=none, 10=very strong
+                              </Badge>
+                            </h4>
+                            
+                            {/* Intensity tracking */}
+                            <div className="mb-6">
+                              <h5 className="text-sm font-medium mb-2 text-muted-foreground">Intensity Level</h5>
+                              <div className="grid grid-cols-7 gap-2">
+                                {dayHeaders.map(day => {
+                                  const value = getUrgeValue(day.date, urge, 'level');
+                                  const numValue = parseInt(value || '0');
+                                  return (
+                                    <div key={`${day.date}-level`} className="flex flex-col items-center">
+                                      <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "EEE")}</div>
+                                      <Select 
+                                        value={value}
+                                        onValueChange={(value) => handleUrgeChange(day.date, urge, 'level', value)}
+                                      >
+                                        <SelectTrigger 
+                                          className={cn(
+                                            "h-10 w-full text-center",
+                                            numValue >= 7 ? "bg-destructive/20 border-destructive text-destructive font-medium" : 
+                                            numValue >= 3 ? "bg-amber-500/20 border-amber-500 text-amber-700 font-medium" : 
+                                            numValue > 0 ? "bg-amber-300/20 border-amber-300 text-amber-600" : ""
+                                          )}
+                                        >
+                                          <SelectValue placeholder="-" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {scaleOptions.map(option => (
+                                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                          
-                          {/* Safety reminder */}
-                          {urge === 'Suicide' && (
-                            <div className="mt-4 bg-muted p-3 rounded-lg text-sm">
-                              <p className="font-medium mb-1">Crisis Resources</p>
-                              <p className="text-muted-foreground">If in crisis, call 988 (US) for the Suicide & Crisis Lifeline or text HOME to 741741 for Crisis Text Line.</p>
+                            
+                            {/* Action taken tracking */}
+                            <div>
+                              <h5 className="text-sm font-medium mb-2 text-muted-foreground">Action Taken?</h5>
+                              <div className="grid grid-cols-7 gap-2">
+                                {dayHeaders.map(day => {
+                                  const value = getUrgeValue(day.date, urge, 'action');
+                                  return (
+                                    <div key={`${day.date}-action`} className="flex flex-col items-center">
+                                      <div className="text-xs text-muted-foreground mb-1">{format(new Date(day.date), "d")}</div>
+                                      <Select 
+                                        value={value}
+                                        onValueChange={(value) => handleUrgeChange(day.date, urge, 'action', value)}
+                                      >
+                                        <SelectTrigger 
+                                          className={cn(
+                                            "h-10 w-full text-center",
+                                            value === 'Yes' ? "bg-destructive/20 border-destructive text-destructive font-medium" : 
+                                            value === 'No' ? "bg-success/10 border-success text-success font-medium" : ""
+                                          )}
+                                        >
+                                          <SelectValue placeholder="-" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {yesNoOptions.map(option => (
+                                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                            
+                            {/* Safety reminder */}
+                            {urge === 'Suicide' && (
+                              <div className="mt-4 bg-muted p-3 rounded-lg text-sm">
+                                <p className="font-medium mb-1">Crisis Resources</p>
+                                <p className="text-muted-foreground">If in crisis, call 988 (US) for the Suicide & Crisis Lifeline or text HOME to 741741 for Crisis Text Line.</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>

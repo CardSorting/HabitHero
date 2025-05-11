@@ -237,50 +237,71 @@ function TherapyCompanion() {
                     <p className="text-sm">Start chatting with your DBT therapy companion</p>
                   </div>
                 ) : (
-                  messages.map((msg, index) => (
-                    <div 
-                      key={index}
-                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
+                  <>
+                    {messages.map((msg, index) => (
                       <div 
-                        className={`rounded-lg p-3 max-w-[85%] ${
-                          msg.role === "user" 
-                            ? "bg-primary text-primary-foreground" 
-                            : "bg-muted"
-                        }`}
+                        key={index}
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                       >
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                        <div 
+                          className={`rounded-lg p-3 max-w-[85%] ${
+                            msg.role === "user" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted"
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    
+                    {chatMutation.isPending && (
+                      <div className="flex justify-start">
+                        <div className="bg-muted rounded-lg p-3 max-w-[85%]">
+                          <div className="flex items-center space-x-2">
+                            <div className="h-2 w-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                            <div className="h-2 w-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                            <div className="h-2 w-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div ref={chatEndRef} />
               </div>
             </CardContent>
-            <CardFooter className="flex gap-2">
-              <Input 
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Type your message here..."
-                className="flex-1"
-                disabled={chatMutation.isPending}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-              />
-              <Button 
-                onClick={handleSendMessage}
-                disabled={chatMutation.isPending || !inputMessage.trim()}
-              >
-                {chatMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
+            <CardFooter className="flex flex-col gap-2">
+              <div className="relative w-full">
+                <Textarea 
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder="Type your message here..."
+                  className="min-h-[80px] pr-10 resize-none w-full"
+                  disabled={chatMutation.isPending}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                />
+                <Button 
+                  className="absolute bottom-2 right-2 h-8 w-8 p-0"
+                  onClick={handleSendMessage}
+                  disabled={chatMutation.isPending || !inputMessage.trim()}
+                  variant="secondary"
+                >
+                  {chatMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Press Enter to send, Shift+Enter for new line
+              </div>
             </CardFooter>
           </Card>
         </TabsContent>

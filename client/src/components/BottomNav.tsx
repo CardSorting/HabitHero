@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Home, BarChart2, Calendar, Settings } from "lucide-react";
+import { Home, BarChart2, Calendar, PieChart, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 
 const BottomNav: React.FC = () => {
@@ -10,6 +10,7 @@ const BottomNav: React.FC = () => {
     { icon: Home, label: "Today", path: "/" },
     { icon: BarChart2, label: "Progress", path: "/progress" },
     { icon: Calendar, label: "Calendar", path: "/calendar" },
+    { icon: PieChart, label: "Analytics", path: "/analytics" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
@@ -45,14 +46,14 @@ const BottomNav: React.FC = () => {
             
             return (
               <Link key={item.path} href={item.path}>
-                <a className={`flex flex-col items-center py-1 px-4 ${
+                <div className={`flex flex-col items-center py-1 px-4 ${
                   isActive ? "text-primary" : "text-muted-foreground"
-                }`}>
+                } cursor-pointer`}>
                   <Icon className="text-xl" size={20} />
                   <span className={`text-xs mt-1 ${isActive ? "font-medium" : ""}`}>
                     {item.label}
                   </span>
-                </a>
+                </div>
               </Link>
             );
           })}

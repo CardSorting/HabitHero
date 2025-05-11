@@ -4,6 +4,7 @@ import DailyProgressSummary from "@/components/DailyProgressSummary";
 import HabitsList from "@/components/HabitsList";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import AddHabitModal from "@/components/AddHabitModal";
+import HabitInsights from "@/components/HabitInsights";
 import { useHabits } from "@/lib/useHabits";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
@@ -76,6 +77,14 @@ const Today: React.FC = () => {
           completedHabits={completedHabitsCount} 
           totalHabits={habits.length} 
         />
+        
+        {/* Only show insights if there are habits */}
+        {habits.length > 0 && (
+          <div className="mb-8">
+            <HabitInsights compact={true} />
+          </div>
+        )}
+        
         <HabitsList 
           habits={habits}
           onToggleHabit={handleToggleHabit}

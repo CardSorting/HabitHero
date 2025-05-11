@@ -112,6 +112,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get analytics data
+  app.get("/api/analytics", async (req, res) => {
+    try {
+      const habits = await storage.getHabits();
+      
+      // Calculate overall completion rate
+      const totalCompletions = habits.reduce((sum, habit) => {
+        return sum + habit.completionRecords.filter(r => r.completed).length;
+      }, 0);
+      
+      const totalPossible = habits.length * 30; // Assuming 30 days per month
+      const completionRate = totalPossible > 0 ? (totalCompletions / totalPossible) * 100 : 0;
+      
+      // Find best performing habit
+      const habitPerformance = habits.map(habit => {
+        const completions = habit.completionRecords.filter(r => r.completed).length;
+        return {
+          id: habit.id,
+          name: habit.name,
+          completionRate: completions / 30 * 100,
+          streak: habit.streak
+        };
+      });
+      
+      const bestHabit = habitPerformance.length > 0 
+        ? habitPerformance.reduce((prev, current) => 
+            (prev.completionRate > current.completionRate) ? prev : current
+          )
+        : null;
+      
+      const worstHabit = habitPerformance.length > 0 
+        ? habitPerformance.reduce((prev, current) => 
+            (prev.completionRate < current.completionRate) ? prev : current
+          )
+        : null;
+      
+      // Calculate longest streak
+      const longestStreak = habits.reduce((max, habit) => Math.max(max, habit.streak), 0);
+      
+      res.json({
+        totalHabits: habits.length,
+        totalCompletions,
+        completionRate: Math.round(completionRate * 10) / 10,
+        longestStreak,
+        bestHabit,
+        worstHabit,
+        habitPerformance
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

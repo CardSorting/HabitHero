@@ -106,14 +106,29 @@ export const dbtSkills = pgTable("dbt_skills", {
 // New table for DBT diary card - events
 export const dbtEvents = pgTable("dbt_events", {
   id: serial("id").primaryKey(), 
+  userId: integer("user_id").notNull(),
   date: date("date").notNull(),
   eventDescription: text("event_description"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Define relationships
-export const habitsRelations = relations(habits, ({ many }) => ({
+export const usersRelations = relations(users, ({ many }) => ({
+  habits: many(habits),
+  dailyGoals: many(dailyGoals),
+  dbtSleep: many(dbtSleep),
+  dbtEmotions: many(dbtEmotions),
+  dbtUrges: many(dbtUrges),
+  dbtSkills: many(dbtSkills),
+  dbtEvents: many(dbtEvents),
+}));
+
+export const habitsRelations = relations(habits, ({ many, one }) => ({
   completions: many(habitCompletions),
+  user: one(users, {
+    fields: [habits.userId],
+    references: [users.id],
+  }),
 }));
 
 export const habitCompletionsRelations = relations(habitCompletions, ({ one }) => ({
@@ -122,6 +137,54 @@ export const habitCompletionsRelations = relations(habitCompletions, ({ one }) =
     references: [habits.id],
   }),
 }));
+
+export const dailyGoalsRelations = relations(dailyGoals, ({ one }) => ({
+  user: one(users, {
+    fields: [dailyGoals.userId],
+    references: [users.id],
+  }),
+}));
+
+export const dbtSleepRelations = relations(dbtSleep, ({ one }) => ({
+  user: one(users, {
+    fields: [dbtSleep.userId],
+    references: [users.id],
+  }),
+}));
+
+export const dbtEmotionsRelations = relations(dbtEmotions, ({ one }) => ({
+  user: one(users, {
+    fields: [dbtEmotions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const dbtUrgesRelations = relations(dbtUrges, ({ one }) => ({
+  user: one(users, {
+    fields: [dbtUrges.userId],
+    references: [users.id],
+  }),
+}));
+
+export const dbtSkillsRelations = relations(dbtSkills, ({ one }) => ({
+  user: one(users, {
+    fields: [dbtSkills.userId],
+    references: [users.id],
+  }),
+}));
+
+export const dbtEventsRelations = relations(dbtEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [dbtEvents.userId],
+    references: [users.id],
+  }),
+}));
+
+// Create user insert schema
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+});
 
 // Create insert schemas for new tables
 export const insertDailyGoalSchema = createInsertSchema(dailyGoals).omit({
@@ -154,6 +217,9 @@ export const insertDbtEventSchema = createInsertSchema(dbtEvents).omit({
   id: true,
   createdAt: true,
 });
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type InsertHabit = z.infer<typeof insertHabitSchema>;
 export type Habit = typeof habits.$inferSelect;

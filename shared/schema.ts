@@ -181,7 +181,10 @@ export const dbtEventsRelations = relations(dbtEvents, ({ one }) => ({
 }));
 
 // Create user insert schema
-export const insertUserSchema = createInsertSchema(users).omit({
+export const insertUserSchema = createInsertSchema(users, {
+  email: z.string().email().nullable().optional(),
+  fullName: z.string().nullable().optional(),
+}).omit({
   id: true,
   createdAt: true,
 });

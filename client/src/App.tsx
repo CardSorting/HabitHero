@@ -10,8 +10,11 @@ import Calendar from "@/pages/Calendar";
 import Settings from "@/pages/Settings";
 import Analytics from "@/pages/Analytics";
 import DiaryCard from "@/pages/DiaryCard";
+import AuthPage from "@/pages/auth-page";
 import BottomNav from "@/components/BottomNav";
 import { AnimatePresence } from "framer-motion";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
   const [location] = useLocation();
@@ -20,15 +23,16 @@ function Router() {
     <AnimatePresence mode="wait">
       <div className="max-w-lg mx-auto h-full min-h-screen bg-background flex flex-col relative pb-16">
         <Switch location={location} key={location}>
-          <Route path="/" component={Today} />
-          <Route path="/progress" component={Progress} />
-          <Route path="/calendar" component={Calendar} />
-          <Route path="/analytics" component={Analytics} />
-          <Route path="/diary-card" component={DiaryCard} />
-          <Route path="/settings" component={Settings} />
+          <ProtectedRoute path="/" component={Today} />
+          <ProtectedRoute path="/progress" component={Progress} />
+          <ProtectedRoute path="/calendar" component={Calendar} />
+          <ProtectedRoute path="/analytics" component={Analytics} />
+          <ProtectedRoute path="/diary-card" component={DiaryCard} />
+          <ProtectedRoute path="/settings" component={Settings} />
+          <Route path="/auth" component={AuthPage} />
           <Route component={NotFound} />
         </Switch>
-        <BottomNav />
+        {location !== "/auth" && <BottomNav />}
       </div>
     </AnimatePresence>
   );
@@ -38,8 +42,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <AuthProvider>
+          <Toaster />
+          <Router />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

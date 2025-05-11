@@ -167,7 +167,7 @@ export class DatabaseStorage implements IStorage {
       await db.insert(habitCompletionsTable)
         .values({
           habitId,
-          date,
+          date: format(date, "yyyy-MM-dd"),
           completed
         });
     }
@@ -355,7 +355,7 @@ export class DatabaseStorage implements IStorage {
       // Create new urge
       const [newUrge] = await db.insert(dbtUrgesTable)
         .values({
-          date,
+          date: format(date, "yyyy-MM-dd"),
           urgeType,
           level,
           action
@@ -396,7 +396,7 @@ export class DatabaseStorage implements IStorage {
       // Create new skill
       const [newSkill] = await db.insert(dbtSkillsTable)
         .values({
-          date,
+          date: format(date, "yyyy-MM-dd"),
           category,
           skill,
           used
@@ -434,7 +434,7 @@ export class DatabaseStorage implements IStorage {
       // Create new event
       const [newEvent] = await db.insert(dbtEventsTable)
         .values({
-          date,
+          date: format(date, "yyyy-MM-dd"),
           eventDescription
         })
         .returning();

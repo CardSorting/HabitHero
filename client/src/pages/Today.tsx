@@ -6,6 +6,7 @@ import DailySummary from "@/components/DailySummary";
 import WeeklyOverview from "@/components/WeeklyOverview";
 import TrendMicroCard from "@/components/TrendMicroCard";
 import HabitDetailModal from "@/components/HabitDetailModal";
+import DailyGoalTracker from "@/components/DailyGoalTracker";
 import { useHabits } from "@/lib/useHabits";
 import { Habit } from "@/lib/types";
 import { motion } from "framer-motion";
@@ -85,6 +86,16 @@ const Today: React.FC = () => {
       >
         {/* Apple Health inspired daily summary card */}
         <DailySummary />
+        
+        {/* Daily goal tracker with DBT skills */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="mb-6"
+        >
+          <DailyGoalTracker />
+        </motion.div>
         
         {/* Weekly progress overview with activity rings */}
         <WeeklyOverview />

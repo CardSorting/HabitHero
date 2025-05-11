@@ -13,6 +13,7 @@ import {
 } from "@shared/schema";
 import { setupAuth } from "./auth";
 import { z } from "zod";
+import { getTherapeuticResponse, getCopingStrategy, analyzeDailyReflection } from "./anthropicService";
 
 // Extend Request type with authenticated user
 interface AuthRequest extends Request {
@@ -435,6 +436,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(savedEvent);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // AI Therapy Companion Routes
+  
+  // Get therapeutic response from Claude
+  app.post("/api/therapy/chat", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { message, conversationHistory = [] } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      
+      const response = await getTherapeuticResponse(message, conversationHistory);
+      res.json({ response });
+    } catch (error: any) {
+      console.error("Error in therapy chat:", error);
+      res.status(500).json({ message: "Failed to get therapeutic response" });
+    }
+  });
+
+  // Get coping strategy for specific emotion
+  app.post("/api/therapy/coping-strategy", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { emotion, intensity } = req.body;
+      
+      if (!emotion) {
+        return res.status(400).json({ message: "Emotion is required" });
+      }
+      
+      const copingStrategy = await getCopingStrategy(emotion, intensity || "5");
+      res.json({ copingStrategy });
+    } catch (error: any) {
+      console.error("Error getting coping strategy:", error);
+      res.status(500).json({ message: "Failed to get coping strategy" });
+    }
+  });
+
+  // Analyze daily reflection
+  app.post("/api/therapy/analyze-reflection", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { reflection } = req.body;
+      
+      if (!reflection || !reflection.todayGoal) {
+        return res.status(400).json({ message: "Reflection data is required" });
+      }
+      
+      const analysis = await analyzeDailyReflection(reflection);
+      res.json({ analysis });
+    } catch (error: any) {
+      console.error("Error analyzing reflection:", error);
+      res.status(500).json({ message: "Failed to analyze reflection" });
     }
   });
 

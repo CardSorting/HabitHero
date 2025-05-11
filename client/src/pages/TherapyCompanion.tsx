@@ -49,6 +49,10 @@ function TherapyCompanion() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [displayedResponse, setDisplayedResponse] = useState("");
+  const [fullResponse, setFullResponse] = useState("");
+  const [typingSpeed, setTypingSpeed] = useState({ min: 10, max: 25 }); // Milliseconds per character
   
   // Coping strategy state
   const [emotion, setEmotion] = useState("");
@@ -69,7 +73,35 @@ function TherapyCompanion() {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, displayedResponse]);
+  
+  // Handle typing animation effect
+  useEffect(() => {
+    if (isTyping && fullResponse) {
+      if (displayedResponse.length < fullResponse.length) {
+        const randomDelay = Math.floor(
+          Math.random() * (typingSpeed.max - typingSpeed.min + 1) + typingSpeed.min
+        );
+        
+        const timeout = setTimeout(() => {
+          setDisplayedResponse(
+            fullResponse.substring(0, displayedResponse.length + 1)
+          );
+        }, randomDelay);
+        
+        return () => clearTimeout(timeout);
+      } else {
+        // When typing is complete, update messages with the full response
+        setIsTyping(false);
+        setMessages(prev => [
+          ...prev.slice(0, -1), // Remove the temporary message
+          { role: "assistant", content: fullResponse }
+        ]);
+        setFullResponse("");
+        setDisplayedResponse("");
+      }
+    }
+  }, [isTyping, fullResponse, displayedResponse, typingSpeed]);
 
   // Chat mutation
   const chatMutation = useMutation({
@@ -83,7 +115,13 @@ function TherapyCompanion() {
       });
     },
     onSuccess: (data) => {
-      setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
+      // Start the typing animation
+      setFullResponse(data.response);
+      setDisplayedResponse("");
+      setIsTyping(true);
+      
+      // Add a temporary message that will be replaced with the typed response
+      setMessages(prev => [...prev, { role: "assistant", content: "" }]);
     },
     onError: (error: Error) => {
       toast({
@@ -250,12 +288,19 @@ function TherapyCompanion() {
                               : "bg-muted"
                           }`}
                         >
-                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                          {/* If this is the last message and we're typing, show the typing animation */}
+                          {isTyping && index === messages.length - 1 && msg.role === "assistant" ? (
+                            <p className="whitespace-pre-wrap">{displayedResponse}
+                              <span className="inline-block animate-pulse">▋</span>
+                            </p>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                          )}
                         </div>
                       </div>
                     ))}
                     
-                    {chatMutation.isPending && (
+                    {chatMutation.isPending && !isTyping && (
                       <div className="flex justify-start">
                         <div className="bg-muted rounded-lg p-3 max-w-[85%]">
                           <div className="flex items-center space-x-2">

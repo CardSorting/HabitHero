@@ -1082,25 +1082,49 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
       
       {/* Skills Tab */}
       <TabsContent value="skills" className="space-y-4">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card className="rounded-xl overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Badge variant="outline" className="bg-violet-500/10 border-violet-500 text-violet-700">DBT Skills</Badge>
-                <div className="text-xs text-muted-foreground ml-auto">
-                  {viewMode === 'day' 
-                    ? `For ${isToday(selectedDate) ? 'today' : format(selectedDate, 'MMMM d')}` 
-                    : 'Track which DBT skills you used this week'
-                  }
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="text-lg font-medium mb-4">DBT Skills Used</h3>
+            <div className="text-sm text-muted-foreground mb-4">
+              Place a checkmark on any skills you used the previous day.
+            </div>
+            <ScrollArea className="h-[calc(100vh-300px)]">
+              <div className="space-y-8">
+                {/* Mindfulness Skills */}
+                <div>
+                  <h4 className="text-base font-medium mb-2 text-violet-700 flex items-center">
+                    <span className="inline-block w-3 h-3 rounded-full bg-violet-500 mr-2"></span>
+                    MINDFULNESS SKILLS
+                  </h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-1/3">Skill</TableHead>
+                        {dayHeaders.map(day => (
+                          <TableHead key={day.date} className="px-1 text-center">
+                            <div className="font-medium">{day.abbr}</div>
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {['Wise Mind', 'Observe: just notice', 'Describe: put words on', 'Participate', 'Non-judgmental stance', 'One-mindfully: in the moment', 'Effectiveness: focus on what works'].map(skill => (
+                        <TableRow key={skill}>
+                          <TableCell className="font-medium">{skill}</TableCell>
+                          {dayHeaders.map(day => (
+                            <TableCell key={day.date} className="text-center">
+                              <Checkbox 
+                                className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600"
+                                checked={getSkillChecked('mindfulness', skill, day.date)}
+                                onCheckedChange={(checked) => handleSkillChange('mindfulness', skill, day.date, checked as boolean)}
+                              />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-              </div>
-              
-              <ScrollArea className="h-[calc(100vh-300px)]">
-                <div className="space-y-8">
                   {/* Mindfulness Skills */}
                   <div>
                     <h4 className="text-base font-medium mb-2">MINDFULNESS SKILLS</h4>

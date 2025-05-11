@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 215 14% 20%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215 16% 47%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 215 14% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 14% 20%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --primary: 251 95% 66%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 174 100% 38%;
+  --secondary-foreground: 0 0% 100%;
+  --accent: 174 100% 38%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --success: 151 83% 51%;
+  --success-foreground: 0 0% 100%;
+  --ring: 215 14% 20%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 251 95% 66%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 174 100% 38%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 174 100% 38%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --success: 151 83% 51%;
+  --success-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .habit-card {
+    @apply transition-all duration-200 ease-in-out active:scale-[0.98] active:shadow-inner;
+  }
+  
+  .habit-checkmark {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .habit-checkbox:checked + .habit-checkmark {
+    @apply bg-success border-success;
+  }
+  
+  .habit-checkmark i {
+    @apply opacity-0 scale-50 transition-all duration-200 ease-in-out;
+  }
+  
+  .habit-checkbox:checked + .habit-checkmark i {
+    @apply opacity-100 scale-100;
+  }
+  
+  .streak-dot {
+    @apply transition-all duration-300 ease-in-out hover:scale-110;
+  }
+  
+  .add-btn {
+    @apply transition-all duration-300 ease-in-out hover:scale-105 active:scale-95;
+  }
+  
+  .tab-indicator {
+    @apply transition-transform duration-300 ease-in-out;
+  }
+}

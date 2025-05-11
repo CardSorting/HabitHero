@@ -174,30 +174,7 @@ export default function AuthPage() {
                 </form>
               </Form>
               
-              {/* Feature bullets - mobile only */}
-              <div className="mt-12 pt-6 border-t border-border/30">
-                <p className="text-sm text-muted-foreground text-center mb-4">Habit Builder helps you:</p>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-primary text-xs">✓</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Track daily habits and build consistency</p>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-primary text-xs">✓</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Monitor emotional wellbeing with DBT tools</p>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-primary text-xs">✓</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Set meaningful goals and track progress</p>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </TabsContent>
           
@@ -332,41 +309,7 @@ export default function AuthPage() {
         </Tabs>
       </div>
       
-      {/* Desktop hero - hidden on mobile */}
-      <div className="hidden lg:block absolute top-0 right-0 bottom-0 w-1/2 bg-primary/5">
-        <div className="h-full flex flex-col justify-center p-16">
-          <h1 className="text-4xl font-bold text-primary mb-6">Welcome to Habit Builder</h1>
-          <p className="text-xl text-foreground/80 mb-8">
-            Your personal habit tracking system designed to help you build a better daily routine and achieve your goals.
-          </p>
-          <div className="space-y-6">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center mr-4">
-                <span className="text-primary">✓</span>
-              </div>
-              <p className="text-lg text-foreground/70">Track your daily habits and build consistency</p>
-            </div>
-            <div className="flex items-start">
-              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center mr-4">
-                <span className="text-primary">✓</span>
-              </div>
-              <p className="text-lg text-foreground/70">Monitor your emotional wellbeing with DBT diary cards</p>
-            </div>
-            <div className="flex items-start">
-              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center mr-4">
-                <span className="text-primary">✓</span>
-              </div>
-              <p className="text-lg text-foreground/70">Set meaningful goals and track your progress</p>
-            </div>
-            <div className="flex items-start">
-              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center mr-4">
-                <span className="text-primary">✓</span>
-              </div>
-              <p className="text-lg text-foreground/70">Visualize your improvements with detailed analytics</p>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 }

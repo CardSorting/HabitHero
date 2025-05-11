@@ -68,6 +68,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update a habit
+  app.patch("/api/habits/:id", async (req, res) => {
+    try {
+      const habitId = parseInt(req.params.id);
+      if (isNaN(habitId)) {
+        return res.status(400).json({ message: "Invalid habit ID" });
+      }
+
+      const updatedHabit = await storage.updateHabit(habitId, req.body);
+      res.json(updatedHabit);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Delete a habit
   app.delete("/api/habits/:id", async (req, res) => {
     try {

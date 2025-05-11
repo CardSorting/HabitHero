@@ -1,31 +1,29 @@
 import React, { useState } from "react";
 import Header from "@/components/Header";
-import DailyProgressSummary from "@/components/DailyProgressSummary";
-import HabitsList from "@/components/HabitsList";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import AddHabitModal from "@/components/AddHabitModal";
-import HabitInsights from "@/components/HabitInsights";
+import DailySummary from "@/components/DailySummary";
+import WeeklyOverview from "@/components/WeeklyOverview";
+import TrendMicroCard from "@/components/TrendMicroCard";
+import HabitDetailModal from "@/components/HabitDetailModal";
 import { useHabits } from "@/lib/useHabits";
+import { Habit } from "@/lib/types";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
+import { TrendingUp } from "lucide-react";
 
 const Today: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
+  const [showHabitDetail, setShowHabitDetail] = useState(false);
+  
+  // Get habits data
   const { 
     habits, 
     isLoading, 
     toggleHabitCompletion, 
     addHabit
   } = useHabits();
-
-  const completedHabitsCount = habits.filter(habit => {
-    const today = new Date();
-    return habit.completionRecords.some(
-      record => 
-        new Date(record.date).setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0) && 
-        record.completed
-    );
-  }).length;
 
   const handleToggleHabit = async (habitId: number, completed: boolean) => {
     try {
@@ -65,39 +63,108 @@ const Today: React.FC = () => {
       });
     }
   };
+  
+  const handleHabitClick = (habit: Habit) => {
+    setSelectedHabit(habit);
+    setShowHabitDetail(true);
+  };
+  
+  const handleUpdateHabit = (habit: Habit) => {
+    // Just close the modal for now
+    setShowHabitDetail(false);
+  };
 
   return (
     <>
       <Header />
       <motion.main 
-        className="flex-1 px-6 py-6 overflow-y-auto"
+        className="flex-1 px-6 pb-20 pt-6 overflow-y-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <DailyProgressSummary 
-          completedHabits={completedHabitsCount} 
-          totalHabits={habits.length} 
-        />
+        {/* Apple Health inspired daily summary card */}
+        <DailySummary />
         
-        {/* Only show insights if there are habits */}
+        {/* Weekly progress overview with activity rings */}
+        <WeeklyOverview />
+        
+        {/* Habit trends section */}
         {habits.length > 0 && (
-          <div className="mb-8">
-            <HabitInsights compact={true} />
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium flex items-center">
+                <TrendingUp className="mr-2 h-5 w-5 text-primary" />
+                Your Habits
+              </h2>
+              <span className="text-sm text-muted-foreground">
+                {habits.length} {habits.length === 1 ? 'habit' : 'habits'}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {habits.map((habit, index) => (
+                <TrendMicroCard 
+                  key={habit.id}
+                  habit={habit}
+                  index={index} 
+                  onClick={() => handleHabitClick(habit)}
+                />
+              ))}
+            </div>
+          </motion.div>
         )}
         
-        <HabitsList 
-          habits={habits}
-          onToggleHabit={handleToggleHabit}
-          isLoading={isLoading}
-        />
+        {/* Empty state */}
+        {habits.length === 0 && !isLoading && (
+          <motion.div 
+            className="flex flex-col items-center justify-center py-12 text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="rounded-full bg-muted p-3 mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-muted-foreground"
+              >
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium">No habits yet</h3>
+            <p className="text-muted-foreground text-sm mt-1 max-w-[250px]">
+              Create your first habit to start tracking your progress and building better routines
+            </p>
+          </motion.div>
+        )}
       </motion.main>
+      
       <FloatingActionButton onClick={() => setIsAddModalOpen(true)} />
+      
       <AddHabitModal 
         open={isAddModalOpen} 
         onOpenChange={setIsAddModalOpen} 
         onAddHabit={handleAddHabit}
+      />
+      
+      <HabitDetailModal
+        habit={selectedHabit}
+        open={showHabitDetail}
+        onOpenChange={setShowHabitDetail}
+        onEditHabit={handleUpdateHabit}
       />
     </>
   );

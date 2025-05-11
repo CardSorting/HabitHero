@@ -71,6 +71,20 @@ export function useHabits() {
     },
   });
 
+  // Add update habit functionality
+  const updateHabit = async (id: number, habitData: Partial<Habit>) => {
+    const response = await apiRequest("PATCH", `/api/habits/${id}`, habitData);
+    return response.json();
+  };
+
+  const updateHabitMutation = useMutation({
+    mutationFn: ({ id, habitData }: { id: number; habitData: Partial<Habit> }) => 
+      updateHabit(id, habitData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/habits"] });
+    },
+  });
+
   return {
     habits,
     isLoading,
@@ -78,6 +92,8 @@ export function useHabits() {
     toggleHabitCompletion: (habitId: number, completed: boolean) => 
       toggleMutation.mutateAsync({ habitId, completed }),
     addHabit: (habitData: any) => addHabitMutation.mutateAsync(habitData),
+    updateHabit: (id: number, habitData: Partial<Habit>) => 
+      updateHabitMutation.mutateAsync({ id, habitData }),
     clearAllHabits: () => clearHabitsMutation.mutateAsync(),
     clearHabitsInProgress: () => clearInProgressMutation.mutateAsync(),
   };

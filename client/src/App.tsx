@@ -11,6 +11,7 @@ import Settings from "@/pages/Settings";
 import Analytics from "@/pages/Analytics";
 import DiaryCard from "@/pages/DiaryCard";
 import AuthPage from "@/pages/auth-page";
+import OnboardingPage from "@/pages/onboarding-page";
 import BottomNav from "@/components/BottomNav";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -23,7 +24,8 @@ function Router() {
     <AnimatePresence mode="wait">
       <div className="max-w-lg mx-auto h-full min-h-screen bg-background flex flex-col relative pb-16">
         <Switch location={location} key={location}>
-          <ProtectedRoute path="/" component={Today} />
+          <Route path="/" component={OnboardingPage} />
+          <ProtectedRoute path="/today" component={Today} />
           <ProtectedRoute path="/progress" component={Progress} />
           <ProtectedRoute path="/calendar" component={Calendar} />
           <ProtectedRoute path="/analytics" component={Analytics} />
@@ -32,7 +34,7 @@ function Router() {
           <Route path="/auth" component={AuthPage} />
           <Route component={NotFound} />
         </Switch>
-        {location !== "/auth" && <BottomNav />}
+        {location !== "/auth" && location !== "/" && <BottomNav />}
       </div>
     </AnimatePresence>
   );

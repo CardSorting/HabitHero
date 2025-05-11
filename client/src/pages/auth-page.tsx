@@ -77,251 +77,292 @@ export default function AuthPage() {
 
   // Redirect if already logged in
   if (user) {
-    return <Redirect to="/" />;
+    return <Redirect to="/today" />;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="grid w-full max-w-6xl grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="flex flex-col justify-center">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Login</CardTitle>
-                  <CardDescription>
-                    Enter your credentials to access your habit tracker
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Form {...loginForm}>
-                    <form
-                      onSubmit={loginForm.handleSubmit(onLoginSubmit)}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={loginForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="johndoe"
-                                {...field}
-                                disabled={loginMutation.isPending}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={loginForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="password"
-                                placeholder="••••••••"
-                                {...field}
-                                disabled={loginMutation.isPending}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        disabled={loginMutation.isPending}
-                        className="w-full"
-                      >
-                        {loginMutation.isPending && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        Sign In
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-                <CardFooter className="flex justify-center">
-                  <Button
-                    variant="link"
-                    onClick={() => setActiveTab("register")}
-                  >
-                    Don't have an account? Register
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="register">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Register</CardTitle>
-                  <CardDescription>
-                    Create a new account to start tracking your habits
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Form {...registerForm}>
-                    <form
-                      onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={registerForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="johndoe"
-                                {...field}
-                                disabled={registerMutation.isPending}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="fullName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Full Name</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="John Doe"
-                                {...field}
-                                disabled={registerMutation.isPending}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="email"
-                                placeholder="john@example.com"
-                                {...field}
-                                disabled={registerMutation.isPending}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="password"
-                                placeholder="••••••••"
-                                {...field}
-                                disabled={registerMutation.isPending}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Confirm Password</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="password"
-                                placeholder="••••••••"
-                                {...field}
-                                disabled={registerMutation.isPending}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        disabled={registerMutation.isPending}
-                        className="w-full"
-                      >
-                        {registerMutation.isPending && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        Create Account
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-                <CardFooter className="flex justify-center">
-                  <Button
-                    variant="link"
-                    onClick={() => setActiveTab("login")}
-                  >
-                    Already have an account? Login
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </Tabs>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-primary/5 to-background overflow-y-auto">
+      {/* App logo and welcome message */}
+      <div className="pt-8 pb-4 px-6 text-center">
+        <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-primary text-2xl">🌱</span>
         </div>
-        
-        <div className="hidden lg:flex flex-col justify-center">
-          <div className="p-8 bg-primary/5 rounded-xl">
-            <h1 className="text-3xl font-bold text-primary mb-4">Habit Builder</h1>
-            <p className="text-lg text-gray-600 mb-6">
-              Your personal habit tracking system designed to help you build a better daily routine and achieve your goals.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                  <span className="text-primary text-sm">✓</span>
+        <h1 className="text-2xl font-bold text-foreground">Habit Builder</h1>
+        <p className="text-sm text-muted-foreground mt-1">Build better habits, one day at a time</p>
+      </div>
+      
+      {/* Auth Forms */}
+      <div className="flex-1 w-full max-w-md mx-auto px-4 pb-8">
+        <Tabs 
+          value={activeTab} 
+          onValueChange={setActiveTab} 
+          className="w-full"
+        >
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="login" className="rounded-full">Login</TabsTrigger>
+            <TabsTrigger value="register" className="rounded-full">Register</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="login" className="mt-0">
+            <div className="space-y-6">
+              <Form {...loginForm}>
+                <form
+                  onSubmit={loginForm.handleSubmit(onLoginSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={loginForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Username</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="rounded-lg border-input/50 bg-background"
+                            placeholder="Enter your username"
+                            {...field}
+                            disabled={loginMutation.isPending}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="rounded-lg border-input/50 bg-background"
+                            type="password"
+                            placeholder="Enter your password"
+                            {...field}
+                            disabled={loginMutation.isPending}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={loginMutation.isPending}
+                    className="w-full mt-6 rounded-lg py-6 text-base font-medium"
+                  >
+                    {loginMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing In...
+                      </>
+                    ) : (
+                      "Sign In"
+                    )}
+                  </Button>
+                  
+                  <div className="text-center mt-4">
+                    <Button
+                      variant="link"
+                      onClick={() => setActiveTab("register")}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Don't have an account? Register
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+              
+              {/* Feature bullets - mobile only */}
+              <div className="mt-12 pt-6 border-t border-border/30">
+                <p className="text-sm text-muted-foreground text-center mb-4">Habit Builder helps you:</p>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-primary text-xs">✓</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Track daily habits and build consistency</p>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-primary text-xs">✓</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Monitor emotional wellbeing with DBT tools</p>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-primary text-xs">✓</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Set meaningful goals and track progress</p>
+                  </div>
                 </div>
-                <p className="text-gray-600">Track your daily habits and build consistency</p>
               </div>
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                  <span className="text-primary text-sm">✓</span>
-                </div>
-                <p className="text-gray-600">Monitor your emotional wellbeing with DBT diary cards</p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="register" className="mt-0">
+            <div className="space-y-6">
+              <Form {...registerForm}>
+                <form
+                  onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={registerForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Username</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="rounded-lg border-input/50 bg-background"
+                            placeholder="Choose a username"
+                            {...field}
+                            disabled={registerMutation.isPending}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Full Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="rounded-lg border-input/50 bg-background"
+                            placeholder="Enter your full name"
+                            {...field}
+                            disabled={registerMutation.isPending}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="rounded-lg border-input/50 bg-background"
+                            type="email"
+                            placeholder="Enter your email"
+                            {...field}
+                            disabled={registerMutation.isPending}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="rounded-lg border-input/50 bg-background"
+                            type="password"
+                            placeholder="Create a password"
+                            {...field}
+                            disabled={registerMutation.isPending}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="rounded-lg border-input/50 bg-background"
+                            type="password"
+                            placeholder="Confirm your password"
+                            {...field}
+                            disabled={registerMutation.isPending}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={registerMutation.isPending}
+                    className="w-full mt-6 rounded-lg py-6 text-base font-medium"
+                  >
+                    {registerMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      "Create Account"
+                    )}
+                  </Button>
+                  
+                  <div className="text-center mt-4">
+                    <Button
+                      variant="link"
+                      onClick={() => setActiveTab("login")}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Already have an account? Login
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {/* Desktop hero - hidden on mobile */}
+      <div className="hidden lg:block absolute top-0 right-0 bottom-0 w-1/2 bg-primary/5">
+        <div className="h-full flex flex-col justify-center p-16">
+          <h1 className="text-4xl font-bold text-primary mb-6">Welcome to Habit Builder</h1>
+          <p className="text-xl text-foreground/80 mb-8">
+            Your personal habit tracking system designed to help you build a better daily routine and achieve your goals.
+          </p>
+          <div className="space-y-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center mr-4">
+                <span className="text-primary">✓</span>
               </div>
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                  <span className="text-primary text-sm">✓</span>
-                </div>
-                <p className="text-gray-600">Set meaningful goals and track your progress</p>
+              <p className="text-lg text-foreground/70">Track your daily habits and build consistency</p>
+            </div>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center mr-4">
+                <span className="text-primary">✓</span>
               </div>
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                  <span className="text-primary text-sm">✓</span>
-                </div>
-                <p className="text-gray-600">Visualize your improvements with detailed analytics</p>
+              <p className="text-lg text-foreground/70">Monitor your emotional wellbeing with DBT diary cards</p>
+            </div>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center mr-4">
+                <span className="text-primary">✓</span>
               </div>
+              <p className="text-lg text-foreground/70">Set meaningful goals and track your progress</p>
+            </div>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center mr-4">
+                <span className="text-primary">✓</span>
+              </div>
+              <p className="text-lg text-foreground/70">Visualize your improvements with detailed analytics</p>
             </div>
           </div>
         </div>

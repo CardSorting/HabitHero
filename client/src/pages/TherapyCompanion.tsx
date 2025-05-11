@@ -319,20 +319,42 @@ function TherapyCompanion() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-4 gap-2 items-end">
+              <div className="grid grid-cols-4 gap-3 items-end">
                 <div className="col-span-2">
-                  <label htmlFor="emotion" className="text-sm font-medium">
+                  <label htmlFor="emotion" className="text-sm font-medium mb-1 block">
                     Emotion
                   </label>
-                  <Input
-                    id="emotion"
-                    value={emotion}
-                    onChange={(e) => setEmotion(e.target.value)}
-                    placeholder="e.g., Anxiety, Anger, Sadness"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="emotion"
+                      value={emotion}
+                      onChange={(e) => setEmotion(e.target.value)}
+                      placeholder="e.g., Anxiety, Anger, Sadness"
+                      disabled={copingStrategyMutation.isPending}
+                      className="pr-8"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && emotion.trim()) {
+                          handleGetCopingStrategy();
+                        }
+                      }}
+                    />
+                    {emotion && !copingStrategyMutation.isPending && (
+                      <Button 
+                        type="button"
+                        variant="ghost"
+                        className="absolute right-0 top-0 h-full px-3 py-0"
+                        onClick={() => setEmotion("")}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50 hover:opacity-100">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div>
-                  <label htmlFor="intensity" className="text-sm font-medium">
+                  <label htmlFor="intensity" className="text-sm font-medium mb-1 block">
                     Intensity (1-10)
                   </label>
                   <Input
@@ -342,15 +364,24 @@ function TherapyCompanion() {
                     max="10"
                     value={intensity}
                     onChange={(e) => setIntensity(e.target.value)}
+                    disabled={copingStrategyMutation.isPending}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && emotion.trim()) {
+                        handleGetCopingStrategy();
+                      }
+                    }}
                   />
                 </div>
                 <Button
                   onClick={handleGetCopingStrategy}
                   disabled={copingStrategyMutation.isPending || !emotion.trim()}
-                  className="flex gap-1"
+                  className="flex gap-1 items-center justify-center"
                 >
                   {copingStrategyMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading...</span>
+                    </>
                   ) : (
                     "Get Strategy"
                   )}
@@ -400,43 +431,49 @@ function TherapyCompanion() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label htmlFor="todayGoal" className="text-sm font-medium">
+                <label htmlFor="todayGoal" className="text-sm font-medium mb-1 block">
                   Today's Goal
                 </label>
-                <Input
+                <Textarea
                   id="todayGoal"
                   value={reflectionData.todayGoal}
                   onChange={(e) => handleReflectionChange("todayGoal", e.target.value)}
                   placeholder="What was your main goal today?"
+                  className="min-h-[60px] resize-none"
+                  disabled={reflectionAnalysisMutation.isPending}
                 />
               </div>
               
               <div>
-                <label htmlFor="todayHighlight" className="text-sm font-medium">
+                <label htmlFor="todayHighlight" className="text-sm font-medium mb-1 block">
                   Today's Highlight
                 </label>
-                <Input
+                <Textarea
                   id="todayHighlight"
                   value={reflectionData.todayHighlight}
                   onChange={(e) => handleReflectionChange("todayHighlight", e.target.value)}
                   placeholder="What was the best part of your day?"
+                  className="min-h-[60px] resize-none"
+                  disabled={reflectionAnalysisMutation.isPending}
                 />
               </div>
               
               <div>
-                <label htmlFor="gratitude" className="text-sm font-medium">
+                <label htmlFor="gratitude" className="text-sm font-medium mb-1 block">
                   Gratitude
                 </label>
-                <Input
+                <Textarea
                   id="gratitude"
                   value={reflectionData.gratitude}
                   onChange={(e) => handleReflectionChange("gratitude", e.target.value)}
                   placeholder="What are you grateful for today?"
+                  className="min-h-[60px] resize-none"
+                  disabled={reflectionAnalysisMutation.isPending}
                 />
               </div>
               
               <div>
-                <label htmlFor="dbtSkillUsed" className="text-sm font-medium">
+                <label htmlFor="dbtSkillUsed" className="text-sm font-medium mb-1 block">
                   DBT Skill Used
                 </label>
                 <Input
@@ -444,6 +481,7 @@ function TherapyCompanion() {
                   value={reflectionData.dbtSkillUsed}
                   onChange={(e) => handleReflectionChange("dbtSkillUsed", e.target.value)}
                   placeholder="What DBT skill did you practice today?"
+                  disabled={reflectionAnalysisMutation.isPending}
                 />
               </div>
               
@@ -457,7 +495,10 @@ function TherapyCompanion() {
                 className="w-full mt-2"
               >
                 {reflectionAnalysisMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Analyzing your reflection...</span>
+                  </div>
                 ) : (
                   "Analyze Reflection"
                 )}

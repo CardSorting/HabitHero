@@ -188,6 +188,212 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Daily Goals API Routes
+  // Get a daily goal for a specific date
+  app.get("/api/daily-goals/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const dailyGoal = await storage.getDailyGoal(dateStr);
+      
+      if (!dailyGoal) {
+        return res.status(404).json({ message: "No daily goal found for this date" });
+      }
+      
+      res.json(dailyGoal);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Save a daily goal for a specific date
+  app.post("/api/daily-goals/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const goalData = insertDailyGoalSchema.parse({
+        ...req.body,
+        date: dateStr
+      });
+      
+      const savedGoal = await storage.saveDailyGoal(dateStr, {
+        todayGoal: goalData.todayGoal,
+        tomorrowGoal: goalData.tomorrowGoal,
+        todayHighlight: goalData.todayHighlight,
+        gratitude: goalData.gratitude,
+        dbtSkillUsed: goalData.dbtSkillUsed
+      });
+      
+      res.status(201).json(savedGoal);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // DBT Diary Card - Sleep API Routes
+  // Get sleep data for a specific date
+  app.get("/api/dbt/sleep/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const sleepData = await storage.getDbtSleepData(dateStr);
+      
+      if (!sleepData) {
+        return res.json({});
+      }
+      
+      res.json(sleepData);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Save sleep data for a specific date
+  app.post("/api/dbt/sleep/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const sleepData = insertDbtSleepSchema.parse({
+        ...req.body,
+        date: dateStr
+      });
+      
+      const savedData = await storage.saveDbtSleepData(dateStr, {
+        hoursSlept: sleepData.hoursSlept || "",
+        troubleFalling: sleepData.troubleFalling || "",
+        troubleStaying: sleepData.troubleStaying || "",
+        troubleWaking: sleepData.troubleWaking || ""
+      });
+      
+      res.json(savedData);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // DBT Diary Card - Emotions API Routes
+  // Get emotions for a specific date
+  app.get("/api/dbt/emotions/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const emotions = await storage.getDbtEmotionsForDate(dateStr);
+      res.json(emotions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Save an emotion for a specific date
+  app.post("/api/dbt/emotions/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const { emotion, intensity } = req.body;
+      
+      if (!emotion) {
+        return res.status(400).json({ message: "Emotion name is required" });
+      }
+      
+      const savedEmotion = await storage.saveDbtEmotion(dateStr, emotion, intensity || "");
+      res.status(201).json(savedEmotion);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // DBT Diary Card - Urges API Routes
+  // Get urges for a specific date
+  app.get("/api/dbt/urges/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const urges = await storage.getDbtUrgesForDate(dateStr);
+      res.json(urges);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Save an urge for a specific date
+  app.post("/api/dbt/urges/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const { urgeType, level, action } = req.body;
+      
+      if (!urgeType) {
+        return res.status(400).json({ message: "Urge type is required" });
+      }
+      
+      const savedUrge = await storage.saveDbtUrge(dateStr, urgeType, level || "", action || "");
+      res.status(201).json(savedUrge);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // DBT Diary Card - Skills API Routes
+  // Get skills for a specific date
+  app.get("/api/dbt/skills/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const skills = await storage.getDbtSkillsForDate(dateStr);
+      res.json(skills);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Toggle a skill for a specific date
+  app.post("/api/dbt/skills/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const { category, skill, used } = req.body;
+      
+      if (!category || !skill) {
+        return res.status(400).json({ message: "Category and skill name are required" });
+      }
+      
+      const savedSkill = await storage.toggleDbtSkill(dateStr, category, skill, !!used);
+      res.status(201).json(savedSkill);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // DBT Diary Card - Events API Routes
+  // Get event for a specific date
+  app.get("/api/dbt/events/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const event = await storage.getDbtEventForDate(dateStr);
+      
+      if (!event) {
+        return res.json({});
+      }
+      
+      res.json(event);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Save an event for a specific date
+  app.post("/api/dbt/events/:date", async (req, res) => {
+    try {
+      const dateStr = req.params.date;
+      const { eventDescription } = req.body;
+      
+      if (!eventDescription) {
+        return res.status(400).json({ message: "Event description is required" });
+      }
+      
+      const savedEvent = await storage.saveDbtEvent(dateStr, eventDescription);
+      res.status(201).json(savedEvent);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

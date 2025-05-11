@@ -163,11 +163,11 @@ export class DatabaseStorage implements IStorage {
         .set({ completed })
         .where(eq(habitCompletionsTable.id, existingCompletions[0].id));
     } else {
-      // Create new record
+      // Create new record - parse date as Date object since the schema expects Date
       await db.insert(habitCompletionsTable)
         .values({
           habitId,
-          date: format(date, "yyyy-MM-dd"),
+          date: new Date(format(date, "yyyy-MM-dd")),
           completed
         });
     }
@@ -236,7 +236,7 @@ export class DatabaseStorage implements IStorage {
       // Create new goal
       const [newGoal] = await db.insert(dailyGoalsTable)
         .values({
-          date: format(date, "yyyy-MM-dd"),
+          date: new Date(format(date, "yyyy-MM-dd")),
           ...goalData
         })
         .returning();
@@ -278,7 +278,7 @@ export class DatabaseStorage implements IStorage {
       // Create new data
       const [newData] = await db.insert(dbtSleepTable)
         .values({
-          date: format(date, "yyyy-MM-dd"),
+          date: new Date(format(date, "yyyy-MM-dd")),
           ...data
         })
         .returning();
@@ -316,7 +316,7 @@ export class DatabaseStorage implements IStorage {
       // Create new emotion
       const [newEmotion] = await db.insert(dbtEmotionsTable)
         .values({
-          date: format(date, "yyyy-MM-dd"),
+          date: new Date(format(date, "yyyy-MM-dd")),
           emotion,
           intensity
         })
@@ -355,7 +355,7 @@ export class DatabaseStorage implements IStorage {
       // Create new urge
       const [newUrge] = await db.insert(dbtUrgesTable)
         .values({
-          date: format(date, "yyyy-MM-dd"),
+          date: new Date(format(date, "yyyy-MM-dd")),
           urgeType,
           level,
           action
@@ -396,7 +396,7 @@ export class DatabaseStorage implements IStorage {
       // Create new skill
       const [newSkill] = await db.insert(dbtSkillsTable)
         .values({
-          date: format(date, "yyyy-MM-dd"),
+          date: new Date(format(date, "yyyy-MM-dd")),
           category,
           skill,
           used
@@ -434,7 +434,7 @@ export class DatabaseStorage implements IStorage {
       // Create new event
       const [newEvent] = await db.insert(dbtEventsTable)
         .values({
-          date: format(date, "yyyy-MM-dd"),
+          date: new Date(format(date, "yyyy-MM-dd")),
           eventDescription
         })
         .returning();

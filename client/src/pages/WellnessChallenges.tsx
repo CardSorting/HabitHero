@@ -280,7 +280,7 @@ const WellnessChallenges: React.FC = () => {
                         <div className={`p-1 rounded-full ${type.color} mr-2`}>
                           {React.cloneElement(type.icon, { className: 'h-4 w-4' })}
                         </div>
-                        <span className="text-sm">{type.displayName || type.name}</span>
+                        <span className="text-sm">{type.displayName}</span>
                       </div>
                     ))}
                   </div>

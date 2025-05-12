@@ -133,7 +133,7 @@ const WellnessChallengeCategory: React.FC = () => {
   const categoryStyles = getCategoryStyles();
   
   // Fetch challenges from the API for the selected category
-  const { data: apiChallenges = [], isLoading: isLoadingChallenges, error: challengesError } = useQuery({
+  const { data: apiChallenges = [], isLoading: isLoadingChallenges, error: challengesError } = useQuery<any[]>({
     queryKey: [`/api/wellness-challenges/type/${category}`],
     enabled: !!category && !!user,
   });
@@ -221,7 +221,7 @@ const WellnessChallengeCategory: React.FC = () => {
               <p className="text-gray-600">There are no challenges in this category yet.</p>
             </div>
           ) : (
-            currentChallenges.map((challenge) => (
+            currentChallenges.map((challenge: any) => (
               <Card 
                 key={challenge.id} 
                 className={`hover:shadow-md transition-shadow cursor-pointer border-l-4 ${categoryStyles.borderColor}`}

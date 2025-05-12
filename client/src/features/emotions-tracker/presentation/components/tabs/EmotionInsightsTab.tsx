@@ -281,7 +281,7 @@ const EmotionInsightsTab = () => {
             // Determine styling for the day
             const dayContainerClass = `
               relative group flex flex-col items-center cursor-pointer transition-all duration-200
-              ${isSelected ? 'opacity-100 transform scale-105' : 'opacity-90 hover:opacity-100 hover:scale-102'}
+              ${isSelected ? 'opacity-100 transform scale-105' : 'opacity-90 hover:opacity-100 hover:scale-[1.02]'}
             `;
             
             // Styling for date circle
@@ -386,7 +386,7 @@ const EmotionInsightsTab = () => {
                 if (!selectedDay?.matchingDay) {
                   return (
                     <div className="flex items-center mt-2 text-sm text-gray-500">
-                      <InfoIcon className="h-4 w-4 mr-1.5 text-gray-400" />
+                      <Info className="h-4 w-4 mr-1.5 text-gray-400" />
                       No emotions tracked on this day
                     </div>
                   );
@@ -720,28 +720,75 @@ const EmotionInsightsTab = () => {
                                   )}
                                 </div>
                                 
-                                {/* Enhanced tooltip */}
-                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full mb-2 
-                                  bg-white border border-gray-200 shadow-lg rounded-lg p-2 transform -translate-x-1/2 
-                                  transition-all duration-200 pointer-events-none z-20"
+                                {/* Professional data visualization tooltip */}
+                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full mb-2
+                                  bg-white border border-gray-200 shadow-lg rounded-lg p-3 transform -translate-x-1/2
+                                  transition-all duration-200 pointer-events-none z-20 min-w-[200px]"
                                 >
-                                  <div className="text-xs font-medium text-gray-900">
-                                    {format(new Date(day.date), 'MMMM d, yyyy')}
+                                  {/* Tooltip header with date and indicator */}
+                                  <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {format(new Date(day.date), 'MMMM d, yyyy')}
+                                    </div>
+                                    <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium
+                                      ${day.dominantCategory === 'positive' ? 'bg-blue-100 text-blue-700' :
+                                        day.dominantCategory === 'negative' ? 'bg-red-100 text-red-700' : 
+                                        'bg-purple-100 text-purple-700'}
+                                    `}>
+                                      {day.dominantCategory?.charAt(0).toUpperCase() + day.dominantCategory?.slice(1) || 'Unknown'}
+                                    </div>
                                   </div>
-                                  <div className="text-xs text-gray-600 mt-1">
-                                    <span className="font-medium">{day.dominantEmotion || "Unknown"}</span>
-                                    <span className="inline-block mx-1">•</span>
-                                    <span>Intensity: {day.averageIntensity.toFixed(1)}/10</span>
+                                  
+                                  {/* Emotion information */}
+                                  <div className="mb-2">
+                                    <div className="text-xs text-gray-500 mb-1">Primary Emotion</div>
+                                    <div className="text-sm font-semibold">{day.dominantEmotion || "Unknown"}</div>
                                   </div>
-                                  <div className="h-1 w-full mt-1 rounded-full overflow-hidden bg-gray-100">
-                                    <div 
-                                      className={`h-full ${
-                                        day.dominantCategory === 'positive' ? 'bg-blue-500' :
-                                        day.dominantCategory === 'negative' ? 'bg-red-500' : 'bg-purple-500'
-                                      }`}
-                                      style={{ width: `${day.averageIntensity * 10}%` }}
-                                    ></div>
+                                  
+                                  {/* Intensity meter */}
+                                  <div className="mb-1">
+                                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                      <span>Intensity</span>
+                                      <span className="font-medium">{day.averageIntensity.toFixed(1)}/10</span>
+                                    </div>
+                                    
+                                    {/* Professional gauge visualization */}
+                                    <div className="h-2 w-full rounded-full overflow-hidden bg-gray-100 relative">
+                                      {/* Background segments for scale visualization */}
+                                      <div className="absolute inset-0 flex">
+                                        <div className="w-1/3 h-full border-r border-white opacity-50"></div>
+                                        <div className="w-1/3 h-full border-r border-white opacity-50"></div>
+                                        <div className="w-1/3 h-full"></div>
+                                      </div>
+                                      
+                                      {/* Intensity bar with gradient */}
+                                      <div 
+                                        className={`h-full relative ${
+                                          day.dominantCategory === 'positive' ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
+                                          day.dominantCategory === 'negative' ? 'bg-gradient-to-r from-red-400 to-red-600' : 
+                                          'bg-gradient-to-r from-purple-400 to-purple-600'
+                                        }`}
+                                        style={{ width: `${day.averageIntensity * 10}%` }}
+                                      >
+                                        {/* Add shine effect */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"></div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Intensity scale */}
+                                    <div className="flex justify-between text-[9px] text-gray-400 mt-0.5">
+                                      <span>Low</span>
+                                      <span>Medium</span>
+                                      <span>High</span>
+                                    </div>
                                   </div>
+                                  
+                                  {/* Extra insight - only for non-synthetic data */}
+                                  {!day.synthetic && (
+                                    <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500">
+                                      {getIntensityLabel(day.averageIntensity)} intensity level recorded
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             );

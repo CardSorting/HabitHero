@@ -312,10 +312,21 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
   
   // Skill data handler
   const handleSkillChange = useCallback((category: string, skill: string, date: DateString, checked: boolean) => {
+    console.log(`Skill change triggered - Category: ${category}, Skill: ${skill}, Date: ${date}, Checked: ${checked}`);
+    
     // Skip if value hasn't changed
     if (diaryData.skills[category]?.[skill]?.[date] === checked) {
+      console.log('Skill value unchanged, skipping update');
       return;
     }
+    
+    console.log('Updating skill data in state', { 
+      category,
+      skill,
+      date,
+      current: diaryData.skills[category]?.[skill]?.[date], 
+      new: checked 
+    });
     
     setDiaryData(prev => {
       // Create a deep copy of the skills structure
@@ -323,11 +334,13 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       
       // Create category if it doesn't exist
       if (!updatedSkills[category]) {
+        console.log(`Creating new category: ${category}`);
         updatedSkills[category] = {};
       }
       
       // Create skill if it doesn't exist
       if (!updatedSkills[category][skill]) {
+        console.log(`Creating new skill: ${skill} in category ${category}`);
         updatedSkills[category][skill] = {};
       }
       
@@ -353,10 +366,18 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
   
   // Medication data handler (local only)
   const handleMedicationChange = useCallback((date: DateString, value: string) => {
+    console.log(`Medication change triggered - Date: ${date}, Value: ${value}`);
+    
     // Skip if value hasn't changed
     if (diaryData.medication[date] === value) {
+      console.log('Medication value unchanged, skipping update');
       return;
     }
+    
+    console.log('Updating medication data in state', { 
+      current: diaryData.medication[date], 
+      new: value 
+    });
     
     setDiaryData(prev => ({
       ...prev,
@@ -373,40 +394,83 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
   // Getters for diary data values
   
   const getSleepValue = useCallback((date: DateString, field: keyof SleepData): string => {
+    console.log(`Getting sleep value for date: ${date}, field: ${field}`);
     return diaryData.sleep[date]?.[field] || '';
   }, [diaryData.sleep]);
   
   const getEmotionValue = useCallback((date: DateString, emotion: string): string => {
+    console.log(`Getting emotion value for date: ${date}, emotion: ${emotion}`);
     return diaryData.emotions[date]?.[emotion] || '';
   }, [diaryData.emotions]);
   
   // getUrgeValue removed
   
   const getEventValue = useCallback((date: DateString): string => {
+    console.log(`Getting event value for date: ${date}`);
     return diaryData.events[date] || '';
   }, [diaryData.events]);
   
   const getMedicationValue = useCallback((date: DateString): string => {
+    console.log(`Getting medication value for date: ${date}`);
     return diaryData.medication[date] || '';
   }, [diaryData.medication]);
   
   const getSkillChecked = useCallback((category: string, skill: string, date: DateString): boolean => {
+    console.log(`Getting skill checked status for category: ${category}, skill: ${skill}, date: ${date}`);
     return diaryData.skills[category]?.[skill]?.[date] || false;
   }, [diaryData.skills]);
 
   // Load data for a specific day from the server
   const loadDay = useCallback(async (date: DateString) => {
+    console.log(`Loading data for date: ${date}`);
+    
     // Skip if already loaded or currently loading
     if (serverData[date] || isLoading) {
+      console.log(`Data for ${date} already loaded or currently loading`);
       return;
     }
     
     try {
       setIsLoading(true);
       
+      // Initialize empty data structures for this date even if no data is returned
+      // This helps ensure all fields are properly initialized
+      setDiaryData(prev => {
+        const updated = { ...prev };
+        
+        // Initialize sleep data
+        if (!updated.sleep[date]) {
+          updated.sleep[date] = {
+            hoursSlept: '',
+            troubleFalling: '',
+            troubleStaying: '',
+            troubleWaking: ''
+          };
+        }
+        
+        // Initialize emotions data
+        if (!updated.emotions[date]) {
+          updated.emotions[date] = {};
+        }
+        
+        // Initialize events data
+        if (!updated.events[date]) {
+          updated.events[date] = '';
+        }
+        
+        // Initialize medication data
+        if (!updated.medication[date]) {
+          updated.medication[date] = '';
+        }
+        
+        return updated;
+      });
+      
       // Get sleep data
+      console.log(`Fetching sleep data for ${date}`);
       const sleepData = await diaryService.getSleepData(date);
       if (sleepData) {
+        console.log(`Received sleep data for ${date}:`, sleepData);
         setDiaryData(prev => ({
           ...prev,
           sleep: {
@@ -414,11 +478,15 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
             [date]: sleepData
           }
         }));
+      } else {
+        console.log(`No sleep data returned for ${date}`);
       }
       
       // Get emotions data
+      console.log(`Fetching emotions data for ${date}`);
       const emotions = await diaryService.getEmotions(date);
       if (emotions.length > 0) {
+        console.log(`Received emotions data for ${date}:`, emotions);
         const emotionsMap: { [emotion: string]: string } = {};
         emotions.forEach(entry => {
           emotionsMap[entry.emotion] = entry.intensity;
@@ -431,13 +499,17 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
             [date]: emotionsMap
           }
         }));
+      } else {
+        console.log(`No emotions data returned for ${date}`);
       }
       
       // Urges data loading removed
       
       // Get skills data
+      console.log(`Fetching skills data for ${date}`);
       const skills = await diaryService.getSkills(date);
       if (skills.length > 0) {
+        console.log(`Received skills data for ${date}:`, skills);
         const updatedSkills = { ...diaryData.skills };
         
         skills.forEach(entry => {
@@ -456,11 +528,15 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
           ...prev,
           skills: updatedSkills
         }));
+      } else {
+        console.log(`No skills data returned for ${date}`);
       }
       
       // Get event data
+      console.log(`Fetching event data for ${date}`);
       const event = await diaryService.getEvent(date);
       if (event) {
+        console.log(`Received event data for ${date}:`, event);
         setDiaryData(prev => ({
           ...prev,
           events: {
@@ -468,10 +544,13 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
             [date]: event.eventDescription || ''
           }
         }));
+      } else {
+        console.log(`No event data returned for ${date}`);
       }
       
       // Mark date as loaded from server
       markDateLoaded(date);
+      console.log(`Data loading complete for ${date}`);
       
     } catch (error) {
       console.error(`Error loading data for ${date}:`, error);

@@ -139,24 +139,94 @@ const EmotionInsightsTab = () => {
       );
     }
     
-    // Render a simple bar chart of average intensities by date
-    return (
-      <div className="h-64 flex items-end space-x-2">
-        {trendData.map((day, index) => (
-          <div key={index} className="flex flex-col items-center flex-1">
-            <div 
-              className="w-full rounded-t"
-              style={{
-                height: `${day.averageIntensity * 10}%`,
-                backgroundColor: day.dominantCategory === 'positive' ? '#4CAF50' :
-                                day.dominantCategory === 'negative' ? '#F44336' : '#9E9E9E'
-              }}
-            />
-            <div className="text-xs mt-1 text-muted-foreground">
-              {format(new Date(day.date), 'MM/dd')}
-            </div>
+    // Transform data for the bar chart
+    const chartData = trendData.map(day => ({
+      date: format(new Date(day.date), 'MMM d'),
+      fullDate: format(new Date(day.date), 'MMM d, yyyy'),
+      intensity: day.averageIntensity || 0,
+      category: day.dominantCategory || 'unknown',
+      emotion: day.dominantEmotion || 'Unknown'
+    }));
+
+    // Define colors for different emotion categories
+    const categoryColors = {
+      positive: "#4CAF50",
+      negative: "#F44336", 
+      neutral: "#9E9E9E",
+      unknown: "#BDBDBD"
+    };
+    
+    // Custom tooltip content
+    const CustomTooltip = ({ active, payload, label }: any) => {
+      if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+          <div className="p-3 bg-white shadow-lg rounded-md border border-gray-200">
+            <p className="font-bold">{data.fullDate}</p>
+            <p className="text-gray-600">{data.emotion}</p>
+            <p className="font-semibold mt-1">
+              Intensity: <span className="font-bold">{data.intensity.toFixed(1)}/10</span>
+            </p>
           </div>
-        ))}
+        );
+      }
+      return null;
+    };
+    
+    return (
+      <div className="w-full h-72">
+        <h3 className="font-medium mb-2 text-gray-700">Emotion Intensity Over Time</h3>
+        <div className="flex mb-2 text-sm">
+          <div className="flex items-center mr-4">
+            <div className="w-3 h-3 mr-1 rounded-full" style={{ backgroundColor: categoryColors.positive }}></div>
+            <span>Positive</span>
+          </div>
+          <div className="flex items-center mr-4">
+            <div className="w-3 h-3 mr-1 rounded-full" style={{ backgroundColor: categoryColors.negative }}></div>
+            <span>Negative</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 mr-1 rounded-full" style={{ backgroundColor: categoryColors.neutral }}></div>
+            <span>Neutral</span>
+          </div>
+        </div>
+        
+        <ResponsiveContainer width="100%" height="85%">
+          <BarChart
+            data={chartData}
+            margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis 
+              dataKey="date" 
+              tick={{ fontSize: 12 }}
+              tickLine={false}
+            />
+            <YAxis 
+              domain={[0, 10]} 
+              ticks={[0, 5, 10]}
+              tickFormatter={(value) => `${value}`}
+              tickLine={false}
+              tick={{ fontSize: 12 }}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar 
+              dataKey="intensity" 
+              radius={[4, 4, 0, 0]}
+              barSize={30}
+            >
+              {chartData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={categoryColors[entry.category as keyof typeof categoryColors]} 
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+        <p className="text-xs text-center text-gray-500 mt-1">
+          Hover over bars to see detailed information
+        </p>
       </div>
     );
   };
@@ -712,10 +782,10 @@ const EmotionInsightsTab = () => {
                 <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
                   <TrendingUp className="h-5 w-5 text-green-500" />
                 </div>
-                <h3 className="text-lg font-semibold">Emotion Trends</h3>
+                <h3 className="text-lg font-semibold">Emotion Intensity Over Time</h3>
               </div>
               
-              {/* Simplified Emotion Trends Chart */}
+              {/* Bar Chart for Emotion Intensity Over Time */}
               <div className="bg-white p-4 rounded-lg border border-gray-100 mb-4">
                 <div className="text-sm font-medium text-gray-700 mb-3 flex justify-between items-center">
                   <span>Emotion Intensity Over Time</span>

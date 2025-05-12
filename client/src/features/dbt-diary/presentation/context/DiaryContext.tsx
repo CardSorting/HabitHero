@@ -189,19 +189,35 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
   
   // Sleep data handler
   const handleSleepChange = useCallback((date: DateString, field: keyof SleepData, value: string) => {
+    console.log(`Sleep change triggered - Date: ${date}, Field: ${field}, Value: ${value}`);
+    
     // Skip if value hasn't changed
     if (diaryData.sleep[date]?.[field] === value) {
+      console.log('Value unchanged, skipping update');
       return;
     }
     
+    console.log('Updating sleep data in state', { 
+      current: diaryData.sleep[date]?.[field], 
+      new: value 
+    });
+    
     // Update local state immediately
     setDiaryData(prev => {
+      // Ensure we have an object for this date
+      const dateData = prev.sleep[date] || {
+        hoursSlept: '',
+        troubleFalling: '',
+        troubleStaying: '',
+        troubleWaking: ''
+      };
+      
       const updated = {
         ...prev,
         sleep: {
           ...prev.sleep,
           [date]: {
-            ...prev.sleep[date],
+            ...dateData,
             [field]: value
           }
         }
@@ -219,19 +235,30 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
   
   // Emotion data handler
   const handleEmotionChange = useCallback((date: DateString, emotion: string, value: string) => {
+    console.log(`Emotion change triggered - Date: ${date}, Emotion: ${emotion}, Value: ${value}`);
+    
     // Skip if value hasn't changed
     if (diaryData.emotions[date]?.[emotion] === value) {
+      console.log('Emotion value unchanged, skipping update');
       return;
     }
     
+    console.log('Updating emotion data in state', { 
+      current: diaryData.emotions[date]?.[emotion], 
+      new: value 
+    });
+    
     // Update local state immediately
     setDiaryData(prev => {
+      // Ensure we have an object for this date
+      const dateEmotions = prev.emotions[date] || {};
+      
       const updated = {
         ...prev,
         emotions: {
           ...prev.emotions,
           [date]: {
-            ...prev.emotions[date],
+            ...dateEmotions,
             [emotion]: value
           }
         }
@@ -251,10 +278,18 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
   
   // Event data handler
   const handleEventChange = useCallback((date: DateString, value: string) => {
+    console.log(`Event change triggered - Date: ${date}, Value: ${value}`);
+    
     // Skip if value hasn't changed
     if (diaryData.events[date] === value) {
+      console.log('Event value unchanged, skipping update');
       return;
     }
+    
+    console.log('Updating event data in state', { 
+      current: diaryData.events[date], 
+      new: value 
+    });
     
     setDiaryData(prev => {
       const updated = {

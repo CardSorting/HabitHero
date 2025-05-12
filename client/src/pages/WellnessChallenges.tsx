@@ -199,52 +199,6 @@ const WellnessChallenges: React.FC = () => {
               ))}
             </div>
           </div>
-          
-          {/* How it works section */}
-          <div className="mb-6">
-            <h2 className="text-lg font-medium mb-3">How It Works</h2>
-            <Card>
-              <CardContent className="p-4">
-                <div className="space-y-5">
-                  <div className="flex items-start">
-                    <div className="bg-primary/10 rounded-full h-8 w-8 flex items-center justify-center mr-3 flex-shrink-0">
-                      <span className="font-medium">1</span>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Create a Challenge</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Choose a focus area and set a target that feels achievable
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="bg-primary/10 rounded-full h-8 w-8 flex items-center justify-center mr-3 flex-shrink-0">
-                      <span className="font-medium">2</span>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Track Daily</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Record your progress consistently to build momentum
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="bg-primary/10 rounded-full h-8 w-8 flex items-center justify-center mr-3 flex-shrink-0">
-                      <span className="font-medium">3</span>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Review Progress</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Analyze your patterns weekly to identify what's working
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
         
         {/* Floating action button for new challenge */}

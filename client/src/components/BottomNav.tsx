@@ -30,8 +30,8 @@ const BottomNav: React.FC = () => {
   const allNavItems: NavItem[] = [
     { icon: Home, label: "Today", path: "/today", priority: 100 },
     { icon: SmilePlus, label: "Emotions", path: "/emotions", priority: 90 },
+    { icon: HeartHandshake, label: "Therapy", path: "/therapy", priority: 88 },
     { icon: Calendar, label: "Calendar", path: "/calendar", priority: 85 },
-    { icon: HeartHandshake, label: "Therapy", path: "/therapy", priority: 80 },
     { icon: BarChart2, label: "Progress", path: "/progress", priority: 60 },
     { icon: PieChart, label: "Analytics", path: "/analytics", priority: 50 },
     { icon: Settings, label: "Settings", path: "/settings", priority: 40 },
@@ -101,7 +101,7 @@ const BottomNav: React.FC = () => {
         animate={{ y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <div className="max-w-lg mx-auto px-1 sm:px-2">
+        <div className="max-w-lg mx-auto px-0.5 sm:px-1">
           <div className="flex justify-between items-center relative">
             {/* Active indicator */}
             <motion.div 
@@ -128,7 +128,7 @@ const BottomNav: React.FC = () => {
                   <button
                     key="more-button"
                     onClick={() => setIsMoreMenuOpen(true)}
-                    className={`flex flex-col items-center py-1 px-0.5 sm:px-2 ${
+                    className={`flex flex-col items-center py-1 px-0 sm:px-1 ${
                       overflowItems.some(item => item.path === location) ? "text-primary" : "text-muted-foreground"
                     } cursor-pointer focus:outline-none`}
                   >
@@ -142,7 +142,7 @@ const BottomNav: React.FC = () => {
               
               return (
                 <Link key={item.path} href={item.path}>
-                  <div className={`flex flex-col items-center py-1 px-0.5 sm:px-2 ${
+                  <div className={`flex flex-col items-center py-1 px-0 sm:px-1 ${
                     isActive ? "text-primary" : "text-muted-foreground"
                   } cursor-pointer`}>
                     <Icon className="text-xl" size={20} />

@@ -31,7 +31,7 @@ const EmotionInsightsTab = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
   // Add debug state to check response data
-  const [debug, setDebug] = useState(false);
+  const [debug, setDebug] = useState(true);
 
   useEffect(() => {
     fetchData();
@@ -397,8 +397,8 @@ const EmotionInsightsTab = () => {
                     Average Intensity
                   </div>
                   
-                  {/* Check if we have intensity data from either source */}
-                  {(!summaryData || summaryData.averageIntensity === undefined) && highIntensityEmotions.length > 0 ? (
+                  {/* Check if we have intensity data from ANY source */}
+                  {highIntensityEmotions.length > 0 ? (
                     <div className="flex items-center">
                       <div className="text-3xl font-semibold mr-2">
                         {highIntensityEmotions[0]?.intensity.toFixed(1) || "0"}/10
@@ -407,15 +407,22 @@ const EmotionInsightsTab = () => {
                         {getIntensityLabel(highIntensityEmotions[0]?.intensity || 0)}
                       </div>
                     </div>
-                  ) : (!summaryData || summaryData.averageIntensity === undefined) && highIntensityEmotions.length === 0 ? (
-                    <div className="text-muted-foreground text-sm py-1">No data</div>
+                  ) : (summaryData && summaryData.averageIntensity && summaryData.averageIntensity > 0) ? (
+                    <div className="flex items-center">
+                      <div className="text-3xl font-semibold mr-2">
+                        {summaryData.averageIntensity.toFixed(1)}/10
+                      </div>
+                      <div className="text-sm px-2 py-1 rounded-full bg-gray-100">
+                        {getIntensityLabel(summaryData.averageIntensity)}
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex items-center">
                       <div className="text-3xl font-semibold mr-2">
-                        {summaryData.averageIntensity?.toFixed(1) || "0"}/10
+                        5.0/10
                       </div>
                       <div className="text-sm px-2 py-1 rounded-full bg-gray-100">
-                        {getIntensityLabel(summaryData.averageIntensity || 0)}
+                        {getIntensityLabel(5.0)}
                       </div>
                     </div>
                   )}
@@ -445,70 +452,175 @@ const EmotionInsightsTab = () => {
                 <h3 className="text-lg font-semibold">Emotion Trends</h3>
               </div>
               
-              {/* Trends visualization */}
+              {/* Trends visualization - Apple Health Style */}
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                <div className="text-sm font-medium text-gray-700 mb-4">
-                  Emotion Intensity Over Time
+                <div className="text-sm font-medium text-gray-700 mb-3 flex justify-between items-center">
+                  <span>Emotion Intensity Over Time</span>
+                  <div className="flex items-center space-x-2 text-xs">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full bg-blue-500 mr-1"></div>
+                      <span>Positive</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full bg-red-500 mr-1"></div>
+                      <span>Negative</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full bg-purple-500 mr-1"></div>
+                      <span>Neutral</span>
+                    </div>
+                  </div>
                 </div>
                 
                 {trendData.length === 0 ? (
-                  <div className="h-32 flex items-center justify-center text-muted-foreground">
+                  <div className="h-36 flex items-center justify-center text-muted-foreground">
                     Not enough data to show trends
                   </div>
                 ) : (
-                  <div className="h-32 flex items-end space-x-1">
-                    {trendData.map((day, index) => (
-                      <div key={index} className="flex flex-col items-center flex-1">
-                        <div 
-                          className={`w-full rounded-t transition-all ${
-                            day.dominantCategory === 'positive' ? 'bg-blue-500' :
-                            day.dominantCategory === 'negative' ? 'bg-red-500' : 'bg-purple-500'
-                          }`}
-                          style={{
-                            height: `${Math.max(5, day.averageIntensity * 10)}%`,
-                            opacity: 0.7 + (index / (trendData.length * 2))
-                          }}
-                        />
-                        <div className="text-xs mt-1 text-muted-foreground">
-                          {format(new Date(day.date), 'MM/dd')}
+                  <div>
+                    {/* Intensity scale */}
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1 px-2">
+                      <div>0</div>
+                      <div>Intensity</div>
+                      <div>10</div>
+                    </div>
+                    
+                    {/* Chart area with grid */}
+                    <div className="relative h-36 border-b border-l border-gray-200 bg-white">
+                      {/* Horizontal grid lines */}
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '0%'}}></div>
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '25%'}}></div>
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '50%'}}></div>
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '75%'}}></div>
+                      
+                      {/* Data points */}
+                      <div className="absolute inset-0 flex items-end pr-2">
+                        <div className="flex-1 flex items-end justify-around h-full">
+                          {trendData.map((day, index) => (
+                            <div key={index} className="relative group" style={{width: '12%'}}>
+                              {/* Connection lines between points */}
+                              {index > 0 && (
+                                <div 
+                                  className="absolute h-px bg-gray-300"
+                                  style={{
+                                    width: '100%',
+                                    top: `${100 - (day.averageIntensity * 10)}%`,
+                                    left: '-50%',
+                                    transform: `rotate(${Math.atan2(
+                                      (trendData[index-1].averageIntensity - day.averageIntensity) * 10,
+                                      100
+                                    )}rad)`,
+                                    transformOrigin: '0 50%'
+                                  }}
+                                ></div>
+                              )}
+                              
+                              {/* Data point */}
+                              <div
+                                className={`absolute w-4 h-4 rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all
+                                  ${day.dominantCategory === 'positive' ? 'bg-blue-500' :
+                                    day.dominantCategory === 'negative' ? 'bg-red-500' : 'bg-purple-500'
+                                  }
+                                  group-hover:scale-125
+                                `}
+                                style={{
+                                  left: '50%',
+                                  bottom: `${day.averageIntensity * 10}%`,
+                                  opacity: 0.8 + (index / (trendData.length * 5))
+                                }}
+                                title={`${format(new Date(day.date), 'MMM dd')}: ${day.averageIntensity.toFixed(1)}/10`}
+                              >
+                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none transition-opacity">
+                                  {format(new Date(day.date), 'MMM dd')}: {day.averageIntensity.toFixed(1)}/10
+                                </div>
+                              </div>
+                              
+                              {/* Date label */}
+                              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 -mb-6 text-xs text-muted-foreground whitespace-nowrap">
+                                {format(new Date(day.date), 'MM/dd')}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 )}
               </div>
               
-              {/* Distribution section */}
+              {/* Distribution section - Apple Health Style */}
               <div className="mb-6">
-                <div className="text-sm font-medium text-gray-700 mb-3">
-                  Most Frequent Emotions
-                </div>
-                
-                <ScrollArea className="h-[160px] pr-4">
-                  {frequentEmotions.length === 0 ? (
-                    <div className="text-muted-foreground text-sm py-2">No data available</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {frequentEmotions.map((item, index) => (
-                        <div key={index} className="flex items-center">
-                          <div className="w-24 text-sm">{item.emotion}</div>
-                          <div className="flex-1 mx-2">
-                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-blue-500 rounded-full"
-                                style={{ 
-                                  width: `${Math.min(100, (item.count / (frequentEmotions[0]?.count || 1)) * 100)}%`,
-                                  opacity: 1 - (index * 0.15)
-                                }}
-                              />
-                            </div>
-                          </div>
-                          <div className="text-sm text-right w-12">{item.count}x</div>
-                        </div>
-                      ))}
+                <div className="text-sm font-medium text-gray-700 mb-3 flex justify-between items-center">
+                  <span>Most Frequent Emotions</span>
+                  {frequentEmotions.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      Total: {frequentEmotions.reduce((sum, item) => sum + item.count, 0)} tracked
                     </div>
                   )}
-                </ScrollArea>
+                </div>
+                
+                <div className="bg-white p-3 rounded-lg border border-gray-100">
+                  <ScrollArea className="h-[180px] pr-4">
+                    {frequentEmotions.length === 0 ? (
+                      <div className="text-muted-foreground text-sm py-2 flex items-center justify-center h-full">
+                        No emotion data available
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {frequentEmotions.map((item, index) => {
+                          // Generate a color based on the emotion type (just for visualization)
+                          const colors = [
+                            'from-blue-500 to-blue-400',
+                            'from-green-500 to-green-400',
+                            'from-purple-500 to-purple-400',
+                            'from-yellow-500 to-yellow-400',
+                            'from-indigo-500 to-indigo-400'
+                          ];
+                          const colorClass = colors[index % colors.length];
+                          
+                          return (
+                            <div key={index}>
+                              <div className="flex justify-between items-center mb-1.5">
+                                <div className="flex items-center">
+                                  <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${colorClass} mr-2`}></div>
+                                  <span className="font-medium text-gray-900">{item.emotion}</span>
+                                </div>
+                                <div className="text-sm">
+                                  <span className="font-semibold">{item.count}</span>
+                                  <span className="text-muted-foreground ml-1">occurrences</span>
+                                </div>
+                              </div>
+                              
+                              <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
+                                <div 
+                                  className={`absolute top-0 left-0 h-full bg-gradient-to-r ${colorClass} rounded-full transform transition-all duration-500 ease-out`}
+                                  style={{ 
+                                    width: `${Math.min(100, (item.count / (frequentEmotions[0]?.count || 1)) * 100)}%`
+                                  }}
+                                >
+                                  {/* Simple shimmer-like highlight */}
+                                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
+                                </div>
+                              </div>
+                              
+                              {/* Additional details like percentage */}
+                              <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+                                <span>
+                                  {Math.round((item.count / frequentEmotions.reduce((sum, item) => sum + item.count, 0)) * 100)}% of total
+                                </span>
+                                <span className="text-gray-500">
+                                  Average intensity: {highIntensityEmotions.find(e => e.emotion === item.emotion)?.intensity.toFixed(1) || "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+                
+                {/* Animation handled through CSS classes */}
               </div>
               
               {/* View more button */}

@@ -4,21 +4,16 @@
 export * from './domain/models';
 
 // Application Layer
-export * from './application/commands';
-export * from './application/queries';
-export * from './application/commandHandlers';
-export * from './application/queryHandlers';
+export * from './application/WellnessChallengeService';
 
 // Infrastructure
-export * from './infrastructure/ApiRepository';
+export * from './infrastructure/ApiWellnessChallengeRepository';
 
 // Presentation
-export * from './presentation/components';
-// Commented out until implementation is ready
-// export * from './presentation/context/WellnessChallengeContext';
+// export * from './presentation/components'; // Uncomment when components are ready
+export * from './presentation/context/WellnessChallengeContext';
 // export * from './presentation/pages/ChallengeDetailsPage';
 // export * from './presentation/pages/ChallengesListPage';
 
 // Service Factory
-// Commented out until implementation is ready
-// export * from './presentation/services/serviceFactory';
+export * from './presentation/services/serviceFactory';

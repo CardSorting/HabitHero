@@ -1,0 +1,95 @@
+chunk-RPCDYKBN.js?v=94bb674a:521 Warning: React has detected a change in the order of Hooks called by Today. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://reactjs.org/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+1. useState                   useState
+2. useState                   useState
+3. useState                   useState
+4. useContext                 useContext
+5. useContext                 useContext
+6. useContext                 useContext
+7. useContext                 useContext
+8. useEffect                  useContext
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    at Today (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/pages/Today.tsx?t=1747023884939:33:47)
+    at Route (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=94bb674a:323:16)
+    at ProtectedRoute (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/lib/protected-route.tsx?t=1747023874428:22:3)
+    at Switch (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=94bb674a:379:17)
+    at div
+    at PresenceChild (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=94bb674a:121:24)
+    at AnimatePresence (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=94bb674a:210:26)
+    at Router (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/App.tsx?t=1747023874428&v=v8N3IyL91aMc8x4ovK9X3:39:22)
+    at AuthProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/hooks/use-auth.tsx?t=1747023874428:26:32)
+    at Provider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-P23V4H6I.js?v=94bb674a:48:15)
+    at TooltipProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=94bb674a:61:5)
+    at QueryClientProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=94bb674a:2805:3)
+    at App
+    at Provider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-P23V4H6I.js?v=94bb674a:48:15)
+    at Provider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-P23V4H6I.js?v=94bb674a:48:15)
+    at CollectionProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EVUPP2WN.js?v=94bb674a:29:13)
+    at ToastProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-toast.js?v=94bb674a:55:5)
+printWarning @ chunk-RPCDYKBN.js?v=94bb674a:521Understand this errorAI
+chunk-RPCDYKBN.js?v=94bb674a:521 Warning: React has detected a change in the order of Hooks called by DailySummary. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://reactjs.org/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+1. useContext                 useContext
+2. useContext                 useContext
+3. useContext                 useContext
+4. useContext                 useContext
+5. useEffect                  useContext
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    at DailySummary (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/components/DailySummary.tsx?t=1747023884939:26:33)
+    at main
+    at MotionComponent (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=94bb674a:945:40)
+    at Today (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/pages/Today.tsx?t=1747023884939:33:47)
+    at Route (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=94bb674a:323:16)
+    at ProtectedRoute (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/lib/protected-route.tsx?t=1747023874428:22:3)
+    at Switch (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=94bb674a:379:17)
+    at div
+    at PresenceChild (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=94bb674a:121:24)
+    at AnimatePresence (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=94bb674a:210:26)
+    at Router (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/App.tsx?t=1747023874428&v=v8N3IyL91aMc8x4ovK9X3:39:22)
+    at AuthProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/hooks/use-auth.tsx?t=1747023874428:26:32)
+    at Provider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-P23V4H6I.js?v=94bb674a:48:15)
+    at TooltipProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=94bb674a:61:5)
+    at QueryClientProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=94bb674a:2805:3)
+    at App
+    at Provider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-P23V4H6I.js?v=94bb674a:48:15)
+    at Provider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-P23V4H6I.js?v=94bb674a:48:15)
+    at CollectionProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EVUPP2WN.js?v=94bb674a:29:13)
+    at ToastProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-toast.js?v=94bb674a:55:5)
+printWarning @ chunk-RPCDYKBN.js?v=94bb674a:521Understand this errorAI
+chunk-RPCDYKBN.js?v=94bb674a:521 Warning: React has detected a change in the order of Hooks called by WeeklyOverview. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://reactjs.org/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+1. useContext                 useContext
+2. useContext                 useContext
+3. useContext                 useContext
+4. useContext                 useContext
+5. useEffect                  useContext
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    at WeeklyOverview (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/components/WeeklyOverview.tsx?t=1747023884939:26:33)
+    at main
+    at MotionComponent (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=94bb674a:945:40)
+    at Today (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/pages/Today.tsx?t=1747023884939:33:47)
+    at Route (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=94bb674a:323:16)
+    at ProtectedRoute (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/lib/protected-route.tsx?t=1747023874428:22:3)
+    at Switch (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=94bb674a:379:17)
+    at div
+    at PresenceChild (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=94bb674a:121:24)
+    at AnimatePresence (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=94bb674a:210:26)
+    at Router (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/App.tsx?t=1747023874428&v=v8N3IyL91aMc8x4ovK9X3:39:22)
+    at AuthProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/src/hooks/use-auth.tsx?t=1747023874428:26:32)
+    at Provider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-P23V4H6I.js?v=94bb674a:48:15)
+    at TooltipProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=94bb674a:61:5)
+    at QueryClientProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=94bb674a:2805:3)
+    at App
+    at Provider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-P23V4H6I.js?v=94bb674a:48:15)
+    at Provider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-P23V4H6I.js?v=94bb674a:48:15)
+    at CollectionProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EVUPP2WN.js?v=94bb674a:29:13)
+    at ToastProvider (https://e266bea5-2be9-4be6-bf93-0b344450c686-00-1536i5sqanfsl.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-toast.js?v=94bb674a:55:5)

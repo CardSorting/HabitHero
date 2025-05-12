@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { registerEmotionsRoutes } from "./emotions-routes";
+import { registerWellnessChallengeRoutes } from "./wellness-challenge-routes"; 
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -42,6 +43,9 @@ app.use((req, res, next) => {
   
   // Register emotions routes
   registerEmotionsRoutes(app);
+  
+  // Register wellness challenge routes
+  registerWellnessChallengeRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

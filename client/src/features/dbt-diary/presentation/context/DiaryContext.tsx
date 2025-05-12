@@ -561,63 +561,122 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
   
   // Save all pending changes to the server
   const saveChanges = useCallback(async () => {
+    console.log('saveChanges called, hasPendingChanges:', hasPendingChanges);
+    console.log('Current diaryData state:', JSON.stringify(diaryData, null, 2));
+    
     if (!hasPendingChanges) {
+      console.log('No pending changes to save, returning early');
       return;
     }
     
     try {
       setIsLoading(true);
       
-      // Gather all dates with pending changes
+      // Gather all dates with pending changes - include all data sources
       const dates = Object.keys(diaryData.sleep)
         .concat(Object.keys(diaryData.emotions))
         .concat(Object.keys(diaryData.events))
+        .concat(Object.keys(diaryData.medication))
         .filter((date, index, self) => self.indexOf(date) === index) as DateString[];
+      
+      console.log(`Found ${dates.length} dates with data to save:`, dates);
       
       // Process each date
       for (const date of dates) {
-        // Save sleep data if it exists
-        if (diaryData.sleep[date]) {
-          const sleepData = diaryData.sleep[date];
-          for (const field of Object.keys(sleepData) as Array<keyof SleepData>) {
-            if (sleepData[field]) {
-              await diaryService.saveSleepData(date, field, sleepData[field], sleepData);
+        console.log(`Processing date: ${date}`);
+        
+        try {
+          // Save sleep data if it exists
+          if (diaryData.sleep[date]) {
+            console.log(`Processing sleep data for ${date}:`, diaryData.sleep[date]);
+            const sleepData = diaryData.sleep[date];
+            for (const field of Object.keys(sleepData) as Array<keyof SleepData>) {
+              try {
+                if (sleepData[field]) {
+                  console.log(`Saving sleep field ${field}: ${sleepData[field]}`);
+                  await diaryService.saveSleepData(date, field, sleepData[field], sleepData);
+                  console.log(`Successfully saved sleep field ${field}`);
+                }
+              } catch (fieldError) {
+                console.error(`Error saving sleep field ${field}:`, fieldError);
+              }
+            }
+          } else {
+            console.log(`No sleep data to save for ${date}`);
+          }
+          
+          // Save emotions data
+          if (diaryData.emotions[date]) {
+            const emotions = diaryData.emotions[date];
+            console.log(`Processing emotions data for ${date}:`, emotions);
+            
+            for (const [emotion, intensity] of Object.entries(emotions)) {
+              try {
+                if (intensity) {
+                  console.log(`Saving emotion ${emotion} with intensity ${intensity}`);
+                  await diaryService.saveEmotion(date, emotion, intensity);
+                  console.log(`Successfully saved emotion ${emotion}`);
+                } else {
+                  console.log(`Skipping empty emotion: ${emotion}`);
+                }
+              } catch (emotionError) {
+                console.error(`Error saving emotion ${emotion}:`, emotionError);
+              }
+            }
+          } else {
+            console.log(`No emotions data to save for ${date}`);
+          }
+          
+          // Urges section removed
+          
+          // Save skills data
+          console.log(`Processing skills data for ${date}`);
+          let skillCount = 0;
+          
+          for (const category in diaryData.skills) {
+            for (const skill in diaryData.skills[category]) {
+              try {
+                if (diaryData.skills[category][skill][date] !== undefined) {
+                  const used = diaryData.skills[category][skill][date];
+                  console.log(`Saving skill ${category}.${skill}: ${used}`);
+                  await diaryService.saveSkill(date, category, skill, used);
+                  console.log(`Successfully saved skill ${category}.${skill}`);
+                  skillCount++;
+                }
+              } catch (skillError) {
+                console.error(`Error saving skill ${category}.${skill}:`, skillError);
+              }
             }
           }
-        }
-        
-        // Save emotions data
-        if (diaryData.emotions[date]) {
-          for (const [emotion, intensity] of Object.entries(diaryData.emotions[date])) {
-            if (intensity) {
-              await diaryService.saveEmotion(date, emotion, intensity);
-            }
+          
+          if (skillCount === 0) {
+            console.log(`No skills data to save for ${date}`);
           }
-        }
-        
-        // Urges section removed
-        
-        // Save skills data
-        for (const category in diaryData.skills) {
-          for (const skill in diaryData.skills[category]) {
-            if (diaryData.skills[category][skill][date] !== undefined) {
-              const used = diaryData.skills[category][skill][date];
-              await diaryService.saveSkill(date, category, skill, used);
+          
+          // Save event data
+          if (diaryData.events[date]) {
+            try {
+              console.log(`Saving event for ${date}: ${diaryData.events[date]}`);
+              await diaryService.saveEvent(date, diaryData.events[date]);
+              console.log(`Successfully saved event for ${date}`);
+            } catch (eventError) {
+              console.error(`Error saving event for ${date}:`, eventError);
             }
+          } else {
+            console.log(`No event data to save for ${date}`);
           }
-        }
-        
-        // Save event data
-        if (diaryData.events[date]) {
-          await diaryService.saveEvent(date, diaryData.events[date]);
+        } catch (dateError) {
+          console.error(`Error processing date ${date}:`, dateError);
+          // Continue with next date even if this one fails
         }
       }
       
       // Mark all changes as saved
       markAsSaved();
+      console.log('All changes saved successfully');
       
     } catch (error) {
-      console.error('Error saving changes:', error);
+      console.error('Error in saveChanges:', error);
       throw error;
     } finally {
       setIsLoading(false);

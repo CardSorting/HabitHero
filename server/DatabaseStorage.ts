@@ -10,6 +10,9 @@ import {
   dbtSkills, 
   dbtEvents,
   users,
+  wellnessChallenges,
+  wellnessChallengeGoals,
+  wellnessChallengeProgress,
   Habit, 
   HabitCompletion, 
   InsertHabit, 
@@ -22,9 +25,15 @@ import {
   DbtSkill,
   DbtEvent,
   User,
-  InsertUser
+  InsertUser,
+  WellnessChallenge,
+  WellnessChallengeGoal,
+  WellnessChallengeProgress,
+  InsertWellnessChallenge,
+  InsertWellnessChallengeGoal,
+  InsertWellnessChallengeProgress
 } from '@shared/schema';
-import { IStorage, HabitWithCompletions } from './storage';
+import { IStorage, HabitWithCompletions, WellnessChallengeWithDetails, ChallengeSummary, ChallengeStreak } from './storage';
 
 export class DatabaseStorage implements IStorage {
   pool: any;

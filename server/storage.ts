@@ -7,7 +7,13 @@ import {
   type HabitCompletion,
   type InsertHabitCompletion,
   type User,
-  type InsertUser
+  type InsertUser,
+  type WellnessChallenge,
+  type InsertWellnessChallenge,
+  type WellnessChallengeGoal,
+  type InsertWellnessChallengeGoal,
+  type WellnessChallengeProgress,
+  type InsertWellnessChallengeProgress
 } from "@shared/schema";
 import { startOfDay, subDays, format, addDays } from "date-fns";
 
@@ -17,6 +23,28 @@ export interface HabitWithCompletions extends Habit {
     date: string;
     completed: boolean;
   }[];
+}
+
+// Extended wellness challenge type with goals and progress
+export interface WellnessChallengeWithDetails extends WellnessChallenge {
+  goals: WellnessChallengeGoal[];
+  progressEntries: WellnessChallengeProgress[];
+}
+
+// Challenge summary statistics
+export interface ChallengeSummary {
+  totalChallenges: number;
+  activeChallenges: number;
+  completedChallenges: number;
+  abandonedChallenges: number;
+  averageCompletionRate: number;
+}
+
+// Challenge streak information
+export interface ChallengeStreak {
+  challengeId: number;
+  currentStreak: number;
+  longestStreak: number;
 }
 
 export interface IStorage {
@@ -33,6 +61,29 @@ export interface IStorage {
   toggleHabitCompletion(habitId: number, date: string, completed: boolean): Promise<HabitWithCompletions>;
   clearAllHabits(): Promise<boolean>;
   clearHabitCompletions(date: string): Promise<boolean>;
+  
+  // Wellness Challenge methods
+  getWellnessChallenges(userId?: number): Promise<WellnessChallenge[]>;
+  getWellnessChallengesByStatus(status: string): Promise<WellnessChallenge[]>;
+  getWellnessChallengesByType(type: string): Promise<WellnessChallenge[]>;
+  getWellnessChallenge(id: number): Promise<WellnessChallengeWithDetails | undefined>;
+  createWellnessChallenge(challenge: InsertWellnessChallenge): Promise<WellnessChallenge>;
+  updateWellnessChallenge(id: number, challenge: Partial<WellnessChallenge>): Promise<WellnessChallenge>;
+  deleteWellnessChallenge(id: number): Promise<boolean>;
+  updateWellnessChallengeStatus(id: number, status: string): Promise<WellnessChallenge>;
+  
+  // Challenge goals methods
+  getWellnessChallengeGoals(challengeId: number): Promise<WellnessChallengeGoal[]>;
+  createWellnessChallengeGoal(goal: InsertWellnessChallengeGoal): Promise<WellnessChallengeGoal>;
+  
+  // Challenge progress methods
+  getWellnessChallengeProgress(challengeId: number): Promise<WellnessChallengeProgress[]>;
+  getWellnessChallengeProgressForDate(challengeId: number, date: string): Promise<WellnessChallengeProgress[]>;
+  recordWellnessChallengeProgress(progress: InsertWellnessChallengeProgress): Promise<WellnessChallengeProgress>;
+  
+  // Challenge analytics methods
+  getChallengeSummary(userId: number): Promise<ChallengeSummary>;
+  getChallengeStreak(challengeId: number): Promise<ChallengeStreak>;
 }
 
 export class MemStorage implements IStorage {

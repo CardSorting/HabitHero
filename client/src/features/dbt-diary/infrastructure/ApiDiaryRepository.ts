@@ -5,7 +5,7 @@ import {
   DateString, 
   SleepData, 
   EmotionEntry, 
-  UrgeEntry, 
+  // UrgeEntry removed
   SkillEntry, 
   EventEntry, 
   SleepEntry
@@ -120,65 +120,7 @@ export class ApiDiaryRepository implements IDiaryRepository {
     }
   }
 
-  // Urges methods
-  async getUrges(date: DateString): Promise<UrgeEntry[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/urges/${date}`);
-      
-      if (!response.ok) {
-        return [];
-      }
-      
-      const data = await response.json();
-      
-      if (!data || !Array.isArray(data)) {
-        return [];
-      }
-      
-      return data.map((urge: any) => ({
-        date,
-        userId: this.userId,
-        urgeType: urge.urgeType,
-        level: urge.level,
-        action: urge.action || ''
-      }));
-    } catch (error) {
-      console.error('Error fetching urges data:', error);
-      return [];
-    }
-  }
-
-  async saveUrge(entry: UrgeEntry): Promise<UrgeEntry> {
-    try {
-      const response = await fetch(`${this.baseUrl}/urges/${entry.date}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          urgeType: entry.urgeType,
-          level: entry.level,
-          action: entry.action
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save urge data');
-      }
-      
-      const data = await response.json();
-      return {
-        date: entry.date,
-        userId: this.userId,
-        urgeType: data.urgeType,
-        level: data.level,
-        action: data.action || ''
-      };
-    } catch (error) {
-      console.error('Error saving urge data:', error);
-      throw error;
-    }
-  }
+  // Urges methods removed
 
   // Skills methods
   async getSkills(date: DateString): Promise<SkillEntry[]> {

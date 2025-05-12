@@ -6,7 +6,7 @@ import {
   DateString, 
   SleepData,
   EmotionEntry,
-  UrgeEntry,
+  // UrgeEntry removed
   SkillEntry,
   EventEntry
 } from '../domain/models';
@@ -15,7 +15,7 @@ import {
   DiaryCommandHandlers, 
   SaveSleepDataCommand, 
   SaveEmotionCommand, 
-  SaveUrgeCommand, 
+  // SaveUrgeCommand removed
   SaveSkillCommand, 
   SaveEventCommand 
 } from './commands';
@@ -24,7 +24,7 @@ import {
   GetWeekDataQuery, 
   GetSleepDataQuery,
   GetEmotionsQuery,
-  GetUrgesQuery,
+  // GetUrgesQuery removed
   GetSkillsQuery,
   GetEventQuery
 } from './queries';
@@ -62,21 +62,7 @@ export class DiaryService {
     return await this.commandHandlers.handleSaveEmotion(command);
   }
   
-  async saveUrge(date: DateString, urgeType: string, field: 'level' | 'action', value: string, currentLevel?: string, currentAction?: string): Promise<UrgeEntry> {
-    // Set default values
-    let level = currentLevel || '';
-    let action = currentAction || '';
-    
-    // Update the field that changed
-    if (field === 'level') {
-      level = value;
-    } else {
-      action = value;
-    }
-    
-    const command = new SaveUrgeCommand(date, this.userId, urgeType, level, action);
-    return await this.commandHandlers.handleSaveUrge(command);
-  }
+  // saveUrge method removed
   
   async saveSkill(date: DateString, category: string, skill: string, used: boolean): Promise<SkillEntry> {
     const command = new SaveSkillCommand(date, this.userId, category, skill, used);
@@ -99,10 +85,7 @@ export class DiaryService {
     return await this.queryHandlers.handleGetEmotions(query);
   }
   
-  async getUrges(date: DateString): Promise<UrgeEntry[]> {
-    const query = new GetUrgesQuery(date);
-    return await this.queryHandlers.handleGetUrges(query);
-  }
+  // getUrges method removed
   
   async getSkills(date: DateString): Promise<SkillEntry[]> {
     const query = new GetSkillsQuery(date);

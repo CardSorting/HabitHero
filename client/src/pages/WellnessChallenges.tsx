@@ -11,7 +11,11 @@ import {
   Brain,
   BookOpen,
   Activity,
-  ArrowRight
+  ArrowRight,
+  Feather,
+  Shield,
+  Gauge,
+  Users
 } from 'lucide-react';
 import {
   Dialog,
@@ -63,6 +67,11 @@ const WellnessChallenges: React.FC = () => {
     { name: 'Meditation', icon: <Brain className="h-6 w-6 text-blue-500" />, color: 'bg-blue-100' },
     { name: 'Journaling', icon: <BookOpen className="h-6 w-6 text-green-500" />, color: 'bg-green-100' },
     { name: 'Activity', icon: <Activity className="h-6 w-6 text-orange-500" />, color: 'bg-orange-100' },
+    // New categories
+    { name: 'Mindfulness', icon: <Feather className="h-6 w-6 text-teal-500" />, color: 'bg-teal-100' },
+    { name: 'Distress_Tolerance', displayName: 'Distress Tolerance', icon: <Shield className="h-6 w-6 text-red-500" />, color: 'bg-red-100' },
+    { name: 'Emotion_Regulation', displayName: 'Emotion Regulation', icon: <Gauge className="h-6 w-6 text-purple-500" />, color: 'bg-purple-100' },
+    { name: 'Interpersonal_Effectiveness', displayName: 'Interpersonal', icon: <Users className="h-6 w-6 text-blue-500" />, color: 'bg-blue-100' },
   ];
   
   return (
@@ -229,7 +238,7 @@ const WellnessChallenges: React.FC = () => {
           {/* Challenge categories */}
           <div className="mb-6">
             <h2 className="text-lg font-medium mb-3">Browse Challenge Categories</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {challengeTypes.map((type) => (
                 <Card 
                   key={type.name} 
@@ -240,7 +249,7 @@ const WellnessChallenges: React.FC = () => {
                     <div className={`p-3 rounded-full ${type.color} mb-2`}>
                       {type.icon}
                     </div>
-                    <span className="font-medium">{type.name}</span>
+                    <span className="font-medium">{type.displayName || type.name}</span>
                   </CardContent>
                 </Card>
               ))}
@@ -283,7 +292,7 @@ const WellnessChallenges: React.FC = () => {
                 
                 <div>
                   <label className="text-sm font-medium">Challenge Type</label>
-                  <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="grid grid-cols-2 gap-2 mt-1 max-h-56 overflow-y-auto">
                     {challengeTypes.map((type) => (
                       <div 
                         key={type.name}
@@ -292,7 +301,7 @@ const WellnessChallenges: React.FC = () => {
                         <div className={`p-1 rounded-full ${type.color} mr-2`}>
                           {React.cloneElement(type.icon, { className: 'h-4 w-4' })}
                         </div>
-                        <span className="text-sm">{type.name}</span>
+                        <span className="text-sm">{type.displayName || type.name}</span>
                       </div>
                     ))}
                   </div>

@@ -40,12 +40,51 @@ const AddHabitModal: React.FC<AddHabitModalProps> = ({
   });
 
   const onSubmit = (data: FormValues) => {
-    console.log("Form submitted with data:", data);
+    console.log("SUBMIT DETECTED: Form submitted with data:", data);
+    console.log("FORM STATE:", form.formState);
     
-    // We'll let the useHabits hook add the userId from the authenticated user
-    onAddHabit(data);
-    form.reset();
-    onOpenChange(false);
+    try {
+      console.log("About to call onAddHabit");
+      
+      // We'll let the useHabits hook add the userId from the authenticated user
+      onAddHabit(data);
+      
+      console.log("After calling onAddHabit");
+      form.reset();
+      onOpenChange(false);
+      
+      // Try direct API call if the regular approach isn't working
+      const directApiCall = async () => {
+        try {
+          console.log("Making direct API call to create habit");
+          const response = await fetch('/api/habits', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name: data.name,
+              description: data.description || "",
+              frequency: data.frequency,
+              reminder: data.reminder
+            })
+          });
+          
+          if (!response.ok) {
+            console.error("Direct API call failed:", await response.text());
+          } else {
+            console.log("Direct API call succeeded:", await response.json());
+          }
+        } catch (err) {
+          console.error("Error in direct API call:", err);
+        }
+      };
+      
+      // Try direct API call since the normal approach isn't working
+      directApiCall();
+    } catch (err) {
+      console.error("Error in onSubmit handler:", err);
+    }
   };
 
   return (

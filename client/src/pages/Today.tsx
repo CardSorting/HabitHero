@@ -1,34 +1,42 @@
-import React, { useState } from "react";
-import Header from "@/components/Header";
-import FloatingActionButton from "@/components/FloatingActionButton";
+import React, { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import AddHabitModal from "@/components/AddHabitModal";
+import HabitsList from "@/components/HabitsList";
+import DailyProgressSummary from "@/components/DailyProgressSummary";
+import FloatingActionButton from "@/components/FloatingActionButton";
 import DailySummary from "@/components/DailySummary";
-import WeeklyOverview from "@/components/WeeklyOverview";
-import TrendMicroCard from "@/components/TrendMicroCard";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TabsContent } from "@/components/ui/tabs";
 import HabitDetailModal from "@/components/HabitDetailModal";
 import DailyGoalTracker from "@/components/DailyGoalTracker";
-import { useHabits } from "@/lib/useHabits";
+import { Progress } from "@/components/ui/progress";
+import { useHabitService } from "@/hooks/useHabitService";
 import { Habit } from "@/lib/types";
-import { motion } from "framer-motion";
-import { toast } from "@/hooks/use-toast";
-import { TrendingUp } from "lucide-react";
 
+/**
+ * Today page component
+ * Refactored to use the new habit services following Clean Architecture
+ */
 const Today: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [showHabitDetail, setShowHabitDetail] = useState(false);
   
-  // Get habits data
+  // Use our new habit service hook
   const { 
     habits, 
-    isLoading, 
-    toggleHabitCompletion, 
-    addHabit
-  } = useHabits();
+    isLoadingHabits, 
+    toggleHabit, 
+    createHabit,
+    refetchHabits
+  } = useHabitService();
+  
+  const { toast } = useToast();
 
   const handleToggleHabit = async (habitId: number, completed: boolean) => {
     try {
-      await toggleHabitCompletion(habitId, completed);
+      await toggleHabit(habitId, completed);
       
       if (completed) {
         toast({
@@ -51,28 +59,7 @@ const Today: React.FC = () => {
     try {
       console.log("Attempting to create habit with data:", data);
       
-      // Direct API call to avoid hook ordering issues
-      const response = await fetch("/api/habits", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          userId: 1 // Hardcode based on logs for now
-        }),
-        credentials: "include"
-      });
-      
-      console.log("Create habit response status:", response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`${response.status}: ${errorText}`);
-      }
-      
-      // Force refresh habits
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      await createHabit(data);
       
       toast({
         title: "Habit created",
@@ -80,6 +67,9 @@ const Today: React.FC = () => {
         variant: "default",
         className: "bg-success text-white",
       });
+      
+      // Make sure the habits list is refreshed
+      refetchHabits();
     } catch (error) {
       console.error("Error creating habit:", error);
       toast({
@@ -100,99 +90,70 @@ const Today: React.FC = () => {
     setShowHabitDetail(false);
   };
 
+  // Calculate completion stats
+  const completedHabits = habits.filter(habit => 
+    habit.completionRecords.some(record => 
+      record.date === new Date().toISOString().split('T')[0] && record.completed
+    )
+  ).length;
+  
+  const totalHabits = habits.length;
+  const completionPercentage = totalHabits > 0 
+    ? Math.round((completedHabits / totalHabits) * 100) 
+    : 0;
+
   return (
-    <>
-      <Header />
-      <motion.main 
-        className="flex-1 px-6 pb-20 pt-6 overflow-y-auto"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        {/* Apple Health inspired daily summary card */}
-        <DailySummary />
-        
-        {/* Daily goal tracker with DBT skills */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="mb-6"
-        >
-          <DailyGoalTracker />
-        </motion.div>
-        
-        {/* Weekly progress overview with activity rings */}
-        <WeeklyOverview />
-        
-        {/* Habit trends section */}
-        {habits.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium flex items-center">
-                <TrendingUp className="mr-2 h-5 w-5 text-primary" />
-                Your Habits
-              </h2>
-              <span className="text-sm text-muted-foreground">
-                {habits.length} {habits.length === 1 ? 'habit' : 'habits'}
-              </span>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {habits.map((habit, index) => (
-                <TrendMicroCard 
-                  key={habit.id}
-                  habit={habit}
-                  index={index} 
-                  onClick={() => handleHabitClick(habit)}
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
-        
-        {/* Empty state */}
-        {habits.length === 0 && !isLoading && (
-          <motion.div 
-            className="flex flex-col items-center justify-center py-12 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="rounded-full bg-muted p-3 mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-muted-foreground"
-              >
-                <path d="M12 5v14" />
-                <path d="M5 12h14" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium">No habits yet</h3>
-            <p className="text-muted-foreground text-sm mt-1 max-w-[250px]">
-              Create your first habit to start tracking your progress and building better routines
-            </p>
-          </motion.div>
-        )}
-      </motion.main>
+    <div className="container mx-auto px-4 py-6 max-w-md">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold text-primary">Today</h1>
+        <Badge variant="outline" className="text-sm">
+          {new Date().toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            month: 'short', 
+            day: 'numeric' 
+          })}
+        </Badge>
+      </div>
+      
+      <DailyProgressSummary 
+        completedHabits={completedHabits} 
+        totalHabits={totalHabits} 
+      />
+      
+      <Card className="mb-6 shadow-sm border-muted">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-medium">Daily Progress</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Progress value={completionPercentage} className="h-2 mb-2" />
+          <p className="text-sm text-muted-foreground">
+            {completedHabits} of {totalHabits} habits completed
+          </p>
+        </CardContent>
+      </Card>
+      
+      <DailySummary />
+      
+      <div className="mt-6 mb-4">
+        <h2 className="text-xl font-semibold text-foreground">Your Habits</h2>
+        <p className="text-sm text-muted-foreground">Track your daily habits below</p>
+      </div>
+      
+      <HabitsList 
+        habits={habits}
+        onToggleHabit={handleToggleHabit}
+        isLoading={isLoadingHabits}
+      />
+      
+      <div className="mt-8 mb-20">
+        <DailyGoalTracker />
+      </div>
       
       <FloatingActionButton onClick={() => setIsAddModalOpen(true)} />
       
-      <AddHabitModal 
-        open={isAddModalOpen} 
-        onOpenChange={setIsAddModalOpen} 
+      <AddHabitModal
+        open={isAddModalOpen}
+        onOpenChange={setIsAddModalOpen}
         onAddHabit={handleAddHabit}
       />
       
@@ -202,7 +163,7 @@ const Today: React.FC = () => {
         onOpenChange={setShowHabitDetail}
         onEditHabit={handleUpdateHabit}
       />
-    </>
+    </div>
   );
 };
 

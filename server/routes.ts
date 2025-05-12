@@ -1,21 +1,12 @@
-import type { Express, Request } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { 
-  insertHabitSchema, 
-  insertDailyGoalSchema,
-  insertDbtSleepSchema,
-  insertDbtEmotionSchema,
-  insertDbtUrgeSchema,
-  insertDbtSkillSchema,
-  insertDbtEventSchema,
-  insertUserSchema
-} from "@shared/schema";
-import { setupAuth } from "./auth";
+import { Express, Request, Response, NextFunction, Server } from "express";
+import { createServer } from "http";
 import { z } from "zod";
+import { storage } from "./storage";
+import { insertHabitSchema } from "@shared/schema";
 import { getTherapeuticResponse, getCopingStrategy, analyzeDailyReflection } from "./anthropicService";
+import { HabitController } from "./interfaces/controllers/HabitController";
 
-// Extend Request type with authenticated user
+// Request with authenticated user (from auth middleware)
 interface AuthRequest extends Request {
   user?: {
     id: number;
@@ -23,136 +14,50 @@ interface AuthRequest extends Request {
   }
 }
 
-// Middleware to check if user is authenticated
 function isAuthenticated(req: AuthRequest, res: any, next: any) {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
   }
-  next();
+  return res.status(401).json({ message: "Not authenticated" });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication routes and middleware
-  setupAuth(app);
-  // Get all habits
-  app.get("/api/habits", isAuthenticated, async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      
-      const habits = await storage.getHabits(userId);
-      res.json(habits);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+  const server = createServer(app);
+  
+  // Initialize the habit controller
+  const habitController = new HabitController();
+  
+  // Get authenticated user
+  app.get("/api/user", (req: AuthRequest, res) => {
+    if (req.user) {
+      res.json(req.user);
+    } else {
+      res.status(401).json({ message: "Not authenticated" });
     }
   });
-
-  // Get a specific habit
-  app.get("/api/habits/:id", isAuthenticated, async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      
-      const habitId = parseInt(req.params.id);
-      if (isNaN(habitId)) {
-        return res.status(400).json({ message: "Invalid habit ID" });
-      }
-
-      const habit = await storage.getHabit(habitId);
-      if (!habit) {
-        return res.status(404).json({ message: "Habit not found" });
-      }
-      
-      // Ensure the habit belongs to the authenticated user
-      if (habit.userId !== userId) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-
-      res.json(habit);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
+  
+  // Get all habits for a user
+  app.get("/api/habits", isAuthenticated, (req: AuthRequest, res) => {
+    habitController.getUserHabits(req, res);
   });
-
+  
+  // Get a habit by ID
+  app.get("/api/habits/:id", isAuthenticated, (req: AuthRequest, res) => {
+    habitController.getHabitById(req, res);
+  });
+  
   // Create a new habit
-  app.post("/api/habits", isAuthenticated, async (req: AuthRequest, res) => {
-    try {
-      console.log("POST /api/habits received with body:", req.body);
-      
-      const userId = req.user?.id;
-      if (!userId) {
-        console.log("Habit creation rejected: User not authenticated");
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      
-      console.log("Creating habit for authenticated user:", userId);
-      
-      try {
-        const habitData = insertHabitSchema.parse({
-          ...req.body,
-          userId
-        });
-        
-        console.log("Parsed habit data:", habitData);
-        
-        const newHabit = await storage.createHabit(habitData);
-        console.log("Habit created successfully:", newHabit);
-        
-        res.status(201).json(newHabit);
-      } catch (validationError) {
-        if (validationError instanceof z.ZodError) {
-          console.log("Validation error:", validationError.errors);
-          return res.status(400).json({ message: validationError.errors });
-        }
-        throw validationError;
-      }
-    } catch (error: any) {
-      console.error("Error creating habit:", error);
-      res.status(500).json({ message: error.message });
-    }
+  app.post("/api/habits", isAuthenticated, (req: AuthRequest, res) => {
+    habitController.createHabit(req, res);
   });
-
+  
   // Toggle habit completion for a specific date
-  app.post("/api/habits/:id/toggle", async (req, res) => {
-    try {
-      const habitId = parseInt(req.params.id);
-      if (isNaN(habitId)) {
-        return res.status(400).json({ message: "Invalid habit ID" });
-      }
-
-      const { date, completed } = req.body;
-      if (!date || typeof completed !== "boolean") {
-        return res.status(400).json({ message: "Date and completed status are required" });
-      }
-
-      const habit = await storage.toggleHabitCompletion(habitId, date, completed);
-      res.json(habit);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
+  app.post("/api/habits/:id/toggle", isAuthenticated, (req: AuthRequest, res) => {
+    habitController.toggleHabitCompletion(req, res);
   });
-
-  // Update a habit
-  app.patch("/api/habits/:id", async (req, res) => {
-    try {
-      const habitId = parseInt(req.params.id);
-      if (isNaN(habitId)) {
-        return res.status(400).json({ message: "Invalid habit ID" });
-      }
-
-      const updatedHabit = await storage.updateHabit(habitId, req.body);
-      res.json(updatedHabit);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
+  
   // Delete a habit
-  app.delete("/api/habits/:id", async (req, res) => {
+  app.delete("/api/habits/:id", isAuthenticated, async (req: AuthRequest, res) => {
     try {
       const habitId = parseInt(req.params.id);
       if (isNaN(habitId)) {
@@ -164,79 +69,361 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Habit not found" });
       }
 
-      res.status(204).end();
+      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-
-  // Clear all habits (for reset functionality)
-  app.delete("/api/habits", async (req, res) => {
+  
+  // Clear all habits (for testing)
+  app.delete("/api/habits", isAuthenticated, async (req, res) => {
     try {
       await storage.clearAllHabits();
-      res.status(204).end();
+      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-
-  // Reset habit statuses for a particular day
-  app.post("/api/habits/reset", async (req, res) => {
+  
+  // Clear habit completions for a specific date (for testing)
+  app.delete("/api/completions", isAuthenticated, async (req, res) => {
     try {
-      const { date } = req.body;
-      if (!date) {
+      const { date } = req.query;
+      if (!date || typeof date !== "string") {
         return res.status(400).json({ message: "Date is required" });
       }
-
+      
       await storage.clearHabitCompletions(date);
-      res.status(204).end();
+      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-
-  // Get analytics data
-  app.get("/api/analytics", async (req, res) => {
+  
+  // Get daily goals for a specific date
+  app.get("/api/daily-goals/:date", isAuthenticated, async (req: AuthRequest, res) => {
     try {
-      const habits = await storage.getHabits();
+      const date = req.params.date;
+      const userId = req.user?.id;
       
-      // Calculate overall completion rate
-      const totalCompletions = habits.reduce((sum, habit) => {
-        return sum + habit.completionRecords.filter(r => r.completed).length;
-      }, 0);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
-      const totalPossible = habits.length * 30; // Assuming 30 days per month
-      const completionRate = totalPossible > 0 ? (totalCompletions / totalPossible) * 100 : 0;
+      const dailyGoal = await storage.getDailyGoal(date, userId);
+      res.json(dailyGoal || { date, userId });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Save daily goals for a specific date
+  app.post("/api/daily-goals/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
       
-      // Find best performing habit
-      const habitPerformance = habits.map(habit => {
-        const completions = habit.completionRecords.filter(r => r.completed).length;
-        return {
-          id: habit.id,
-          name: habit.name,
-          completionRate: completions / 30 * 100,
-          streak: habit.streak
-        };
-      });
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
-      const bestHabit = habitPerformance.length > 0 
-        ? habitPerformance.reduce((prev, current) => 
-            (prev.completionRate > current.completionRate) ? prev : current
-          )
-        : null;
+      const dailyGoal = await storage.saveDailyGoal(date, userId, req.body);
+      res.json(dailyGoal);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get DBT sleep data for a specific date
+  app.get("/api/dbt/sleep/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
       
-      const worstHabit = habitPerformance.length > 0 
-        ? habitPerformance.reduce((prev, current) => 
-            (prev.completionRate < current.completionRate) ? prev : current
-          )
-        : null;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
-      // Calculate longest streak
-      const longestStreak = habits.reduce((max, habit) => Math.max(max, habit.streak), 0);
+      const sleepData = await storage.getDbtSleepData(date, userId);
+      res.json(sleepData || null);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Save DBT sleep data for a specific date
+  app.post("/api/dbt/sleep/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const sleepData = await storage.saveDbtSleepData(date, userId, req.body);
+      res.json(sleepData);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get DBT emotions for a specific date
+  app.get("/api/dbt/emotions/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const emotions = await storage.getDbtEmotionsForDate(date, userId);
+      res.json(emotions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Save DBT emotions for a specific date
+  app.post("/api/dbt/emotions/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { emotion, intensity } = req.body;
+      if (!emotion || !intensity) {
+        return res.status(400).json({ message: "Emotion and intensity are required" });
+      }
+      
+      const emotionData = await storage.saveDbtEmotion(date, userId, emotion, intensity);
+      res.json(emotionData);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get DBT urges for a specific date
+  app.get("/api/dbt/urges/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const urges = await storage.getDbtUrgesForDate(date, userId);
+      res.json(urges);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Save DBT urges for a specific date
+  app.post("/api/dbt/urges/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { urgeType, level, action } = req.body;
+      if (!urgeType || !level) {
+        return res.status(400).json({ message: "Urge type and level are required" });
+      }
+      
+      const urgeData = await storage.saveDbtUrge(date, userId, urgeType, level, action || "");
+      res.json(urgeData);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get DBT skills for a specific date
+  app.get("/api/dbt/skills/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const skills = await storage.getDbtSkillsForDate(date, userId);
+      res.json(skills);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Toggle DBT skill for a specific date
+  app.post("/api/dbt/skills/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { category, skill, used } = req.body;
+      if (!category || !skill || typeof used !== "boolean") {
+        return res.status(400).json({ message: "Category, skill, and used status are required" });
+      }
+      
+      const skillData = await storage.toggleDbtSkill(date, userId, category, skill, used);
+      res.json(skillData);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get DBT event for a specific date
+  app.get("/api/dbt/events/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const event = await storage.getDbtEventForDate(date, userId);
+      res.json(event || null);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Save DBT event for a specific date
+  app.post("/api/dbt/events/:date", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const date = req.params.date;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { eventDescription } = req.body;
+      if (!eventDescription) {
+        return res.status(400).json({ message: "Event description is required" });
+      }
+      
+      const eventData = await storage.saveDbtEvent(date, userId, eventDescription);
+      res.json(eventData);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Create a therapeutic chat endpoint using Anthropic
+  app.post("/api/therapy/chat", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const { message, history } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      
+      const response = await getTherapeuticResponse(message, history || []);
+      res.json({ response });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get coping strategies for emotions
+  app.post("/api/therapy/coping-strategy", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const { emotion, intensity } = req.body;
+      
+      if (!emotion || !intensity) {
+        return res.status(400).json({ message: "Emotion and intensity are required" });
+      }
+      
+      const strategy = await getCopingStrategy(emotion, intensity);
+      res.json({ strategy });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get analysis of daily reflection
+  app.post("/api/therapy/analyze-reflection", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const { 
+        todayGoal, 
+        todayHighlight, 
+        tomorrowGoal, 
+        gratitude,
+        dbtSkillUsed 
+      } = req.body;
+      
+      if (!todayGoal || !todayHighlight || !tomorrowGoal || !gratitude) {
+        return res.status(400).json({ message: "All reflection fields are required" });
+      }
+      
+      const analysis = await analyzeDailyReflection(
+        todayGoal,
+        todayHighlight,
+        tomorrowGoal,
+        gratitude,
+        dbtSkillUsed || ""
+      );
+      
+      res.json({ analysis });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Get weekly habit insights
+  app.get("/api/habits/insights/:habitId", isAuthenticated, async (req: AuthRequest, res) => {
+    try {
+      const habitId = parseInt(req.params.habitId);
+      if (isNaN(habitId)) {
+        return res.status(400).json({ message: "Invalid habit ID" });
+      }
+      
+      const habit = await storage.getHabit(habitId);
+      if (!habit) {
+        return res.status(404).json({ message: "Habit not found" });
+      }
+      
+      // Generate some basic insights
+      const completions = habit.completionRecords;
+      const totalDays = completions.length;
+      const completedDays = completions.filter(c => c.completed).length;
+      const completionRate = totalDays > 0 ? (completedDays / totalDays) * 100 : 0;
+      
+      // Get the longest streak
+      const longestStreak = habit.streak;
+      
+      // Determine if this is the best or worst habit
+      const bestHabit = completionRate > 80;
+      const worstHabit = completionRate < 30;
+      
+      // Generate performance rating
+      let habitPerformance;
+      if (completionRate > 80) habitPerformance = "excellent";
+      else if (completionRate > 60) habitPerformance = "good";
+      else if (completionRate > 40) habitPerformance = "average";
+      else if (completionRate > 20) habitPerformance = "poor";
+      else habitPerformance = "very poor";
       
       res.json({
-        totalHabits: habits.length,
-        totalCompletions,
+        habitId,
+        name: habit.name,
+        totalDays,
+        completedDays,
         completionRate: Math.round(completionRate * 10) / 10,
         longestStreak,
         bestHabit,
@@ -248,280 +435,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Daily Goals API Routes
-  // Get a daily goal for a specific date
-  app.get("/api/daily-goals/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const dailyGoal = await storage.getDailyGoal(dateStr);
-      
-      if (!dailyGoal) {
-        return res.status(404).json({ message: "No daily goal found for this date" });
-      }
-      
-      res.json(dailyGoal);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Save a daily goal for a specific date
-  app.post("/api/daily-goals/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const goalData = insertDailyGoalSchema.parse({
-        ...req.body,
-        date: dateStr
-      });
-      
-      const savedGoal = await storage.saveDailyGoal(dateStr, {
-        todayGoal: goalData.todayGoal,
-        tomorrowGoal: goalData.tomorrowGoal,
-        todayHighlight: goalData.todayHighlight,
-        gratitude: goalData.gratitude,
-        dbtSkillUsed: goalData.dbtSkillUsed
-      });
-      
-      res.status(201).json(savedGoal);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
-      }
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // DBT Diary Card - Sleep API Routes
-  // Get sleep data for a specific date
-  app.get("/api/dbt/sleep/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const sleepData = await storage.getDbtSleepData(dateStr);
-      
-      if (!sleepData) {
-        return res.json({});
-      }
-      
-      res.json(sleepData);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Save sleep data for a specific date
-  app.post("/api/dbt/sleep/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const sleepData = insertDbtSleepSchema.parse({
-        ...req.body,
-        date: dateStr
-      });
-      
-      const savedData = await storage.saveDbtSleepData(dateStr, {
-        hoursSlept: sleepData.hoursSlept || "",
-        troubleFalling: sleepData.troubleFalling || "",
-        troubleStaying: sleepData.troubleStaying || "",
-        troubleWaking: sleepData.troubleWaking || ""
-      });
-      
-      res.json(savedData);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
-      }
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // DBT Diary Card - Emotions API Routes
-  // Get emotions for a specific date
-  app.get("/api/dbt/emotions/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const emotions = await storage.getDbtEmotionsForDate(dateStr);
-      res.json(emotions);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Save an emotion for a specific date
-  app.post("/api/dbt/emotions/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const { emotion, intensity } = req.body;
-      
-      if (!emotion) {
-        return res.status(400).json({ message: "Emotion name is required" });
-      }
-      
-      const savedEmotion = await storage.saveDbtEmotion(dateStr, emotion, intensity || "");
-      res.status(201).json(savedEmotion);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // DBT Diary Card - Urges API Routes
-  // Get urges for a specific date
-  app.get("/api/dbt/urges/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const urges = await storage.getDbtUrgesForDate(dateStr);
-      res.json(urges);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Save an urge for a specific date
-  app.post("/api/dbt/urges/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const { urgeType, level, action } = req.body;
-      
-      if (!urgeType) {
-        return res.status(400).json({ message: "Urge type is required" });
-      }
-      
-      const savedUrge = await storage.saveDbtUrge(dateStr, urgeType, level || "", action || "");
-      res.status(201).json(savedUrge);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // DBT Diary Card - Skills API Routes
-  // Get skills for a specific date
-  app.get("/api/dbt/skills/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const skills = await storage.getDbtSkillsForDate(dateStr);
-      res.json(skills);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Toggle a skill for a specific date
-  app.post("/api/dbt/skills/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const { category, skill, used } = req.body;
-      
-      if (!category || !skill) {
-        return res.status(400).json({ message: "Category and skill name are required" });
-      }
-      
-      const savedSkill = await storage.toggleDbtSkill(dateStr, category, skill, !!used);
-      res.status(201).json(savedSkill);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // DBT Diary Card - Events API Routes
-  // Get event for a specific date
-  app.get("/api/dbt/events/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const event = await storage.getDbtEventForDate(dateStr);
-      
-      if (!event) {
-        return res.json({});
-      }
-      
-      res.json(event);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Save an event for a specific date
-  app.post("/api/dbt/events/:date", async (req, res) => {
-    try {
-      const dateStr = req.params.date;
-      const { eventDescription } = req.body;
-      
-      if (!eventDescription) {
-        return res.status(400).json({ message: "Event description is required" });
-      }
-      
-      const savedEvent = await storage.saveDbtEvent(dateStr, eventDescription);
-      res.status(201).json(savedEvent);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // AI Therapy Companion Routes
-  
-  // Get therapeutic response from Claude
-  app.post("/api/therapy/chat", isAuthenticated, async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      
-      const { message, conversationHistory = [] } = req.body;
-      
-      if (!message) {
-        return res.status(400).json({ message: "Message is required" });
-      }
-      
-      const response = await getTherapeuticResponse(message, conversationHistory);
-      res.json({ response });
-    } catch (error: any) {
-      console.error("Error in therapy chat:", error);
-      res.status(500).json({ message: "Failed to get therapeutic response" });
-    }
-  });
-
-  // Get coping strategy for specific emotion
-  app.post("/api/therapy/coping-strategy", isAuthenticated, async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      
-      const { emotion, intensity } = req.body;
-      
-      if (!emotion) {
-        return res.status(400).json({ message: "Emotion is required" });
-      }
-      
-      const copingStrategy = await getCopingStrategy(emotion, intensity || "5");
-      res.json({ copingStrategy });
-    } catch (error: any) {
-      console.error("Error getting coping strategy:", error);
-      res.status(500).json({ message: "Failed to get coping strategy" });
-    }
-  });
-
-  // Analyze daily reflection
-  app.post("/api/therapy/analyze-reflection", isAuthenticated, async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      
-      const { reflection } = req.body;
-      
-      if (!reflection || !reflection.todayGoal) {
-        return res.status(400).json({ message: "Reflection data is required" });
-      }
-      
-      const analysis = await analyzeDailyReflection(reflection);
-      res.json({ analysis });
-    } catch (error: any) {
-      console.error("Error analyzing reflection:", error);
-      res.status(500).json({ message: "Failed to analyze reflection" });
-    }
-  });
-
-  const httpServer = createServer(app);
-  return httpServer;
+  return server;
 }

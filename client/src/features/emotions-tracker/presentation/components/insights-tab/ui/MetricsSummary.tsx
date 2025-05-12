@@ -53,19 +53,12 @@ const Metric: React.FC<MetricProps> = ({
   };
   
   return (
-    <div className="p-4 flex items-start">
-      {icon && (
-        <div className={`h-10 w-10 rounded-full ${bgColorClass} flex items-center justify-center mr-3 flex-shrink-0`}>
-          <div className={`h-5 w-5 ${textColorClass}`}>{icon}</div>
-        </div>
-      )}
-      <div>
-        <div className="flex items-center">
-          <span className="text-2xl font-bold">{value}</span>
-          {renderTrendIndicator()}
-        </div>
-        <div className="text-sm text-gray-500">{label}</div>
+    <div className="py-2 px-1 flex flex-col items-center text-center">
+      <div className="flex items-center justify-center">
+        <span className="text-xl font-bold">{value}</span>
+        {renderTrendIndicator()}
       </div>
+      <div className="text-[10px] text-gray-500 mt-0.5">{label}</div>
     </div>
   );
 };

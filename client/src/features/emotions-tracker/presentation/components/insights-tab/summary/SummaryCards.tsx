@@ -68,25 +68,18 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
     {
       value: trendData.length || 0,
       label: 'Total Emotions Tracked',
-      icon: <Activity />,
       color: 'bg-blue-100 text-blue-600'
     },
     {
-      value: summaryData?.dominantEmotion ? (
-        <span className="flex items-center">
-          <span className="mr-2 text-xl">{getEmoji(summaryData.dominantEmotion)}</span>
-          <span className="capitalize">{summaryData.dominantEmotion}</span>
-        </span>
-      ) : 'None',
+      value: summaryData?.dominantEmotion ? 
+        <span className="capitalize">{summaryData.dominantEmotion}</span>
+        : 'None',
       label: 'Dominant Emotion',
-      color: summaryData?.dominantEmotion ? 
-        `${getCategoryClass(summaryData.dominantEmotion)} ${getCategoryClass(summaryData.dominantEmotion).replace('bg-', 'text-')}` : 
-        'bg-gray-100 text-gray-600'
+      color: 'bg-gray-100 text-gray-600'
     },
     {
       value: getIntensity(),
       label: 'Average Intensity',
-      icon: <TrendingUp />,
       color: 'bg-orange-100 text-orange-500'
     }
   ];
@@ -99,21 +92,19 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
       iconColor="text-indigo-600"
       fullWidth
     >
-      {/* Apple Health-style metrics grid */}
+      {/* Simplified metrics grid */}
       <MetricsSummary metrics={metrics} columns={3} />
       
-      {/* Intensity visualization */}
-      {summaryData?.averageIntensity && (
-        <div className="mt-4 px-4 pb-4">
-          <div className="text-sm font-medium text-gray-600 mb-2">Intensity Scale</div>
+      {/* Simplified intensity visualization - only show when there's data */}
+      {summaryData?.averageIntensity && summaryData.averageIntensity > 0 && (
+        <div className="mt-2 px-3 pb-3">
           <Progress 
             value={Number(summaryData.averageIntensity) * 10} 
-            className="h-3 bg-gray-100" 
+            className="h-2 bg-gray-100" 
           />
-          <div className="flex justify-between text-xs mt-1 text-gray-500">
-            <span>Subtle (1)</span>
-            <span>Moderate (5)</span>
-            <span>Intense (10)</span>
+          <div className="flex justify-between text-[10px] mt-1 text-gray-500">
+            <span>Low</span>
+            <span>High</span>
           </div>
         </div>
       )}

@@ -1,18 +1,15 @@
-import { Express, Request, Response, NextFunction, Server } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
-import { insertHabitSchema } from "@shared/schema";
+import { insertHabitSchema, User as SelectUser } from "@shared/schema";
 import { getTherapeuticResponse, getCopingStrategy, analyzeDailyReflection } from "./anthropicService";
 import { HabitController } from "./interfaces/controllers/HabitController";
 import { setupAuth } from "./auth";
 
-// Request with authenticated user (from auth middleware)
-interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    username: string;
-  }
+// Reuse the AuthRequest type to match the existing User definition
+type AuthRequest = Request & {
+  user?: SelectUser;
 }
 
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
@@ -204,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<any> {
         return res.status(400).json({ message: "Emotion and intensity are required" });
       }
       
-      const emotionData = await storage.saveDbtEmotion(date, userId, emotion, intensity);
+      const emotionData = await storage.saveDbtEmotion(date, userId, emotion, intensity || "");
       res.json(emotionData);
     } catch (error: any) {
       res.status(500).json({ message: error.message });

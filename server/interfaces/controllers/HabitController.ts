@@ -10,13 +10,11 @@ import { GetUserHabitsQueryHandler } from "../../../shared/application/habit/que
 import { DrizzleHabitRepository } from "../../infrastructure/repositories/DrizzleHabitRepository";
 import { SimpleEventBus } from "../../infrastructure/event-bus/SimpleEventBus";
 import { z } from "zod";
+import { User as SelectUser } from "@shared/schema";
 
 // Request with authenticated user (from auth middleware)
-interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    username: string;
-  }
+type AuthRequest = Request & {
+  user?: SelectUser;
 }
 
 /**

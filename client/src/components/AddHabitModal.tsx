@@ -233,10 +233,21 @@ const AddHabitModal: React.FC<AddHabitModalProps> = ({
                       Cancel
                     </Button>
                     <Button
-                      type="submit"
+                      type="button" 
                       className="flex-1 bg-primary text-white rounded-[12px]"
+                      onClick={() => {
+                        console.log("Create Habit button clicked");
+                        
+                        // Manual form submission
+                        const data = form.getValues();
+                        console.log("Form values on button click:", data);
+                        onSubmit(data);
+                        
+                        // Also try the regular submit
+                        form.handleSubmit(onSubmit)();
+                      }}
                     >
-                      Create Habit
+                      Create Habit (Fixed)
                     </Button>
                   </div>
                 </form>

@@ -91,7 +91,7 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
         date: format(selectedDate, "yyyy-MM-dd")
       }];
   
-  // Save diary data to local storage when it changes
+  // Save diary data to local storage when it changes (temporary backup)
   useEffect(() => {
     const weekKey = format(currentWeekStart, "yyyy-MM-dd");
     localStorage.setItem(`dbt-diary-${weekKey}`, JSON.stringify(diaryData));
@@ -107,10 +107,121 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
     } else {
       setDiaryData(defaultDiaryCardData);
     }
-  }, [currentWeekStart]);
+    
+    // For each day in the week, load data from the API
+    dayHeaders.forEach(day => {
+      // Fetch sleep data
+      fetch(`/api/dbt/sleep/${day.date}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data) {
+            setDiaryData(prev => ({
+              ...prev,
+              sleep: {
+                ...prev.sleep,
+                [day.date]: {
+                  hoursSlept: data.hoursSlept || '',
+                  troubleFalling: data.troubleFalling || '',
+                  troubleStaying: data.troubleStaying || '',
+                  troubleWaking: data.troubleWaking || ''
+                }
+              }
+            }));
+          }
+        })
+        .catch(err => console.error('Error fetching sleep data:', err));
+      
+      // Fetch emotions data
+      fetch(`/api/dbt/emotions/${day.date}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            const emotionsForDay = {};
+            data.forEach(emotion => {
+              emotionsForDay[emotion.emotion] = emotion.intensity;
+            });
+            
+            setDiaryData(prev => ({
+              ...prev,
+              emotions: {
+                ...prev.emotions,
+                [day.date]: emotionsForDay
+              }
+            }));
+          }
+        })
+        .catch(err => console.error('Error fetching emotions data:', err));
+      
+      // Fetch urges data
+      fetch(`/api/dbt/urges/${day.date}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            const urgesForDay = {};
+            data.forEach(urge => {
+              urgesForDay[urge.urgeType] = {
+                level: urge.level,
+                action: urge.action
+              };
+            });
+            
+            setDiaryData(prev => ({
+              ...prev,
+              urges: {
+                ...prev.urges,
+                [day.date]: urgesForDay
+              }
+            }));
+          }
+        })
+        .catch(err => console.error('Error fetching urges data:', err));
+      
+      // Fetch skills data
+      fetch(`/api/dbt/skills/${day.date}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            const skillsData = {...defaultDiaryCardData.skills};
+            
+            data.forEach(skill => {
+              if (!skillsData[skill.category]) {
+                skillsData[skill.category] = {};
+              }
+              if (!skillsData[skill.category][skill.skill]) {
+                skillsData[skill.category][skill.skill] = {};
+              }
+              skillsData[skill.category][skill.skill][day.date] = skill.used;
+            });
+            
+            setDiaryData(prev => ({
+              ...prev,
+              skills: skillsData
+            }));
+          }
+        })
+        .catch(err => console.error('Error fetching skills data:', err));
+      
+      // Fetch events data
+      fetch(`/api/dbt/events/${day.date}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data) {
+            setDiaryData(prev => ({
+              ...prev,
+              events: {
+                ...prev.events,
+                [day.date]: data.eventDescription || ''
+              }
+            }));
+          }
+        })
+        .catch(err => console.error('Error fetching events data:', err));
+    });
+  }, [currentWeekStart, dayHeaders]);
   
   // Handle sleep data changes
   const handleSleepChange = (date: string, field: string, value: string) => {
+    // Update local state
     setDiaryData(prev => ({
       ...prev,
       sleep: {
@@ -121,10 +232,30 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
         }
       }
     }));
+    
+    // Save to server
+    const updatedSleepData = {
+      ...diaryData.sleep[date],
+      [field]: value
+    };
+    
+    fetch(`/api/dbt/sleep/${date}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updatedSleepData)
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to save sleep data');
+      return res.json();
+    })
+    .catch(err => console.error('Error saving sleep data:', err));
   };
   
   // Handle medication data changes
   const handleMedicationChange = (date: string, value: string) => {
+    // Update local state
     setDiaryData(prev => ({
       ...prev,
       medication: {
@@ -132,10 +263,14 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
         [date]: value
       }
     }));
+    
+    // Since there's no medication API endpoint, we can keep this in local storage only
+    // or you can add a custom endpoint for it
   };
   
   // Handle emotion data changes
   const handleEmotionChange = (date: string, emotion: string, value: string) => {
+    // Update local state
     setDiaryData(prev => ({
       ...prev,
       emotions: {
@@ -146,10 +281,28 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
         }
       }
     }));
+    
+    // Save to server
+    fetch(`/api/dbt/emotions/${date}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        emotion,
+        intensity: value
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to save emotion data');
+      return res.json();
+    })
+    .catch(err => console.error('Error saving emotion data:', err));
   };
   
   // Handle urge data changes
   const handleUrgeChange = (date: string, urge: string, field: string, value: string) => {
+    // Update local state
     setDiaryData(prev => ({
       ...prev,
       urges: {
@@ -163,10 +316,52 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
         }
       }
     }));
+    
+    // Only save to server when both level and action are set
+    if (field === 'level') {
+      const action = diaryData.urges[date]?.[urge]?.action || '';
+      
+      fetch(`/api/dbt/urges/${date}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          urgeType: urge,
+          level: value,
+          action
+        })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to save urge data');
+        return res.json();
+      })
+      .catch(err => console.error('Error saving urge data:', err));
+    } else if (field === 'action') {
+      const level = diaryData.urges[date]?.[urge]?.level || '';
+      
+      fetch(`/api/dbt/urges/${date}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          urgeType: urge,
+          level,
+          action: value
+        })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to save urge data');
+        return res.json();
+      })
+      .catch(err => console.error('Error saving urge data:', err));
+    }
   };
   
   // Handle events data changes
   const handleEventChange = (date: string, value: string) => {
+    // Update local state
     setDiaryData(prev => ({
       ...prev,
       events: {
@@ -174,10 +369,27 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
         [date]: value
       }
     }));
+    
+    // Save to server
+    fetch(`/api/dbt/events/${date}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        eventDescription: value
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to save event data');
+      return res.json();
+    })
+    .catch(err => console.error('Error saving event data:', err));
   };
   
   // Handle skill checkboxes
   const handleSkillChange = (category: string, skill: string, date: string, checked: boolean) => {
+    // Update local state
     setDiaryData(prev => ({
       ...prev,
       skills: {
@@ -191,6 +403,24 @@ const DBTDiaryCardTracker: React.FC<DBTDiaryCardTrackerProps> = ({
         }
       }
     }));
+    
+    // Save to server
+    fetch(`/api/dbt/skills/${date}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        category,
+        skill,
+        used: checked
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to save skill data');
+      return res.json();
+    })
+    .catch(err => console.error('Error saving skill data:', err));
   };
   
   const getEmotionValue = (date: string, emotion: string) => {

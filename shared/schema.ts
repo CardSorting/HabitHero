@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, date, varchar, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, date, varchar, unique, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -112,6 +112,22 @@ export const dbtEvents = pgTable("dbt_events", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// New table for enhanced emotions tracking
+export const emotionTrackingEntries = pgTable("emotion_tracking_entries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  date: date("date").notNull(),
+  emotionId: varchar("emotion_id", { length: 50 }).notNull(),
+  emotionName: varchar("emotion_name", { length: 100 }).notNull(),
+  categoryId: varchar("category_id", { length: 50 }).notNull(),
+  intensity: integer("intensity").notNull(),
+  notes: text("notes"),
+  triggers: jsonb("triggers"),
+  copingMechanisms: jsonb("coping_mechanisms"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Define relationships
 export const usersRelations = relations(users, ({ many }) => ({
   habits: many(habits),
@@ -121,6 +137,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   dbtUrges: many(dbtUrges),
   dbtSkills: many(dbtSkills),
   dbtEvents: many(dbtEvents),
+  emotionTrackingEntries: many(emotionTrackingEntries),
 }));
 
 export const habitsRelations = relations(habits, ({ many, one }) => ({
@@ -180,6 +197,13 @@ export const dbtEventsRelations = relations(dbtEvents, ({ one }) => ({
   }),
 }));
 
+export const emotionTrackingEntriesRelations = relations(emotionTrackingEntries, ({ one }) => ({
+  user: one(users, {
+    fields: [emotionTrackingEntries.userId],
+    references: [users.id],
+  }),
+}));
+
 // Create user insert schema
 export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email().nullable().optional(),
@@ -221,6 +245,12 @@ export const insertDbtEventSchema = createInsertSchema(dbtEvents).omit({
   createdAt: true,
 });
 
+export const insertEmotionTrackingEntrySchema = createInsertSchema(emotionTrackingEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
@@ -247,3 +277,6 @@ export type InsertDbtSkill = z.infer<typeof insertDbtSkillSchema>;
 
 export type DbtEvent = typeof dbtEvents.$inferSelect;
 export type InsertDbtEvent = z.infer<typeof insertDbtEventSchema>;
+
+export type EmotionTrackingEntry = typeof emotionTrackingEntries.$inferSelect;
+export type InsertEmotionTrackingEntry = z.infer<typeof insertEmotionTrackingEntrySchema>;

@@ -575,4 +575,254 @@ export class DatabaseStorage implements IStorage {
       return newEvent;
     }
   }
+
+  // Wellness Challenge methods
+  
+  async getWellnessChallenges(userId?: number): Promise<WellnessChallenge[]> {
+    let query = db.select().from(wellnessChallenges);
+    
+    if (userId) {
+      query = query.where(eq(wellnessChallenges.userId, userId));
+    }
+    
+    return await query;
+  }
+
+  async getWellnessChallengesByStatus(status: string): Promise<WellnessChallenge[]> {
+    return await db
+      .select()
+      .from(wellnessChallenges)
+      .where(eq(wellnessChallenges.status, status));
+  }
+
+  async getWellnessChallengesByType(type: string): Promise<WellnessChallenge[]> {
+    return await db
+      .select()
+      .from(wellnessChallenges)
+      .where(eq(wellnessChallenges.type, type));
+  }
+
+  async getWellnessChallenge(id: number): Promise<WellnessChallengeWithDetails | undefined> {
+    const [challenge] = await db
+      .select()
+      .from(wellnessChallenges)
+      .where(eq(wellnessChallenges.id, id));
+
+    if (!challenge) {
+      return undefined;
+    }
+
+    const goals = await this.getWellnessChallengeGoals(id);
+    const progressEntries = await this.getWellnessChallengeProgress(id);
+
+    return {
+      ...challenge,
+      goals,
+      progressEntries
+    };
+  }
+
+  async createWellnessChallenge(challenge: InsertWellnessChallenge): Promise<WellnessChallenge> {
+    const [newChallenge] = await db
+      .insert(wellnessChallenges)
+      .values(challenge)
+      .returning();
+    
+    return newChallenge;
+  }
+
+  async updateWellnessChallenge(id: number, challenge: Partial<WellnessChallenge>): Promise<WellnessChallenge> {
+    const [updatedChallenge] = await db
+      .update(wellnessChallenges)
+      .set(challenge)
+      .where(eq(wellnessChallenges.id, id))
+      .returning();
+    
+    return updatedChallenge;
+  }
+
+  async deleteWellnessChallenge(id: number): Promise<boolean> {
+    // First delete related goals and progress entries
+    await db
+      .delete(wellnessChallengeGoals)
+      .where(eq(wellnessChallengeGoals.challengeId, id));
+    
+    await db
+      .delete(wellnessChallengeProgress)
+      .where(eq(wellnessChallengeProgress.challengeId, id));
+    
+    // Then delete the challenge
+    const result = await db
+      .delete(wellnessChallenges)
+      .where(eq(wellnessChallenges.id, id))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async updateWellnessChallengeStatus(id: number, status: string): Promise<WellnessChallenge> {
+    const [updatedChallenge] = await db
+      .update(wellnessChallenges)
+      .set({ status })
+      .where(eq(wellnessChallenges.id, id))
+      .returning();
+    
+    return updatedChallenge;
+  }
+
+  // Challenge goals methods
+  
+  async getWellnessChallengeGoals(challengeId: number): Promise<WellnessChallengeGoal[]> {
+    return await db
+      .select()
+      .from(wellnessChallengeGoals)
+      .where(eq(wellnessChallengeGoals.challengeId, challengeId));
+  }
+
+  async createWellnessChallengeGoal(goal: InsertWellnessChallengeGoal): Promise<WellnessChallengeGoal> {
+    const [newGoal] = await db
+      .insert(wellnessChallengeGoals)
+      .values(goal)
+      .returning();
+    
+    return newGoal;
+  }
+
+  // Challenge progress methods
+  
+  async getWellnessChallengeProgress(challengeId: number): Promise<WellnessChallengeProgress[]> {
+    return await db
+      .select()
+      .from(wellnessChallengeProgress)
+      .where(eq(wellnessChallengeProgress.challengeId, challengeId))
+      .orderBy(desc(wellnessChallengeProgress.date));
+  }
+
+  async getWellnessChallengeProgressForDate(challengeId: number, dateStr: string): Promise<WellnessChallengeProgress[]> {
+    const date = new Date(dateStr);
+    
+    return await db
+      .select()
+      .from(wellnessChallengeProgress)
+      .where(and(
+        eq(wellnessChallengeProgress.challengeId, challengeId),
+        eq(wellnessChallengeProgress.date, date)
+      ));
+  }
+
+  async recordWellnessChallengeProgress(progress: InsertWellnessChallengeProgress): Promise<WellnessChallengeProgress> {
+    // Check if there's already a progress entry for this date
+    const existingProgress = await this.getWellnessChallengeProgressForDate(
+      progress.challengeId, 
+      progress.date.toString()
+    );
+    
+    if (existingProgress.length > 0) {
+      // Update existing progress
+      const [updatedProgress] = await db
+        .update(wellnessChallengeProgress)
+        .set({ 
+          value: progress.value,
+          notes: progress.notes
+        })
+        .where(eq(wellnessChallengeProgress.id, existingProgress[0].id))
+        .returning();
+      
+      return updatedProgress;
+    } else {
+      // Create new progress entry
+      const [newProgress] = await db
+        .insert(wellnessChallengeProgress)
+        .values(progress)
+        .returning();
+      
+      return newProgress;
+    }
+  }
+
+  // Challenge analytics methods
+  
+  async getChallengeSummary(userId: number): Promise<ChallengeSummary> {
+    const challenges = await this.getWellnessChallenges(userId);
+    
+    // Calculate summary statistics
+    const totalChallenges = challenges.length;
+    const activeChallenges = challenges.filter(c => c.status === 'active').length;
+    const completedChallenges = challenges.filter(c => c.status === 'completed').length;
+    const abandonedChallenges = challenges.filter(c => c.status === 'abandoned').length;
+    
+    // Calculate average completion rate (for completed challenges)
+    let averageCompletionRate = 0;
+    if (completedChallenges > 0) {
+      // This would normally involve more complex calculation looking at progress entries
+      // For now, use a simpler calculation
+      averageCompletionRate = 100;
+    }
+    
+    return {
+      totalChallenges,
+      activeChallenges,
+      completedChallenges,
+      abandonedChallenges,
+      averageCompletionRate
+    };
+  }
+
+  async getChallengeStreak(challengeId: number): Promise<ChallengeStreak> {
+    const progress = await this.getWellnessChallengeProgress(challengeId);
+    
+    // Sort progress by date (newest first)
+    const sortedProgress = [...progress].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    // Calculate current streak
+    let currentStreak = 0;
+    let longestStreak = 0;
+    
+    // For simplicity, consider a streak as consecutive days with any progress value > 0
+    // In a real application, this would be more complex, considering the challenge's frequency
+    if (sortedProgress.length > 0) {
+      // Start with 1 if the most recent entry has a value > 0
+      currentStreak = sortedProgress[0].value > 0 ? 1 : 0;
+      let streakCount = currentStreak;
+      
+      for (let i = 0; i < sortedProgress.length - 1; i++) {
+        const currentDate = new Date(sortedProgress[i].date);
+        const nextDate = new Date(sortedProgress[i + 1].date);
+        
+        // Check if dates are consecutive by checking if they're 1 day apart
+        const daysDifference = Math.floor(
+          (currentDate.getTime() - nextDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        
+        if (daysDifference === 1 && sortedProgress[i + 1].value > 0) {
+          streakCount++;
+        } else {
+          // Break in streak
+          if (streakCount > longestStreak) {
+            longestStreak = streakCount;
+          }
+          
+          // Reset streak if we're still counting current streak
+          if (i < currentStreak) {
+            currentStreak = 0;
+          }
+          
+          streakCount = sortedProgress[i + 1].value > 0 ? 1 : 0;
+        }
+      }
+      
+      // Update longest streak if needed
+      if (streakCount > longestStreak) {
+        longestStreak = streakCount;
+      }
+    }
+    
+    return {
+      challengeId,
+      currentStreak,
+      longestStreak
+    };
+  }
 }

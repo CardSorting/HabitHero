@@ -4,6 +4,7 @@
 import { Express, Request, Response, NextFunction } from 'express';
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from './db';
+import { storage } from './storage';
 import { 
   wellnessChallenges, 
   wellnessChallengeGoals, 
@@ -41,10 +42,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const challenges = await db.query.wellnessChallenges.findMany({
-        where: eq(wellnessChallenges.userId, userId),
-        orderBy: (challenges) => [challenges.createdAt],
-      });
+      const challenges = await storage.getWellnessChallenges(userId);
       
       res.json(challenges);
     } catch (error) {
@@ -65,13 +63,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const challenges = await db.query.wellnessChallenges.findMany({
-        where: and(
-          eq(wellnessChallenges.userId, userId),
-          eq(wellnessChallenges.status, status)
-        ),
-        orderBy: (challenges) => [challenges.createdAt],
-      });
+      const challenges = await storage.getWellnessChallengesByStatus(status);
       
       res.json(challenges);
     } catch (error) {
@@ -92,13 +84,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const challenges = await db.query.wellnessChallenges.findMany({
-        where: and(
-          eq(wellnessChallenges.userId, userId),
-          eq(wellnessChallenges.type, type)
-        ),
-        orderBy: (challenges) => [challenges.createdAt],
-      });
+      const challenges = await storage.getWellnessChallengesByType(type);
       
       res.json(challenges);
     } catch (error) {

@@ -1,280 +1,110 @@
 /**
- * React Context for Wellness Challenge feature
- * Provides access to challenge data and operations throughout component tree
+ * Context provider for wellness challenges
+ * Follows Dependency Injection pattern for better testability and loose coupling
  */
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+import React, { createContext, useContext } from 'react';
 import { 
-  WellnessChallenge, 
-  WellnessChallengeWithDetails, 
-  ChallengeGoal, 
-  ChallengeProgress, 
-  ChallengeType,
-  ChallengeFrequency,
-  ChallengeStatus,
-  CreateChallengeData,
-  UpdateChallengeData,
-  CreateChallengeGoalData,
-  CreateChallengeProgressData
+  ChallengeCategory, 
+  ChallengeId, 
+  UserId, 
+  WellnessChallenge 
 } from '../../domain/models';
-import { getWellnessChallengeService } from '../services/serviceFactory';
-import { WellnessChallengeService } from '../../application/WellnessChallengeService';
+import { WellnessChallengeRepository, WellnessChallengeDataSource } from '../../domain/repositories';
+import { ApiWellnessChallengeRepository } from '../../infrastructure/repositories/ApiWellnessChallengeRepository';
+import { PreDefinedWellnessChallengeDataSource } from '../../infrastructure/data-sources/PreDefinedWellnessChallengeDataSource';
+import { SimpleEventBus } from '../../infrastructure/events/SimpleEventBus';
+import { EventBus } from '@/shared/application/shared/EventBus';
+import { GetChallengesByCategoryQuery } from '../../application/queries/GetChallengesByCategoryQuery';
+import { GetChallengesByCategoryQueryHandler } from '../../application/queries/handlers/GetChallengesByCategoryQueryHandler';
+import { GetActiveChallengesQuery } from '../../application/queries/GetActiveChallengesQuery';
+import { GetActiveChallengesQueryHandler } from '../../application/queries/handlers/GetActiveChallengesQueryHandler';
+import { ActivateChallengeCommand } from '../../application/commands/ActivateChallengeCommand';
+import { ActivateChallengeCommandHandler } from '../../application/commands/handlers/ActivateChallengeCommandHandler';
+import { AbandonChallengeCommand } from '../../application/commands/AbandonChallengeCommand';
+import { AbandonChallengeCommandHandler } from '../../application/commands/handlers/AbandonChallengeCommandHandler';
 
-// Create service instance
-const wellnessChallengeService = getWellnessChallengeService();
-
-// Context state type
+// Define the shape of our context
 interface WellnessChallengeContextType {
-  // Data state
-  challenges: WellnessChallenge[];
-  selectedChallenge: WellnessChallengeWithDetails | null;
-  loading: boolean;
-  error: Error | null;
+  // Queries
+  getChallengesByCategory: (category: ChallengeCategory, page?: number, limit?: number) => Promise<WellnessChallenge[]>;
+  getActiveChallenges: (userId: UserId) => Promise<WellnessChallenge[]>;
   
-  // Actions
-  refreshChallenges: () => Promise<void>;
-  selectChallenge: (id: number) => Promise<void>;
-  createChallenge: (data: CreateChallengeData) => Promise<WellnessChallenge>;
-  updateChallenge: (id: number, data: UpdateChallengeData) => Promise<WellnessChallenge>;
-  deleteChallenge: (id: number) => Promise<boolean>;
-  updateChallengeStatus: (id: number, status: ChallengeStatus) => Promise<WellnessChallenge>;
-  createChallengeGoal: (data: CreateChallengeGoalData) => Promise<ChallengeGoal>;
-  recordProgress: (data: CreateChallengeProgressData) => Promise<ChallengeProgress>;
+  // Commands
+  activateChallenge: (challengeId: ChallengeId, userId: UserId) => Promise<WellnessChallenge>;
+  abandonChallenge: (challengeId: ChallengeId, userId: UserId) => Promise<WellnessChallenge>;
+  
+  // Available challenge categories
+  availableCategories: ChallengeCategory[];
 }
 
-// Create context with default values
-const WellnessChallengeContext = createContext<WellnessChallengeContextType>({
-  challenges: [],
-  selectedChallenge: null,
-  loading: false,
-  error: null,
-  
-  refreshChallenges: async () => {},
-  selectChallenge: async () => {},
-  createChallenge: async () => {
-    throw new Error('Not implemented');
-  },
-  updateChallenge: async () => {
-    throw new Error('Not implemented');
-  },
-  deleteChallenge: async () => false,
-  updateChallengeStatus: async () => {
-    throw new Error('Not implemented');
-  },
-  createChallengeGoal: async () => {
-    throw new Error('Not implemented');
-  },
-  recordProgress: async () => {
-    throw new Error('Not implemented');
-  },
-});
+// Create the context with a default empty value
+const WellnessChallengeContext = createContext<WellnessChallengeContextType | undefined>(undefined);
 
-// Context provider props type
-interface WellnessChallengeProviderProps {
-  children: ReactNode;
-  userId?: number;
-}
-
-// Context provider component
-export const WellnessChallengeProvider: React.FC<WellnessChallengeProviderProps> = ({
-  children,
-  userId,
-}) => {
-  // State
-  const [challenges, setChallenges] = useState<WellnessChallenge[]>([]);
-  const [selectedChallenge, setSelectedChallenge] = useState<WellnessChallengeWithDetails | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
+// Create a provider component
+export const WellnessChallengeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Instantiate our infrastructure components
+  const eventBus: EventBus = React.useMemo(() => new SimpleEventBus(), []);
+  const challengeRepository: WellnessChallengeRepository = React.useMemo(() => new ApiWellnessChallengeRepository(), []);
+  const challengeDataSource: WellnessChallengeDataSource = React.useMemo(() => new PreDefinedWellnessChallengeDataSource(), []);
   
-  // Load challenges on mount or userId change
-  useEffect(() => {
-    if (userId) {
-      refreshChallenges();
-    }
-  }, [userId]);
+  // Create our query handlers
+  const getChallengesByCategoryHandler = React.useMemo(() => 
+    new GetChallengesByCategoryQueryHandler(challengeRepository), 
+    [challengeRepository]
+  );
   
-  // Methods
-  const refreshChallenges = async () => {
-    if (!userId) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await wellnessChallengeService.getChallengesForUser(userId);
-      setChallenges(data);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load challenges'));
-      console.error('Error loading challenges:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const getActiveChallengesHandler = React.useMemo(() => 
+    new GetActiveChallengesQueryHandler(challengeRepository), 
+    [challengeRepository]
+  );
   
-  const selectChallenge = async (id: number) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await wellnessChallengeService.getChallengeById(id);
-      setSelectedChallenge(data);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load challenge details'));
-      console.error('Error loading challenge details:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Create our command handlers
+  const activateChallengeHandler = React.useMemo(() => 
+    new ActivateChallengeCommandHandler(challengeRepository, eventBus), 
+    [challengeRepository, eventBus]
+  );
   
-  const createChallenge = async (data: CreateChallengeData): Promise<WellnessChallenge> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const newChallenge = await wellnessChallengeService.createChallenge(data);
-      await refreshChallenges();
-      return newChallenge;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to create challenge'));
-      console.error('Error creating challenge:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+  const abandonChallengeHandler = React.useMemo(() => 
+    new AbandonChallengeCommandHandler(challengeRepository, eventBus), 
+    [challengeRepository, eventBus]
+  );
   
-  const updateChallenge = async (id: number, data: UpdateChallengeData): Promise<WellnessChallenge> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const updatedChallenge = await wellnessChallengeService.updateChallenge(id, data);
-      
-      // Update local state
-      if (selectedChallenge && selectedChallenge.id === id) {
-        setSelectedChallenge({
-          ...selectedChallenge,
-          ...updatedChallenge,
-        });
-      }
-      
-      await refreshChallenges();
-      return updatedChallenge;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to update challenge'));
-      console.error('Error updating challenge:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const deleteChallenge = async (id: number): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const result = await wellnessChallengeService.deleteChallenge(id);
-      
-      // Update local state
-      if (selectedChallenge && selectedChallenge.id === id) {
-        setSelectedChallenge(null);
-      }
-      
-      await refreshChallenges();
-      return result;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to delete challenge'));
-      console.error('Error deleting challenge:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const updateChallengeStatus = async (id: number, status: ChallengeStatus): Promise<WellnessChallenge> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const updatedChallenge = await wellnessChallengeService.updateChallengeStatus(id, status);
-      
-      // Update local state
-      if (selectedChallenge && selectedChallenge.id === id) {
-        setSelectedChallenge({
-          ...selectedChallenge,
-          status,
-        });
-      }
-      
-      await refreshChallenges();
-      return updatedChallenge;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to update challenge status'));
-      console.error('Error updating challenge status:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const createChallengeGoal = async (data: CreateChallengeGoalData): Promise<ChallengeGoal> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const newGoal = await wellnessChallengeService.createChallengeGoal(data);
-      
-      // Update selected challenge if this goal is for the currently selected challenge
-      if (selectedChallenge && selectedChallenge.id === data.challengeId) {
-        await selectChallenge(data.challengeId);
-      }
-      
-      return newGoal;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to create goal'));
-      console.error('Error creating goal:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const recordProgress = async (data: CreateChallengeProgressData): Promise<ChallengeProgress> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const progress = await wellnessChallengeService.recordChallengeProgress(data);
-      
-      // Update selected challenge if this progress is for the currently selected challenge
-      if (selectedChallenge && selectedChallenge.id === data.challengeId) {
-        await selectChallenge(data.challengeId);
-      }
-      
-      return progress;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to record progress'));
-      console.error('Error recording progress:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Context value
+  // Define our context value with the implemented functions
   const contextValue: WellnessChallengeContextType = {
-    challenges,
-    selectedChallenge,
-    loading,
-    error,
-    refreshChallenges,
-    selectChallenge,
-    createChallenge,
-    updateChallenge,
-    deleteChallenge,
-    updateChallengeStatus,
-    createChallengeGoal,
-    recordProgress,
+    // Queries
+    getChallengesByCategory: async (category, page = 1, limit = 10) => {
+      const query = new GetChallengesByCategoryQuery(category, page, limit);
+      return getChallengesByCategoryHandler.execute(query);
+    },
+    
+    getActiveChallenges: async (userId) => {
+      const query = new GetActiveChallengesQuery(userId);
+      return getActiveChallengesHandler.execute(query);
+    },
+    
+    // Commands
+    activateChallenge: async (challengeId, userId) => {
+      const command = new ActivateChallengeCommand(challengeId, userId);
+      return activateChallengeHandler.execute(command);
+    },
+    
+    abandonChallenge: async (challengeId, userId) => {
+      const command = new AbandonChallengeCommand(challengeId, userId);
+      return abandonChallengeHandler.execute(command);
+    },
+    
+    // Available categories
+    availableCategories: [
+      ChallengeCategory.EMOTIONS,
+      ChallengeCategory.MEDITATION,
+      ChallengeCategory.JOURNALING,
+      ChallengeCategory.ACTIVITY,
+      ChallengeCategory.MINDFULNESS,
+      ChallengeCategory.DISTRESS_TOLERANCE,
+      ChallengeCategory.EMOTION_REGULATION,
+      ChallengeCategory.INTERPERSONAL_EFFECTIVENESS
+    ]
   };
   
   return (
@@ -284,5 +114,11 @@ export const WellnessChallengeProvider: React.FC<WellnessChallengeProviderProps>
   );
 };
 
-// Custom hook to use the wellness challenge context
-export const useWellnessChallenge = () => useContext(WellnessChallengeContext);
+// Create a custom hook to use the context
+export const useWellnessChallenge = (): WellnessChallengeContextType => {
+  const context = useContext(WellnessChallengeContext);
+  if (context === undefined) {
+    throw new Error('useWellnessChallenge must be used within a WellnessChallengeProvider');
+  }
+  return context;
+};

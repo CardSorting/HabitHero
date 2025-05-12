@@ -197,16 +197,154 @@ const EmotionInsightsTab = () => {
     }
     
     return (
-      <div className="space-y-3">
-        {highIntensityEmotions.map((item, index) => (
-          <div key={index}>
-            <div className="flex justify-between text-sm mb-1">
-              <span>{item.emotion}</span>
-              <span>{item.intensity.toFixed(1)}/10</span>
+      <div className="bg-white p-4 rounded-lg border border-gray-100">
+        <div className="flex flex-col md:flex-row">
+          {/* Radial Intensity Chart */}
+          <div className="relative w-full md:w-1/3 flex items-center justify-center pb-8">
+            <div className="relative w-52 h-52">
+              <svg className="w-full h-full" viewBox="0 0 100 100">
+                {/* Background circles for scale */}
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#f3f4f6" strokeWidth="10" />
+                <circle cx="50" cy="50" r="35" fill="none" stroke="#f9fafb" strokeWidth="10" />
+                <circle cx="50" cy="50" r="25" fill="none" stroke="#f3f4f6" strokeWidth="10" />
+                <circle cx="50" cy="50" r="15" fill="none" stroke="#f9fafb" strokeWidth="10" />
+                <circle cx="50" cy="50" r="5" fill="none" stroke="#f3f4f6" strokeWidth="10" />
+                
+                {/* Scale markers */}
+                <text x="50" y="10" fontSize="6" textAnchor="middle" fill="#9ca3af">10</text>
+                <text x="50" y="20" fontSize="6" textAnchor="middle" fill="#9ca3af">8</text>
+                <text x="50" y="30" fontSize="6" textAnchor="middle" fill="#9ca3af">6</text>
+                <text x="50" y="40" fontSize="6" textAnchor="middle" fill="#9ca3af">4</text>
+                <text x="50" y="50" fontSize="6" textAnchor="middle" fill="#9ca3af">2</text>
+                
+                {/* Intensity arcs */}
+                {highIntensityEmotions.map((item, index) => {
+                  // Calculate position parameters
+                  const total = highIntensityEmotions.length;
+                  const angleSlice = (Math.PI * 2) / total;
+                  const startAngle = index * angleSlice;
+                  const endAngle = (index + 0.8) * angleSlice; // 0.8 to leave gap between slices
+                  
+                  // Convert intensity to radius (0-10 scale to 0-45 radius)
+                  const radius = (item.intensity / 10) * 45;
+                  
+                  // Generate colors array
+                  const colors = [
+                    '#3b82f6', // blue
+                    '#10b981', // green
+                    '#8b5cf6', // purple
+                    '#f59e0b', // yellow
+                    '#6366f1'  // indigo
+                  ];
+                  
+                  // Calculate arc path
+                  // We'll reverse the angles for a clockwise orientation
+                  const startX = 50 + radius * Math.cos(2 * Math.PI - startAngle);
+                  const startY = 50 + radius * Math.sin(2 * Math.PI - startAngle);
+                  const endX = 50 + radius * Math.cos(2 * Math.PI - endAngle);
+                  const endY = 50 + radius * Math.sin(2 * Math.PI - endAngle);
+                  
+                  const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0;
+                  
+                  // Calculate label position
+                  const labelAngle = (startAngle + endAngle) / 2;
+                  const labelRadius = radius + 5;
+                  const labelX = 50 + labelRadius * Math.cos(2 * Math.PI - labelAngle);
+                  const labelY = 50 + labelRadius * Math.sin(2 * Math.PI - labelAngle);
+                  
+                  return (
+                    <g key={index}>
+                      {/* Intensity arc */}
+                      <path
+                        d={`M 50 50 L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY} Z`}
+                        fill={colors[index % colors.length]}
+                        opacity="0.7"
+                        className="hover:opacity-90 transition-opacity cursor-pointer"
+                      />
+                      
+                      {/* Emotion label */}
+                      <text 
+                        x={labelX} 
+                        y={labelY}
+                        fontSize="6" 
+                        textAnchor="middle"
+                        fill="#1f2937"
+                        fontWeight="bold"
+                      >
+                        {item.intensity.toFixed(1)}
+                      </text>
+                    </g>
+                  );
+                })}
+                
+                {/* Center circle */}
+                <circle cx="50" cy="50" r="5" fill="white" stroke="#e5e7eb" strokeWidth="1" />
+                
+                {/* Legend at the bottom */}
+                <text x="50" y="95" fontSize="6" textAnchor="middle" fill="#6b7280">
+                  Intensity Scale: 0-10
+                </text>
+              </svg>
             </div>
-            <Progress value={item.intensity * 10} className="h-2" />
           </div>
-        ))}
+          
+          {/* Bar section - traditional representation */}
+          <div className="w-full md:w-2/3 pl-0 md:pl-4">
+            <div className="space-y-3">
+              {highIntensityEmotions.map((item, index) => {
+                // Generate colors
+                const colors = [
+                  'bg-blue-500',
+                  'bg-green-500',
+                  'bg-purple-500',
+                  'bg-yellow-500',
+                  'bg-indigo-500'
+                ];
+                const colorClass = colors[index % colors.length];
+                
+                return (
+                  <div key={index}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-medium">{item.emotion}</span>
+                      <div className="flex items-center">
+                        <span className="font-bold text-gray-900">{item.intensity.toFixed(1)}</span>
+                        <span className="text-gray-500 ml-1">/10</span>
+                      </div>
+                    </div>
+                    
+                    {/* Enhanced progress bar with gradient */}
+                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden relative">
+                      {/* Scale markers */}
+                      <div className="absolute inset-y-0 left-0 right-0 flex justify-between px-1">
+                        {[...Array(11)].map((_, i) => (
+                          <div 
+                            key={i} 
+                            className="w-px h-full bg-gray-200"
+                            style={{ left: `${i * 10}%` }}
+                          ></div>
+                        ))}
+                      </div>
+                      
+                      {/* Actual progress bar */}
+                      <div 
+                        className={`h-full ${colorClass} rounded-full`} 
+                        style={{ width: `${item.intensity * 10}%` }}
+                      >
+                        {/* Add shine effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Intensity label */}
+                    <div className="mt-1 text-xs text-gray-500">
+                      {getIntensityLabel(item.intensity)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
@@ -823,7 +961,7 @@ const EmotionInsightsTab = () => {
                 )}
               </div>
               
-              {/* Distribution section - Apple Health Style */}
+              {/* Distribution section with Circle Graph */}
               <div className="mb-6">
                 <div className="text-sm font-medium text-gray-700 mb-3 flex justify-between items-center">
                   <span>Most Frequent Emotions</span>
@@ -834,65 +972,203 @@ const EmotionInsightsTab = () => {
                   )}
                 </div>
                 
-                <div className="bg-white p-3 rounded-lg border border-gray-100">
-                  <ScrollArea className="h-[180px] pr-4">
-                    {frequentEmotions.length === 0 ? (
-                      <div className="text-muted-foreground text-sm py-2 flex items-center justify-center h-full">
-                        No emotion data available
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {frequentEmotions.map((item, index) => {
-                          // Generate a color based on the emotion type (just for visualization)
-                          const colors = [
-                            'from-blue-500 to-blue-400',
-                            'from-green-500 to-green-400',
-                            'from-purple-500 to-purple-400',
-                            'from-yellow-500 to-yellow-400',
-                            'from-indigo-500 to-indigo-400'
-                          ];
-                          const colorClass = colors[index % colors.length];
+                <div className="bg-white p-4 rounded-lg border border-gray-100">
+                  {frequentEmotions.length === 0 ? (
+                    <div className="text-muted-foreground text-sm py-8 flex items-center justify-center h-full">
+                      No emotion data available
+                    </div>
+                  ) : (
+                    <div className="flex flex-col md:flex-row">
+                      {/* Circular Pie Chart Visualization */}
+                      <div className="relative w-full md:w-1/3 flex items-center justify-center pb-8">
+                        <div className="relative w-52 h-52">
+                          {/* SVG Pie Chart */}
+                          <svg className="w-full h-full" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1" />
+                            
+                            {frequentEmotions.map((item, index) => {
+                              // Calculate percentage
+                              const total = frequentEmotions.reduce((sum, item) => sum + item.count, 0);
+                              const percentage = (item.count / total) * 100;
+                              
+                              // Generate colors array for pie slices
+                              const colors = [
+                                '#3b82f6', // blue
+                                '#10b981', // green
+                                '#8b5cf6', // purple
+                                '#f59e0b', // yellow
+                                '#6366f1'  // indigo
+                              ];
+                              
+                              // Calculate the start and end angles
+                              let previousPercentages = frequentEmotions
+                                .slice(0, index)
+                                .reduce((sum, item) => sum + (item.count / total) * 100, 0);
+                              
+                              const startAngle = (previousPercentages / 100) * 360;
+                              const endAngle = ((previousPercentages + percentage) / 100) * 360;
+                              
+                              // Convert angles to radians
+                              const startRad = (startAngle - 90) * (Math.PI / 180);
+                              const endRad = (endAngle - 90) * (Math.PI / 180);
+                              
+                              // Calculate the path coordinates
+                              const x1 = 50 + 40 * Math.cos(startRad);
+                              const y1 = 50 + 40 * Math.sin(startRad);
+                              const x2 = 50 + 40 * Math.cos(endRad);
+                              const y2 = 50 + 40 * Math.sin(endRad);
+                              
+                              // Create the arc flag (0 for small arc, 1 for large arc)
+                              const largeArcFlag = percentage > 50 ? 1 : 0;
+                              
+                              // SVG path for the pie slice
+                              const path = [
+                                `M 50 50`,
+                                `L ${x1} ${y1}`,
+                                `A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                                `Z`
+                              ].join(' ');
+                              
+                              return (
+                                <path 
+                                  key={index}
+                                  d={path}
+                                  fill={colors[index % colors.length]}
+                                  stroke="#fff"
+                                  strokeWidth="1"
+                                  data-emotion={item.emotion}
+                                  className="hover:opacity-80 transition-opacity cursor-pointer"
+                                />
+                              );
+                            })}
+                            
+                            {/* Center circle for aesthetics */}
+                            <circle cx="50" cy="50" r="25" fill="white" stroke="#e5e7eb" strokeWidth="1" />
+                            
+                            {/* Center text showing total count */}
+                            <text 
+                              x="50" 
+                              y="45" 
+                              fontSize="10" 
+                              textAnchor="middle" 
+                              fill="#6b7280"
+                              className="font-medium"
+                            >
+                              TOTAL
+                            </text>
+                            <text 
+                              x="50" 
+                              y="58" 
+                              fontSize="14" 
+                              textAnchor="middle" 
+                              fill="#111827"
+                              fontWeight="bold"
+                            >
+                              {frequentEmotions.reduce((sum, item) => sum + item.count, 0)}
+                            </text>
+                          </svg>
                           
-                          return (
-                            <div key={index}>
-                              <div className="flex justify-between items-center mb-1.5">
-                                <div className="flex items-center">
-                                  <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${colorClass} mr-2`}></div>
-                                  <span className="font-medium text-gray-900">{item.emotion}</span>
-                                </div>
-                                <div className="text-sm">
-                                  <span className="font-semibold">{item.count}</span>
-                                  <span className="text-muted-foreground ml-1">occurrences</span>
-                                </div>
-                              </div>
+                          {/* Legend circles positioned around the pie */}
+                          {frequentEmotions.map((item, index) => {
+                            const total = frequentEmotions.reduce((sum, item) => sum + item.count, 0);
+                            const percentage = (item.count / total) * 100;
+                            const previousPercentages = frequentEmotions
+                              .slice(0, index)
+                              .reduce((sum, item) => sum + (item.count / total) * 100, 0);
                               
-                              <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-                                <div 
-                                  className={`absolute top-0 left-0 h-full bg-gradient-to-r ${colorClass} rounded-full transform transition-all duration-500 ease-out`}
-                                  style={{ 
-                                    width: `${Math.min(100, (item.count / (frequentEmotions[0]?.count || 1)) * 100)}%`
-                                  }}
+                            const midAngle = ((previousPercentages + (percentage/2)) / 100) * 360;
+                            const midRad = (midAngle - 90) * (Math.PI / 180);
+                            
+                            // Position legend items at the mid-angle of each slice
+                            const x = 50 + 54 * Math.cos(midRad);
+                            const y = 50 + 54 * Math.sin(midRad);
+                            
+                            // Adjust text anchor based on position
+                            const textAnchor = x > 50 ? "start" : "end";
+                            const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#6366f1'];
+                            
+                            return (
+                              <g key={`legend-${index}`} className="text-xs">
+                                <circle 
+                                  cx={x} 
+                                  cy={y} 
+                                  r="3" 
+                                  fill={colors[index % colors.length]} 
+                                />
+                                <text 
+                                  x={x + (x > 50 ? 5 : -5)} 
+                                  y={y} 
+                                  fontSize="8" 
+                                  textAnchor={textAnchor} 
+                                  dominantBaseline="middle"
+                                  fill="#4b5563"
+                                  className="font-medium"
                                 >
-                                  {/* Simple shimmer-like highlight */}
-                                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
-                                </div>
-                              </div>
-                              
-                              {/* Additional details like percentage */}
-                              <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-                                <span>
-                                  {Math.round((item.count / frequentEmotions.reduce((sum, item) => sum + item.count, 0)) * 100)}% of total
-                                </span>
-                                <span className="text-gray-500">
-                                  Average intensity: {highIntensityEmotions.find(e => e.emotion === item.emotion)?.intensity.toFixed(1) || "N/A"}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
+                                  {Math.round(percentage)}%
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </div>
                       </div>
-                    )}
-                  </ScrollArea>
+                      
+                      {/* Bar Chart - right side */}
+                      <div className="w-full md:w-2/3 pl-0 md:pl-4">
+                        <ScrollArea className="h-[180px] pr-4">
+                          <div className="space-y-4">
+                            {frequentEmotions.map((item, index) => {
+                              // Generate a color based on the emotion type
+                              const colors = [
+                                'from-blue-500 to-blue-400',
+                                'from-green-500 to-green-400',
+                                'from-purple-500 to-purple-400',
+                                'from-yellow-500 to-yellow-400',
+                                'from-indigo-500 to-indigo-400'
+                              ];
+                              const colorClass = colors[index % colors.length];
+                              
+                              return (
+                                <div key={index}>
+                                  <div className="flex justify-between items-center mb-1.5">
+                                    <div className="flex items-center">
+                                      <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${colorClass} mr-2`}></div>
+                                      <span className="font-medium text-gray-900">{item.emotion}</span>
+                                    </div>
+                                    <div className="text-sm">
+                                      <span className="font-semibold">{item.count}</span>
+                                      <span className="text-muted-foreground ml-1">occurrences</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`absolute top-0 left-0 h-full bg-gradient-to-r ${colorClass} rounded-full transform transition-all duration-500 ease-out`}
+                                      style={{ 
+                                        width: `${Math.min(100, (item.count / (frequentEmotions[0]?.count || 1)) * 100)}%`
+                                      }}
+                                    >
+                                      {/* Simple shimmer-like highlight */}
+                                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Additional details like percentage and intensity */}
+                                  <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+                                    <span>
+                                      {Math.round((item.count / frequentEmotions.reduce((sum, item) => sum + item.count, 0)) * 100)}% of total
+                                    </span>
+                                    <span className="text-gray-500">
+                                      Average intensity: {highIntensityEmotions.find(e => e.emotion === item.emotion)?.intensity.toFixed(1) || "N/A"}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Animation handled through CSS classes */}

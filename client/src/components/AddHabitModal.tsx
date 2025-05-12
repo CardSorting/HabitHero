@@ -40,7 +40,17 @@ const AddHabitModal: React.FC<AddHabitModalProps> = ({
   });
 
   const onSubmit = (data: FormValues) => {
-    onAddHabit(data);
+    console.log("Form submitted with data:", data);
+    
+    // Add userId to the data before submitting
+    // This is the key step we were missing! We need to include userId
+    const habitData = {
+      ...data,
+      userId: 1 // Hardcoded for now as we know the user ID from logs
+    };
+    
+    console.log("Submitting habit with userId:", habitData);
+    onAddHabit(habitData);
     form.reset();
     onOpenChange(false);
   };

@@ -394,6 +394,200 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     return diaryData.skills[category]?.[skill]?.[date] || false;
   }, [diaryData.skills]);
 
+  // Load data for a specific day from the server
+  const loadDay = useCallback(async (date: DateString) => {
+    // Skip if already loaded or currently loading
+    if (serverData[date] || isLoading) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      // Get sleep data
+      const sleepData = await diaryService.getSleepData(date);
+      if (sleepData) {
+        setDiaryData(prev => ({
+          ...prev,
+          sleep: {
+            ...prev.sleep,
+            [date]: sleepData
+          }
+        }));
+      }
+      
+      // Get emotions data
+      const emotions = await diaryService.getEmotions(date);
+      if (emotions.length > 0) {
+        const emotionsMap: { [emotion: string]: string } = {};
+        emotions.forEach(entry => {
+          emotionsMap[entry.emotion] = entry.intensity;
+        });
+        
+        setDiaryData(prev => ({
+          ...prev,
+          emotions: {
+            ...prev.emotions,
+            [date]: emotionsMap
+          }
+        }));
+      }
+      
+      // Get urges data
+      const urges = await diaryService.getUrges(date);
+      if (urges.length > 0) {
+        const urgesMap: { [urgeType: string]: { level: string, action: string } } = {};
+        urges.forEach(entry => {
+          urgesMap[entry.urgeType] = {
+            level: entry.level || '',
+            action: entry.action || ''
+          };
+        });
+        
+        setDiaryData(prev => ({
+          ...prev,
+          urges: {
+            ...prev.urges,
+            [date]: urgesMap
+          }
+        }));
+      }
+      
+      // Get skills data
+      const skills = await diaryService.getSkills(date);
+      if (skills.length > 0) {
+        const updatedSkills = { ...diaryData.skills };
+        
+        skills.forEach(entry => {
+          if (!updatedSkills[entry.category]) {
+            updatedSkills[entry.category] = {};
+          }
+          
+          if (!updatedSkills[entry.category][entry.skill]) {
+            updatedSkills[entry.category][entry.skill] = {};
+          }
+          
+          updatedSkills[entry.category][entry.skill][date] = entry.used;
+        });
+        
+        setDiaryData(prev => ({
+          ...prev,
+          skills: updatedSkills
+        }));
+      }
+      
+      // Get event data
+      const event = await diaryService.getEvent(date);
+      if (event) {
+        setDiaryData(prev => ({
+          ...prev,
+          events: {
+            ...prev.events,
+            [date]: event.eventDescription || ''
+          }
+        }));
+      }
+      
+      // Mark date as loaded from server
+      markDateLoaded(date);
+      
+    } catch (error) {
+      console.error(`Error loading data for ${date}:`, error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [diaryData.skills, diaryService, isLoading, markDateLoaded, serverData]);
+  
+  // Save all pending changes to the server
+  const saveChanges = useCallback(async () => {
+    if (!hasPendingChanges) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      // Gather all dates with pending changes
+      const dates = Object.keys(diaryData.sleep)
+        .concat(Object.keys(diaryData.emotions))
+        .concat(Object.keys(diaryData.urges))
+        .concat(Object.keys(diaryData.events))
+        .filter((date, index, self) => self.indexOf(date) === index) as DateString[];
+      
+      // Process each date
+      for (const date of dates) {
+        // Save sleep data if it exists
+        if (diaryData.sleep[date]) {
+          const sleepData = diaryData.sleep[date];
+          for (const field of Object.keys(sleepData) as Array<keyof SleepData>) {
+            if (sleepData[field]) {
+              await diaryService.saveSleepData(date, field, sleepData[field], sleepData);
+            }
+          }
+        }
+        
+        // Save emotions data
+        if (diaryData.emotions[date]) {
+          for (const [emotion, intensity] of Object.entries(diaryData.emotions[date])) {
+            if (intensity) {
+              await diaryService.saveEmotion(date, emotion, intensity);
+            }
+          }
+        }
+        
+        // Save urges data
+        if (diaryData.urges[date]) {
+          for (const [urgeType, urgeData] of Object.entries(diaryData.urges[date])) {
+            if (urgeData.level) {
+              await diaryService.saveUrge(
+                date, 
+                urgeType, 
+                'level', 
+                urgeData.level, 
+                urgeData.level,
+                urgeData.action
+              );
+            }
+            if (urgeData.action) {
+              await diaryService.saveUrge(
+                date, 
+                urgeType, 
+                'action', 
+                urgeData.action, 
+                urgeData.level,
+                urgeData.action
+              );
+            }
+          }
+        }
+        
+        // Save skills data
+        for (const category in diaryData.skills) {
+          for (const skill in diaryData.skills[category]) {
+            if (diaryData.skills[category][skill][date] !== undefined) {
+              const used = diaryData.skills[category][skill][date];
+              await diaryService.saveSkill(date, category, skill, used);
+            }
+          }
+        }
+        
+        // Save event data
+        if (diaryData.events[date]) {
+          await diaryService.saveEvent(date, diaryData.events[date]);
+        }
+      }
+      
+      // Mark all changes as saved
+      markAsSaved();
+      
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [diaryData, diaryService, hasPendingChanges, markAsSaved]);
+  
   // Create the context value object
   const value = {
     diaryData,
@@ -418,7 +612,10 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     getUrgeValue,
     getEventValue,
     getMedicationValue,
-    getSkillChecked
+    getSkillChecked,
+    // Add the missing methods
+    loadDay,
+    saveChanges
   };
   
   return <DiaryContext.Provider value={value}>{children}</DiaryContext.Provider>;

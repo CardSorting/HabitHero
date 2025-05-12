@@ -34,16 +34,24 @@ const DiaryCardContent: React.FC = () => {
     saveChanges, 
     hasPendingChanges,
     loadInitialData,
-    loadDay
+    loadDay,
+    serverData
   } = useDiary();
   
   // Load initial cached data when component mounts
   useEffect(() => {
     loadInitialData();
     
-    // Load today's data on first render
+    // Load only today's data on first render
     const today = format(new Date(), 'yyyy-MM-dd') as DateString;
-    loadDay(today);
+    
+    // Only load data for today, not for future dates
+    const currentDate = new Date();
+    const selectedDateObj = new Date(today);
+    
+    if (selectedDateObj <= currentDate) {
+      loadDay(today);
+    }
   }, [loadInitialData, loadDay]);
   
   // Generate dates for the week (Saturday to Friday)
@@ -66,11 +74,22 @@ const DiaryCardContent: React.FC = () => {
   
   const weekRangeText = `${format(weekDates[0], "MMM d")} - ${format(weekDates[6], "MMM d, yyyy")}`;
   
-  // Load data for the selected date when it changes
+  // Only load data for the selected date if it's not a future date
   useEffect(() => {
     const dateStr = format(selectedDate, "yyyy-MM-dd") as DateString;
-    loadDay(dateStr);
-  }, [selectedDate, loadDay]);
+    
+    // Only load data for past or current dates, not future dates
+    const currentDate = new Date();
+    const selectedDateObj = new Date(dateStr);
+    
+    // Check if the selected date is in the past or today
+    if (selectedDateObj <= currentDate) {
+      // Check if we already have data for this date
+      if (!serverData[dateStr]) {
+        loadDay(dateStr);
+      }
+    }
+  }, [selectedDate, loadDay, serverData]);
   
   // Navigate to previous week
   const handlePrevWeek = () => {
@@ -86,11 +105,20 @@ const DiaryCardContent: React.FC = () => {
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'day' ? 'week' : 'day');
     
-    // If switching to week view, load data for all visible dates
+    // If switching to week view, only load data for past and present dates
     if (viewMode === 'day') {
+      const currentDate = new Date();
+      
       weekDates.forEach(date => {
-        const dateStr = format(date, "yyyy-MM-dd") as DateString;
-        loadDay(dateStr);
+        // Only load data for non-future dates
+        if (date <= currentDate) {
+          const dateStr = format(date, "yyyy-MM-dd") as DateString;
+          
+          // Only load if not already loaded
+          if (!serverData[dateStr]) {
+            loadDay(dateStr);
+          }
+        }
       });
     }
   };

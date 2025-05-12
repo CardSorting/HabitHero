@@ -236,27 +236,67 @@ const WellnessChallenges: React.FC = () => {
             {/* Filter row with Apple Health style UI and guidance */}
             {activeChallenges.length > 0 && (
               <div className="mb-6">
-                {/* Filter tutorial banner - Apple Health style education element */}
+                {/* Filter tutorial banner - Apple Health style education element with arrows emphasis */}
                 <div className="bg-gray-50 rounded-xl p-3 mb-4 flex items-center shadow-sm border border-gray-100">
                   <div className="bg-primary/15 p-2 rounded-full mr-3">
                     <Filter className="h-5 w-5 text-primary" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-sm font-medium">Filter Your Challenges</h3>
                     <p className="text-xs text-muted-foreground">
-                      Tap on categories below to filter what's displayed. Swipe to see all options →
+                      Tap on categories below to filter what's displayed. Use the arrow buttons <ChevronUp className="h-3 w-3 -rotate-90 inline-block mx-1" /> <ChevronUp className="h-3 w-3 rotate-90 inline-block mx-1" /> to navigate all options.
                     </p>
                   </div>
                 </div>
                 
-                {/* Enhanced Apple Health-style filter UI */}
-                <div className="relative">
-                  {/* Shadow indicators for scrollable content */}
-                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" 
+                {/* Enhanced Apple Health-style filter UI with slider arrows */}
+                <div className="relative mb-3">
+                  {/* Left arrow navigation button */}
+                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm shadow-sm border border-gray-200 text-primary hover:bg-white"
+                      aria-label="Scroll left"
+                      onClick={() => {
+                        const scrollContainer = document.getElementById('filter-scroll-container');
+                        if (scrollContainer) {
+                          scrollContainer.scrollBy({ left: -200, behavior: 'smooth' });
+                        }
+                      }}
+                    >
+                      <ChevronUp className="h-4 w-4 -rotate-90" />
+                    </Button>
+                  </div>
+                  
+                  {/* Right arrow navigation button */}
+                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm shadow-sm border border-gray-200 text-primary hover:bg-white"
+                      aria-label="Scroll right"
+                      onClick={() => {
+                        const scrollContainer = document.getElementById('filter-scroll-container');
+                        if (scrollContainer) {
+                          scrollContainer.scrollBy({ left: 200, behavior: 'smooth' });
+                        }
+                      }}
+                    >
+                      <ChevronUp className="h-4 w-4 rotate-90" />
+                    </Button>
+                  </div>
+                  
+                  {/* Left shadow gradient */}
+                  <div className="absolute left-8 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" 
+                       aria-hidden="true"></div>
+                       
+                  {/* Right shadow gradient */}
+                  <div className="absolute right-8 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" 
                        aria-hidden="true"></div>
                   
-                  {/* Prominent filter button container */}
-                  <div className="flex overflow-x-auto pb-3 pt-1 hide-scrollbar items-center">
+                  {/* Filter button container with ID for JavaScript scrolling */}
+                  <div id="filter-scroll-container" className="flex overflow-x-auto pb-3 pt-1 hide-scrollbar items-center px-10">
                     <Button 
                       variant={categoryFilter === "all" ? "default" : "outline"} 
                       size="sm" 
@@ -296,6 +336,15 @@ const WellnessChallenges: React.FC = () => {
                         </span>
                       </Button>
                     ))}
+                  </div>
+                  
+                  {/* Scroll indicator dots */}
+                  <div className="flex justify-center mt-1">
+                    <div className="flex space-x-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                    </div>
                   </div>
                 </div>
                 

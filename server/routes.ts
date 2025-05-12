@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { insertHabitSchema } from "@shared/schema";
 import { getTherapeuticResponse, getCopingStrategy, analyzeDailyReflection } from "./anthropicService";
 import { HabitController } from "./interfaces/controllers/HabitController";
+import { setupAuth } from "./auth";
 
 // Request with authenticated user (from auth middleware)
 interface AuthRequest extends Request {
@@ -14,15 +15,18 @@ interface AuthRequest extends Request {
   }
 }
 
-function isAuthenticated(req: AuthRequest, res: any, next: any) {
+function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated && req.isAuthenticated()) {
     return next();
   }
   return res.status(401).json({ message: "Not authenticated" });
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<any> {
   const server = createServer(app);
+  
+  // Setup authentication routes and middleware
+  setupAuth(app);
   
   // Initialize the habit controller
   const habitController = new HabitController();

@@ -110,35 +110,20 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(400).json({ message: 'Invalid challenge ID' });
       }
       
-      // Get the challenge
-      const challenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, challengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
+      // Get the challenge with goals and progress
+      const challenge = await storage.getWellnessChallenge(challengeId);
       
       if (!challenge) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Get the goals
-      const goals = await db.query.wellnessChallengeGoals.findMany({
-        where: eq(wellnessChallengeGoals.challengeId, challengeId),
-      });
+      // Verify that the challenge belongs to the user
+      if (challenge.userId !== userId) {
+        return res.status(403).json({ message: 'Not authorized to access this challenge' });
+      }
       
-      // Get the progress entries
-      const progressEntries = await db.query.wellnessChallengeProgress.findMany({
-        where: eq(wellnessChallengeProgress.challengeId, challengeId),
-        orderBy: (progress) => [progress.date],
-      });
-      
-      // Combine into a single response
-      const response = {
-        ...challenge,
-        goals,
-        progressEntries,
-      };
+      // Use the challenge as the response
+      const response = challenge;
       
       res.json(response);
     } catch (error) {
@@ -171,10 +156,10 @@ export function registerWellnessChallengeRoutes(app: Express) {
         });
       }
       
-      // Insert the challenge
-      const inserted = await db.insert(wellnessChallenges).values(parsedBody.data).returning();
+      // Create the challenge using the storage interface
+      const challenge = await storage.createWellnessChallenge(parsedBody.data);
       
-      res.status(201).json(inserted[0]);
+      res.status(201).json(challenge);
     } catch (error) {
       console.error('Error creating challenge:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -210,17 +195,13 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Update the challenge
-      const updatedChallenge = await db
-        .update(wellnessChallenges)
-        .set({
-          ...req.body,
-          updatedAt: new Date(),
-        })
-        .where(eq(wellnessChallenges.id, challengeId))
-        .returning();
+      // Update the challenge using the storage interface
+      const updatedChallenge = await storage.updateWellnessChallenge(challengeId, {
+        ...req.body,
+        updatedAt: new Date(),
+      });
       
-      res.json(updatedChallenge[0]);
+      res.json(updatedChallenge);
     } catch (error) {
       console.error('Error updating challenge:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -256,22 +237,14 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Delete associated progress entries
-      await db
-        .delete(wellnessChallengeProgress)
-        .where(eq(wellnessChallengeProgress.challengeId, challengeId));
+      // Delete the challenge and all associated data
+      const success = await storage.deleteWellnessChallenge(challengeId);
       
-      // Delete associated goals
-      await db
-        .delete(wellnessChallengeGoals)
-        .where(eq(wellnessChallengeGoals.challengeId, challengeId));
-      
-      // Delete the challenge
-      await db
-        .delete(wellnessChallenges)
-        .where(eq(wellnessChallenges.id, challengeId));
-      
-      res.json({ success: true });
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ message: 'Failed to delete challenge' });
+      }
     } catch (error) {
       console.error('Error deleting challenge:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -312,17 +285,10 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Update the challenge status
-      const updatedChallenge = await db
-        .update(wellnessChallenges)
-        .set({
-          status,
-          updatedAt: new Date(),
-        })
-        .where(eq(wellnessChallenges.id, challengeId))
-        .returning();
+      // Update the challenge status using the storage interface
+      const updatedChallenge = await storage.updateWellnessChallengeStatus(challengeId, status);
       
-      res.json(updatedChallenge[0]);
+      res.json(updatedChallenge);
     } catch (error) {
       console.error('Error updating challenge status:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -367,10 +333,10 @@ export function registerWellnessChallengeRoutes(app: Express) {
         });
       }
       
-      // Insert the goal
-      const inserted = await db.insert(wellnessChallengeGoals).values(parsedBody.data).returning();
+      // Create the goal using the storage interface
+      const goal = await storage.createWellnessChallengeGoal(parsedBody.data);
       
-      res.status(201).json(inserted[0]);
+      res.status(201).json(goal);
     } catch (error) {
       console.error('Error creating goal:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -406,10 +372,8 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Get the goals
-      const goals = await db.query.wellnessChallengeGoals.findMany({
-        where: eq(wellnessChallengeGoals.challengeId, parsedChallengeId),
-      });
+      // Get the goals using the storage interface
+      const goals = await storage.getWellnessChallengeGoals(parsedChallengeId);
       
       res.json(goals);
     } catch (error) {

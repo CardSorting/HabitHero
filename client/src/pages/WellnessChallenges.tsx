@@ -4,6 +4,7 @@ import { useLocation } from 'wouter';
 import { PageTransition } from '@/components/page-transition';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
 import {
   Plus,
   Target,
@@ -41,6 +42,12 @@ const WellnessChallenges: React.FC = () => {
   const [, navigate] = useLocation();
   const [abandonedChallenges, setAbandonedChallenges] = useState<string[]>([]);
   
+  // Fetch active challenges from API
+  const { data: activeChallenges = [], isLoading: isLoadingChallenges } = useQuery<any[]>({
+    queryKey: ['/api/wellness-challenges/status/active'],
+    enabled: !!user
+  });
+  
   // Load abandoned challenges from localStorage
   useEffect(() => {
     const storedAbandoned = localStorage.getItem('abandonedChallenges');
@@ -63,15 +70,15 @@ const WellnessChallenges: React.FC = () => {
   
   // Categories of wellness challenges
   const challengeTypes = [
-    { name: 'Emotions', icon: <Heart className="h-6 w-6 text-red-500" />, color: 'bg-red-100' },
-    { name: 'Meditation', icon: <Brain className="h-6 w-6 text-blue-500" />, color: 'bg-blue-100' },
-    { name: 'Journaling', icon: <BookOpen className="h-6 w-6 text-green-500" />, color: 'bg-green-100' },
-    { name: 'Activity', icon: <Activity className="h-6 w-6 text-orange-500" />, color: 'bg-orange-100' },
-    // New categories
-    { name: 'Mindfulness', icon: <Feather className="h-6 w-6 text-teal-500" />, color: 'bg-teal-100' },
-    { name: 'Distress_Tolerance', displayName: 'Distress Tolerance', icon: <Shield className="h-6 w-6 text-red-500" />, color: 'bg-red-100' },
-    { name: 'Emotion_Regulation', displayName: 'Emotion Regulation', icon: <Gauge className="h-6 w-6 text-purple-500" />, color: 'bg-purple-100' },
-    { name: 'Interpersonal_Effectiveness', displayName: 'Interpersonal', icon: <Users className="h-6 w-6 text-blue-500" />, color: 'bg-blue-100' },
+    { name: 'emotions', displayName: 'Emotions', icon: <Heart className="h-6 w-6 text-red-500" />, color: 'bg-red-100' },
+    { name: 'meditation', displayName: 'Meditation', icon: <Brain className="h-6 w-6 text-blue-500" />, color: 'bg-blue-100' },
+    { name: 'journaling', displayName: 'Journaling', icon: <BookOpen className="h-6 w-6 text-green-500" />, color: 'bg-green-100' },
+    { name: 'activity', displayName: 'Activity', icon: <Activity className="h-6 w-6 text-orange-500" />, color: 'bg-orange-100' },
+    // New DBT categories
+    { name: 'mindfulness', displayName: 'Mindfulness', icon: <Feather className="h-6 w-6 text-teal-500" />, color: 'bg-teal-100' },
+    { name: 'distress_tolerance', displayName: 'Distress Tolerance', icon: <Shield className="h-6 w-6 text-red-500" />, color: 'bg-red-100' },
+    { name: 'emotion_regulation', displayName: 'Emotion Regulation', icon: <Gauge className="h-6 w-6 text-purple-500" />, color: 'bg-purple-100' },
+    { name: 'interpersonal_effectiveness', displayName: 'Interpersonal', icon: <Users className="h-6 w-6 text-blue-500" />, color: 'bg-blue-100' },
   ];
   
   return (
@@ -93,134 +100,106 @@ const WellnessChallenges: React.FC = () => {
             
             {/* Challenge Cards */}
             <div className="space-y-3">
-              {/* Emotions Challenge */}
-              {!abandonedChallenges.includes('1') && (
-                <Card className="overflow-hidden border-l-4 border-l-red-400">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <div className="bg-red-100 p-2 rounded-full mr-3">
-                          <Heart className="h-5 w-5 text-red-500" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">Daily Gratitude Practice</h3>
-                          <p className="text-xs text-muted-foreground">Emotions • Daily</p>
-                        </div>
-                      </div>
-                      <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
-                        Active
-                      </div>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Progress Today</span>
-                        <span className="font-medium">1/3</span>
-                      </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-red-400 rounded-full" style={{ width: '33%' }}></div>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => navigate('/wellness-challenges/1')}
-                    >
-                      View Challenge
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+              {isLoadingChallenges ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+                    <p className="mt-2 text-gray-600">Loading challenges...</p>
                   </CardContent>
                 </Card>
-              )}
-              
-              {/* Meditation Challenge */}
-              {!abandonedChallenges.includes('3') && (
-                <Card className="overflow-hidden border-l-4 border-l-blue-400">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <div className="bg-blue-100 p-2 rounded-full mr-3">
-                          <Brain className="h-5 w-5 text-blue-500" />
+              ) : activeChallenges.length > 0 ? (
+                activeChallenges.map((challenge: any) => {
+                  // Determine the category icon and style
+                  let categoryIcon = <Heart className="h-5 w-5 text-red-500" />;
+                  let categoryColor = "bg-red-100";
+                  let borderColor = "border-l-red-400";
+                  let progressColor = "bg-red-400";
+                  
+                  if (challenge.type === 'meditation') {
+                    categoryIcon = <Brain className="h-5 w-5 text-blue-500" />;
+                    categoryColor = "bg-blue-100";
+                    borderColor = "border-l-blue-400";
+                    progressColor = "bg-blue-400";
+                  } else if (challenge.type === 'journaling') {
+                    categoryIcon = <BookOpen className="h-5 w-5 text-green-500" />;
+                    categoryColor = "bg-green-100";
+                    borderColor = "border-l-green-400";
+                    progressColor = "bg-green-400";
+                  } else if (challenge.type === 'activity') {
+                    categoryIcon = <Activity className="h-5 w-5 text-orange-500" />;
+                    categoryColor = "bg-orange-100";
+                    borderColor = "border-l-orange-400";
+                    progressColor = "bg-orange-400";
+                  } else if (challenge.type === 'mindfulness') {
+                    categoryIcon = <Feather className="h-5 w-5 text-teal-500" />;
+                    categoryColor = "bg-teal-100";
+                    borderColor = "border-l-teal-400";
+                    progressColor = "bg-teal-400";
+                  } else if (challenge.type === 'distress_tolerance') {
+                    categoryIcon = <Shield className="h-5 w-5 text-red-500" />;
+                    categoryColor = "bg-red-100";
+                    borderColor = "border-l-red-400";
+                    progressColor = "bg-red-400";
+                  } else if (challenge.type === 'emotion_regulation') {
+                    categoryIcon = <Gauge className="h-5 w-5 text-purple-500" />;
+                    categoryColor = "bg-purple-100";
+                    borderColor = "border-l-purple-400";
+                    progressColor = "bg-purple-400";
+                  } else if (challenge.type === 'interpersonal_effectiveness') {
+                    categoryIcon = <Users className="h-5 w-5 text-blue-500" />;
+                    categoryColor = "bg-blue-100";
+                    borderColor = "border-l-blue-400";
+                    progressColor = "bg-blue-400";
+                  }
+                  
+                  // Calculate progress (hardcoded for now - would be replaced with real progress data)
+                  const progressValue = 33;
+                  const currentValue = Math.round((challenge.targetValue || 1) * (progressValue / 100));
+                  
+                  return (
+                    <Card key={challenge.id} className={`overflow-hidden border-l-4 ${borderColor}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <div className={`${categoryColor} p-2 rounded-full mr-3`}>
+                              {categoryIcon}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">{challenge.title}</h3>
+                              <p className="text-xs text-muted-foreground">
+                                {challenge.type.charAt(0).toUpperCase() + challenge.type.slice(1)} • {challenge.frequency}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
+                            Active
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold">Morning Mindfulness</h3>
-                          <p className="text-xs text-muted-foreground">Meditation • Daily</p>
+                        
+                        <div className="mb-3">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span>Progress Today</span>
+                            <span className="font-medium">{currentValue}/{challenge.targetValue || 1}</span>
+                          </div>
+                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className={`h-full ${progressColor} rounded-full`} style={{ width: `${progressValue}%` }}></div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
-                        Active
-                      </div>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Progress Today</span>
-                        <span className="font-medium">0/10 min</span>
-                      </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-400 rounded-full" style={{ width: '0%' }}></div>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => navigate('/wellness-challenges/3')}
-                    >
-                      View Challenge
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Activity Challenge */}
-              {!abandonedChallenges.includes('7') && (
-                <Card className="overflow-hidden border-l-4 border-l-orange-400">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <div className="bg-orange-100 p-2 rounded-full mr-3">
-                          <Activity className="h-5 w-5 text-orange-500" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">Daily Movement</h3>
-                          <p className="text-xs text-muted-foreground">Activity • Daily</p>
-                        </div>
-                      </div>
-                      <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
-                        Active
-                      </div>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Progress Today</span>
-                        <span className="font-medium">15/30 min</span>
-                      </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-orange-400 rounded-full" style={{ width: '50%' }}></div>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => navigate('/wellness-challenges/7')}
-                    >
-                      View Challenge
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* No active challenges message */}
-              {abandonedChallenges.length >= 3 && (
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => navigate(`/wellness-challenges/${challenge.id}`)}
+                        >
+                          View Challenge
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              ) : (
                 <Card>
                   <CardContent className="p-6 text-center">
                     <p className="text-muted-foreground mb-3">You don't have any active challenges</p>
@@ -243,13 +222,13 @@ const WellnessChallenges: React.FC = () => {
                 <Card 
                   key={type.name} 
                   className="cursor-pointer hover:bg-accent transition-colors"
-                  onClick={() => navigate(`/wellness-challenges/categories/${type.name.toLowerCase()}`)}
+                  onClick={() => navigate(`/wellness-challenges/categories/${type.name}`)}
                 >
                   <CardContent className="p-4 flex flex-col items-center text-center">
                     <div className={`p-3 rounded-full ${type.color} mb-2`}>
                       {type.icon}
                     </div>
-                    <span className="font-medium">{type.displayName || type.name}</span>
+                    <span className="font-medium">{type.displayName}</span>
                   </CardContent>
                 </Card>
               ))}

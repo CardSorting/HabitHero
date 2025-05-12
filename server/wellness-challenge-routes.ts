@@ -73,6 +73,27 @@ export function registerWellnessChallengeRoutes(app: Express) {
   });
   
   /**
+   * Get challenges by status
+   */
+  app.get('/api/wellness-challenges/status/:status', isAuthenticated, async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      const { status } = req.params;
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      const challenges = await storage.getWellnessChallengesByStatus(status);
+      
+      res.json(challenges);
+    } catch (error) {
+      console.error('Error getting challenges by status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  /**
    * Get challenges by type
    */
   app.get('/api/wellness-challenges/type/:type', isAuthenticated, async (req: AuthRequest, res: Response) => {

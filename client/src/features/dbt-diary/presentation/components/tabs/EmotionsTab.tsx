@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDiary } from '../../context/DiaryContext';
+import { useDiary } from '../../../presentation/context/DiaryContext';
 import { DateString } from '../../../domain/models';
 
 interface EmotionsTabProps {

@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { useDiary } from '../../context/DiaryContext';
+import { useDiary } from '../../../presentation/context/DiaryContext';
 import { DateString } from '../../../domain/models';
 import { AlertCircle } from 'lucide-react';
 

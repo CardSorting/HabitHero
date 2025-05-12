@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { useDiary } from '../../context/DiaryContext';
+import { useDiary } from '../../../presentation/context/DiaryContext';
 import { DateString } from '../../../domain/models';
 
 interface EventsTabProps {

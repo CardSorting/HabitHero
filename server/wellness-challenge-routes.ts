@@ -84,7 +84,23 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const challenges = await storage.getWellnessChallengesByType(type);
+      let challenges;
+      // Handle the new DBT categories
+      if (['mindfulness', 'distress_tolerance', 'emotion_regulation', 'interpersonal_effectiveness'].includes(type.toLowerCase())) {
+        // For DBT categories, get all challenges and filter by title prefix
+        // Since we stored them with prefixes like "[Mindfulness] ..."
+        const allChallenges = await storage.getWellnessChallenges(userId);
+        const categoryPrefix = type.toLowerCase() === 'mindfulness' ? 'Mindfulness'
+                             : type.toLowerCase() === 'distress_tolerance' ? 'Distress Tolerance'
+                             : type.toLowerCase() === 'emotion_regulation' ? 'Emotion Regulation'
+                             : 'Interpersonal Effectiveness';
+                             
+        challenges = allChallenges.filter(challenge => 
+          challenge.title.startsWith(`[${categoryPrefix}]`));
+      } else {
+        // For regular categories, use the normal type filtering
+        challenges = await storage.getWellnessChallengesByType(type);
+      }
       
       res.json(challenges);
     } catch (error) {

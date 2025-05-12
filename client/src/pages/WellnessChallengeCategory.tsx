@@ -53,11 +53,18 @@ const WellnessChallengeCategory: React.FC = () => {
   const itemsPerPage = 10;
   
   // Format the category name for display
-  const displayCategory = category.charAt(0).toUpperCase() + category.slice(1);
+  const formatCategoryName = (categoryName) => {
+    if (categoryName === 'distress_tolerance') return 'Distress Tolerance';
+    if (categoryName === 'emotion_regulation') return 'Emotion Regulation';
+    if (categoryName === 'interpersonal_effectiveness') return 'Interpersonal Effectiveness';
+    return categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+  };
+  
+  const displayCategory = formatCategoryName(category);
   
   // Icon and style mapping based on category
   const getCategoryStyles = () => {
-    switch (category) {
+    switch (category.toLowerCase()) {
       case "emotions":
         return { 
           icon: <Heart className="h-6 w-6 text-red-500" />, 
@@ -77,7 +84,7 @@ const WellnessChallengeCategory: React.FC = () => {
           icon: <BookOpen className="h-6 w-6 text-green-500" />, 
           color: "bg-green-100",
           textColor: "text-green-500",
-          borderColor: "border-blue-400" 
+          borderColor: "border-green-400" 
         };
       case "activity":
         return { 
@@ -85,6 +92,34 @@ const WellnessChallengeCategory: React.FC = () => {
           color: "bg-orange-100",
           textColor: "text-orange-500",
           borderColor: "border-orange-400" 
+        };
+      case "mindfulness":
+        return { 
+          icon: <Feather className="h-6 w-6 text-teal-500" />, 
+          color: "bg-teal-100",
+          textColor: "text-teal-500",
+          borderColor: "border-teal-400" 
+        };
+      case "distress_tolerance":
+        return { 
+          icon: <Shield className="h-6 w-6 text-red-500" />, 
+          color: "bg-red-100",
+          textColor: "text-red-500",
+          borderColor: "border-red-400" 
+        };
+      case "emotion_regulation":
+        return { 
+          icon: <Gauge className="h-6 w-6 text-purple-500" />, 
+          color: "bg-purple-100",
+          textColor: "text-purple-500",
+          borderColor: "border-purple-400" 
+        };
+      case "interpersonal_effectiveness":
+        return { 
+          icon: <Users className="h-6 w-6 text-blue-500" />, 
+          color: "bg-blue-100",
+          textColor: "text-blue-500",
+          borderColor: "border-blue-400" 
         };
       default:
         return { 
@@ -98,8 +133,20 @@ const WellnessChallengeCategory: React.FC = () => {
   
   const categoryStyles = getCategoryStyles();
   
+  // Fetch challenges from the API for the selected category
+  const { data: apiChallenges, isLoading: isLoadingChallenges, error: challengesError } = useQuery({
+    queryKey: [`/api/wellness-challenges/type/${category}`],
+    enabled: !!category && !!user,
+  });
+  
   // Get challenges for the category
   const getChallenges = () => {
+    // If we have API data and it's for one of the new DBT categories, use it
+    if (apiChallenges && ['mindfulness', 'distress_tolerance', 'emotion_regulation', 'interpersonal_effectiveness'].includes(category.toLowerCase())) {
+      return apiChallenges;
+    }
+    
+    // Fallback to hardcoded data for existing categories
     switch (category) {
       case "emotions":
         return [

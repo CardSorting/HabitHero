@@ -1,7 +1,13 @@
-import { pgTable, text, serial, integer, boolean, timestamp, date, varchar, unique, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, date, varchar, unique, jsonb, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
+
+// Enums for wellness challenge system
+export const challengeFrequencyEnum = pgEnum('challenge_frequency', ['daily', 'weekly', 'monthly']);
+export const challengeStatusEnum = pgEnum('challenge_status', ['active', 'completed', 'abandoned']);
+export const challengeTypeEnum = pgEnum('challenge_type', ['emotions', 'meditation', 'journaling', 'activity', 'custom']);
+export const emotionIntensityEnum = pgEnum('emotion_intensity', ['very_low', 'low', 'medium', 'high', 'very_high']);
 
 // User table for authentication
 export const users = pgTable("users", {
@@ -33,16 +39,6 @@ export const habits = pgTable("habits", {
   reminder: text("reminder"),
   streak: integer("streak").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertHabitSchema = createInsertSchema(habits).omit({
-  id: true,
-  streak: true,
-  createdAt: true,
-});
-
-export const insertHabitCompletionSchema = createInsertSchema(habitCompletions).omit({
-  id: true,
 });
 
 // New table for daily goals tracking
@@ -128,6 +124,71 @@ export const emotionTrackingEntries = pgTable("emotion_tracking_entries", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Emotion Categories - For organizing emotions
+export const emotionCategories = pgTable("emotion_categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 7 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Predefined Emotions - System emotions
+export const emotions = pgTable("emotions", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull(),
+  name: varchar("name", { length: 50 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// User Defined Emotions - Custom emotions created by user
+export const userEmotions = pgTable("user_emotions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  categoryId: integer("category_id").notNull(),
+  name: varchar("name", { length: 50 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Wellness Challenges - Main challenge definition
+export const wellnessChallenges = pgTable("wellness_challenges", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: varchar("title", { length: 100 }).notNull(),
+  description: text("description"),
+  type: challengeTypeEnum("type").notNull(),
+  frequency: challengeFrequencyEnum("frequency").notNull().default('daily'),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  targetValue: integer("target_value").notNull().default(1),
+  status: challengeStatusEnum("status").notNull().default('active'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Wellness Challenge Goals - Specific goals within a challenge
+export const wellnessChallengeGoals = pgTable("wellness_challenge_goals", {
+  id: serial("id").primaryKey(),
+  challengeId: integer("challenge_id").notNull(),
+  title: varchar("title", { length: 100 }).notNull(),
+  description: text("description"),
+  targetValue: integer("target_value").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Wellness Challenge Progress - Daily/weekly/monthly progress entries
+export const wellnessChallengeProgress = pgTable("wellness_challenge_progress", {
+  id: serial("id").primaryKey(),
+  challengeId: integer("challenge_id").notNull(),
+  date: date("date").notNull(),
+  value: integer("value").notNull().default(0),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Define relationships
 export const usersRelations = relations(users, ({ many }) => ({
   habits: many(habits),
@@ -138,6 +199,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   dbtSkills: many(dbtSkills),
   dbtEvents: many(dbtEvents),
   emotionTrackingEntries: many(emotionTrackingEntries),
+  wellnessChallenges: many(wellnessChallenges),
+  userEmotions: many(userEmotions),
 }));
 
 export const habitsRelations = relations(habits, ({ many, one }) => ({
@@ -204,7 +267,63 @@ export const emotionTrackingEntriesRelations = relations(emotionTrackingEntries,
   }),
 }));
 
-// Create user insert schema
+export const emotionCategoriesRelations = relations(emotionCategories, ({ many }) => ({
+  emotions: many(emotions),
+  userEmotions: many(userEmotions),
+}));
+
+export const emotionsRelations = relations(emotions, ({ one }) => ({
+  category: one(emotionCategories, {
+    fields: [emotions.categoryId],
+    references: [emotionCategories.id],
+  }),
+}));
+
+export const userEmotionsRelations = relations(userEmotions, ({ one }) => ({
+  user: one(users, {
+    fields: [userEmotions.userId],
+    references: [users.id],
+  }),
+  category: one(emotionCategories, {
+    fields: [userEmotions.categoryId],
+    references: [emotionCategories.id],
+  }),
+}));
+
+export const wellnessChallengesRelations = relations(wellnessChallenges, ({ one, many }) => ({
+  user: one(users, {
+    fields: [wellnessChallenges.userId],
+    references: [users.id],
+  }),
+  goals: many(wellnessChallengeGoals),
+  progress: many(wellnessChallengeProgress),
+}));
+
+export const wellnessChallengeGoalsRelations = relations(wellnessChallengeGoals, ({ one }) => ({
+  challenge: one(wellnessChallenges, {
+    fields: [wellnessChallengeGoals.challengeId],
+    references: [wellnessChallenges.id],
+  }),
+}));
+
+export const wellnessChallengeProgressRelations = relations(wellnessChallengeProgress, ({ one }) => ({
+  challenge: one(wellnessChallenges, {
+    fields: [wellnessChallengeProgress.challengeId],
+    references: [wellnessChallenges.id],
+  }),
+}));
+
+// Create insert schemas
+export const insertHabitSchema = createInsertSchema(habits).omit({
+  id: true,
+  streak: true,
+  createdAt: true,
+});
+
+export const insertHabitCompletionSchema = createInsertSchema(habitCompletions).omit({
+  id: true,
+});
+
 export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email().nullable().optional(),
   fullName: z.string().nullable().optional(),
@@ -213,7 +332,6 @@ export const insertUserSchema = createInsertSchema(users, {
   createdAt: true,
 });
 
-// Create insert schemas for new tables
 export const insertDailyGoalSchema = createInsertSchema(dailyGoals).omit({
   id: true,
   createdAt: true,
@@ -251,6 +369,40 @@ export const insertEmotionTrackingEntrySchema = createInsertSchema(emotionTracki
   updatedAt: true,
 });
 
+// Wellness challenge insert schemas
+export const insertWellnessChallengeSchema = createInsertSchema(wellnessChallenges).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWellnessChallengeGoalSchema = createInsertSchema(wellnessChallengeGoals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWellnessChallengeProgressSchema = createInsertSchema(wellnessChallengeProgress).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEmotionCategorySchema = createInsertSchema(emotionCategories).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEmotionSchema = createInsertSchema(emotions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserEmotionSchema = createInsertSchema(userEmotions).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Define types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
@@ -259,7 +411,6 @@ export type Habit = typeof habits.$inferSelect;
 export type HabitCompletion = typeof habitCompletions.$inferSelect;
 export type InsertHabitCompletion = z.infer<typeof insertHabitCompletionSchema>;
 
-// Types for new tables
 export type DailyGoal = typeof dailyGoals.$inferSelect;
 export type InsertDailyGoal = z.infer<typeof insertDailyGoalSchema>;
 
@@ -280,3 +431,22 @@ export type InsertDbtEvent = z.infer<typeof insertDbtEventSchema>;
 
 export type EmotionTrackingEntry = typeof emotionTrackingEntries.$inferSelect;
 export type InsertEmotionTrackingEntry = z.infer<typeof insertEmotionTrackingEntrySchema>;
+
+// Additional types for wellness challenge system
+export type WellnessChallenge = typeof wellnessChallenges.$inferSelect;
+export type InsertWellnessChallenge = z.infer<typeof insertWellnessChallengeSchema>;
+
+export type WellnessChallengeGoal = typeof wellnessChallengeGoals.$inferSelect;
+export type InsertWellnessChallengeGoal = z.infer<typeof insertWellnessChallengeGoalSchema>;
+
+export type WellnessChallengeProgress = typeof wellnessChallengeProgress.$inferSelect;
+export type InsertWellnessChallengeProgress = z.infer<typeof insertWellnessChallengeProgressSchema>;
+
+export type EmotionCategory = typeof emotionCategories.$inferSelect;
+export type InsertEmotionCategory = z.infer<typeof insertEmotionCategorySchema>;
+
+export type Emotion = typeof emotions.$inferSelect;
+export type InsertEmotion = z.infer<typeof insertEmotionSchema>;
+
+export type UserEmotion = typeof userEmotions.$inferSelect;
+export type InsertUserEmotion = z.infer<typeof insertUserEmotionSchema>;

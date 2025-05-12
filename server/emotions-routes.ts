@@ -54,14 +54,18 @@ export function registerEmotionsRoutes(app: Express) {
       const fromDate = parseISO(dateFrom);
       const toDate = parseISO(dateTo);
       
+      // Format dates as strings for comparison
+      const fromDateStr = format(fromDate, 'yyyy-MM-dd');
+      const toDateStr = format(toDate, 'yyyy-MM-dd');
+      
       const entries = await db
         .select()
         .from(emotionTrackingEntries)
         .where(
           and(
             eq(emotionTrackingEntries.userId, userId),
-            gte(emotionTrackingEntries.date, fromDate),
-            lte(emotionTrackingEntries.date, toDate)
+            sql`DATE(${emotionTrackingEntries.date}) >= ${fromDateStr}`,
+            sql`DATE(${emotionTrackingEntries.date}) <= ${toDateStr}`
           )
         )
         .orderBy(desc(emotionTrackingEntries.date));
@@ -322,14 +326,18 @@ export function registerEmotionsRoutes(app: Express) {
       const toDate = parseISO(dateTo);
       
       // Get all entries in the date range
+      // Format dates as strings for comparison
+      const fromDateStr = format(fromDate, 'yyyy-MM-dd');
+      const toDateStr = format(toDate, 'yyyy-MM-dd');
+      
       const entries = await db
         .select()
         .from(emotionTrackingEntries)
         .where(
           and(
             eq(emotionTrackingEntries.userId, userId),
-            gte(emotionTrackingEntries.date, fromDate),
-            lte(emotionTrackingEntries.date, toDate)
+            sql`DATE(${emotionTrackingEntries.date}) >= ${fromDateStr}`,
+            sql`DATE(${emotionTrackingEntries.date}) <= ${toDateStr}`
           )
         )
         .orderBy(emotionTrackingEntries.date);

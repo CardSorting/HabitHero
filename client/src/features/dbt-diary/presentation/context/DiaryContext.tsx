@@ -123,8 +123,7 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       // Merge emotions data
       mergedData.emotions = { ...mergedData.emotions, ...newData.emotions };
       
-      // Merge urges data
-      mergedData.urges = { ...mergedData.urges, ...newData.urges };
+      // Merge urges data removed
       
       // Merge events data
       mergedData.events = { ...mergedData.events, ...newData.events };
@@ -248,37 +247,7 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     setTimeout(() => saveToLocalStorage(), 0);
   }, [diaryData.emotions, saveToLocalStorage]);
   
-  // Urge data handler
-  const handleUrgeChange = useCallback((date: DateString, urge: string, field: 'level' | 'action', value: string) => {
-    // Skip if value hasn't changed
-    if (diaryData.urges[date]?.[urge]?.[field] === value) {
-      return;
-    }
-    
-    setDiaryData(prev => {
-      const updated = {
-        ...prev,
-        urges: {
-          ...prev.urges,
-          [date]: {
-            ...prev.urges[date],
-            [urge]: {
-              ...prev.urges[date]?.[urge],
-              [field]: value
-            }
-          }
-        }
-      };
-      
-      return updated;
-    });
-    
-    // Mark as having pending changes
-    setHasPendingChanges(true);
-    
-    // Schedule saving to session storage
-    setTimeout(() => saveToLocalStorage(), 0);
-  }, [diaryData.urges, saveToLocalStorage]);
+  // Urge data handler removed
   
   // Event data handler
   const handleEventChange = useCallback((date: DateString, value: string) => {
@@ -376,9 +345,7 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     return diaryData.emotions[date]?.[emotion] || '';
   }, [diaryData.emotions]);
   
-  const getUrgeValue = useCallback((date: DateString, urge: string, field: 'level' | 'action'): string => {
-    return diaryData.urges[date]?.[urge]?.[field] || '';
-  }, [diaryData.urges]);
+  // getUrgeValue removed
   
   const getEventValue = useCallback((date: DateString): string => {
     return diaryData.events[date] || '';
@@ -558,13 +525,11 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     saveToLocalStorage,
     handleSleepChange,
     handleEmotionChange,
-    handleUrgeChange,
     handleEventChange,
     handleSkillChange,
     handleMedicationChange,
     getSleepValue,
     getEmotionValue,
-    getUrgeValue,
     getEventValue,
     getMedicationValue,
     getSkillChecked,

@@ -8,6 +8,8 @@ import {
   defaultDiaryCardData, 
   SleepData
 } from '../../domain/models';
+import { ApiDiaryRepository } from '../../infrastructure/ApiDiaryRepository';
+import { DiaryService } from '../../application/DiaryService';
 
 // Storage key for sessionStorage data
 const STORAGE_PREFIX = 'dbt-diary-data';
@@ -43,6 +45,10 @@ interface DiaryContextType {
   clearCache: () => void;
   loadInitialData: () => void;
   saveToLocalStorage: () => void;
+  
+  // API interaction methods (missing from original interface)
+  loadDay: (date: DateString) => Promise<void>;
+  saveChanges: () => Promise<void>;
 }
 
 // Create the context with undefined default
@@ -51,15 +57,20 @@ const DiaryContext = createContext<DiaryContextType | undefined>(undefined);
 // Provider props interface
 interface DiaryProviderProps {
   children: ReactNode;
+  userId: number; // Added userId prop which is being used by DiaryCardContainer
 }
 
 // DiaryProvider component
-export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children }) => {
+export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }) => {
   // State
   const [diaryData, setDiaryData] = useState<DiaryCardData>(defaultDiaryCardData);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasPendingChanges, setHasPendingChanges] = useState<boolean>(false);
   const [serverData, setServerData] = useState<{ [date: string]: boolean }>({});
+  
+  // Create the repository and service
+  const diaryRepository = new ApiDiaryRepository(userId);
+  const diaryService = new DiaryService(diaryRepository, userId);
   
   // Helper to update loading state
   const updateLoading = useCallback((loading: boolean) => {

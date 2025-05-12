@@ -28,7 +28,11 @@ const EmotionInsightsTab = () => {
   const [trendData, setTrendData] = useState<any[]>([]);
   const [frequentEmotions, setFrequentEmotions] = useState<{emotion: string; count: number}[]>([]);
   const [highIntensityEmotions, setHighIntensityEmotions] = useState<{emotion: string; intensity: number}[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
+  // Add debug state to check response data
+  const [debug, setDebug] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, [timeframe]);
@@ -57,21 +61,30 @@ const EmotionInsightsTab = () => {
       const fromDateStr = format(startDate, 'yyyy-MM-dd');
       const toDateStr = format(today, 'yyyy-MM-dd');
       
-      // Fetch emotion trends
-      const trends = await getEmotionTrends(fromDateStr, toDateStr);
-      setTrendData(trends);
+      // Fetch in parallel for better performance
+      const [trends, summary, frequent, highIntensity] = await Promise.all([
+        // Fetch emotion trends
+        getEmotionTrends(fromDateStr, toDateStr),
+        // Fetch today's summary
+        getEmotionSummary(toDateStr),
+        // Fetch most frequent emotions
+        getMostFrequentEmotions(fromDateStr, toDateStr, 5),
+        // Fetch highest intensity emotions
+        getHighestIntensityEmotions(fromDateStr, toDateStr, 5)
+      ]);
       
-      // Fetch today's summary
-      const summary = await getEmotionSummary(toDateStr);
-      setSummaryData(summary);
+      // Log data for debugging
+      if (debug) {
+        console.log('Trends:', trends);
+        console.log('Summary:', summary);
+        console.log('Frequent:', frequent);
+        console.log('High Intensity:', highIntensity);
+      }
       
-      // Fetch most frequent emotions
-      const frequent = await getMostFrequentEmotions(fromDateStr, toDateStr, 5);
-      setFrequentEmotions(frequent);
-      
-      // Fetch highest intensity emotions
-      const highIntensity = await getHighestIntensityEmotions(fromDateStr, toDateStr, 5);
-      setHighIntensityEmotions(highIntensity);
+      setTrendData(trends || []);
+      setSummaryData(summary || null);
+      setFrequentEmotions(frequent || []);
+      setHighIntensityEmotions(highIntensity || []);
       
     } catch (error) {
       console.error('Error fetching insights data:', error);
@@ -203,32 +216,96 @@ const EmotionInsightsTab = () => {
         matchingDay
       });
     }
+
+    const getEmotionTooltip = (day: any) => {
+      if (!day.matchingDay) return "No emotions tracked";
+      return `${day.matchingDay.dominantEmotion || 'Mixed emotions'}: ${day.matchingDay.averageIntensity?.toFixed(1) || '0'}/10`;
+    };
+    
+    const handleDayClick = (date: Date, data: any) => {
+      // Toggle selection
+      setSelectedDate(selectedDate && isSameDay(selectedDate, date) ? null : date);
+    };
     
     return (
-      <div className="grid grid-cols-7 gap-1 mt-3">
-        {days.map((item, idx) => (
-          <div key={idx} className="flex flex-col items-center">
-            <div className="text-xs text-muted-foreground mb-1">
-              {format(item.date, 'EEE')}
-            </div>
+      <div className="mt-3">
+        <div className="grid grid-cols-7 gap-1">
+          {days.map((item, idx) => {
+            const isSelected = selectedDate && isSameDay(selectedDate, item.date);
+            const isToday = isSameDay(item.date, today);
             
-            <div 
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium mb-1 
-                ${isSameDay(item.date, today) ? 'border-2 border-primary' : ''}`}
-            >
-              {format(item.date, 'd')}
-            </div>
-            
-            {item.matchingDay ? (
+            return (
               <div 
-                className={`w-4 h-4 rounded-full ${getEmotionColor(item.matchingDay.dominantCategory)}`}
-                title={`Average intensity: ${item.matchingDay.averageIntensity.toFixed(1)}/10`}
-              />
-            ) : (
-              <div className="w-4 h-4 rounded-full bg-gray-200" title="No data" />
-            )}
+                key={idx} 
+                className={`flex flex-col items-center cursor-pointer transition-all
+                  ${isSelected ? 'transform scale-110' : ''}
+                  ${isSelected ? 'opacity-100' : 'opacity-90'}
+                  hover:opacity-100`}
+                onClick={() => handleDayClick(item.date, item.matchingDay)}
+              >
+                <div className="text-xs text-muted-foreground mb-1">
+                  {format(item.date, 'EEE')}
+                </div>
+                
+                <div 
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium mb-1 
+                    ${isToday ? 'border-2 border-primary' : ''}
+                    ${isSelected ? 'bg-blue-50 shadow-sm' : ''}`}
+                >
+                  {format(item.date, 'd')}
+                </div>
+                
+                {item.matchingDay ? (
+                  <div 
+                    className={`w-5 h-5 rounded-full flex items-center justify-center ${getEmotionColor(item.matchingDay.dominantCategory)}`}
+                    title={getEmotionTooltip(item)}
+                  >
+                    {isSelected && (
+                      <div className="text-[9px] text-white font-semibold">
+                        {Math.round(item.matchingDay.averageIntensity || 0)}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center" title="No data">
+                    {isSelected && <span className="text-[9px] text-gray-500">-</span>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Selected day details */}
+        {selectedDate && (
+          <div className="mt-3 pt-2 border-t border-gray-100 text-sm">
+            <div className="font-medium">{format(selectedDate, 'EEEE, MMMM d')}</div>
+            
+            {(() => {
+              const selectedDay = days.find(d => isSameDay(d.date, selectedDate));
+              
+              if (!selectedDay?.matchingDay) {
+                return (
+                  <div className="text-muted-foreground mt-1">
+                    No emotions tracked on this day
+                  </div>
+                );
+              }
+              
+              return (
+                <div className="mt-1 text-gray-600">
+                  <span className="font-medium">
+                    {selectedDay.matchingDay.dominantEmotion || 'Mixed emotions'}
+                  </span>
+                  {' '}was your most significant emotion with an intensity of{' '}
+                  <span className="font-medium">
+                    {selectedDay.matchingDay.averageIntensity?.toFixed(1) || '0'}/10
+                  </span>
+                </div>
+              );
+            })()}
           </div>
-        ))}
+        )}
       </div>
     );
   };
@@ -290,7 +367,17 @@ const EmotionInsightsTab = () => {
                     Today
                   </div>
                   
-                  {!summaryData || !summaryData.dominantEmotion ? (
+                  {/* Check if we have tracking data based on either summary OR frequent emotions */}
+                  {(!summaryData || !summaryData.dominantEmotion) && frequentEmotions.length > 0 ? (
+                    <div className="flex items-center">
+                      <div className="text-3xl font-semibold mr-2">
+                        {frequentEmotions[0]?.emotion || "None"}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        most frequent
+                      </div>
+                    </div>
+                  ) : (!summaryData || !summaryData.dominantEmotion) && frequentEmotions.length === 0 ? (
                     <div className="text-muted-foreground text-sm py-1">No emotions tracked yet</div>
                   ) : (
                     <div className="flex items-center">
@@ -310,7 +397,17 @@ const EmotionInsightsTab = () => {
                     Average Intensity
                   </div>
                   
-                  {!summaryData ? (
+                  {/* Check if we have intensity data from either source */}
+                  {(!summaryData || summaryData.averageIntensity === undefined) && highIntensityEmotions.length > 0 ? (
+                    <div className="flex items-center">
+                      <div className="text-3xl font-semibold mr-2">
+                        {highIntensityEmotions[0]?.intensity.toFixed(1) || "0"}/10
+                      </div>
+                      <div className="text-sm px-2 py-1 rounded-full bg-gray-100">
+                        {getIntensityLabel(highIntensityEmotions[0]?.intensity || 0)}
+                      </div>
+                    </div>
+                  ) : (!summaryData || summaryData.averageIntensity === undefined) && highIntensityEmotions.length === 0 ? (
                     <div className="text-muted-foreground text-sm py-1">No data</div>
                   ) : (
                     <div className="flex items-center">

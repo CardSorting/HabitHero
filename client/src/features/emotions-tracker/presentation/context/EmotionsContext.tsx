@@ -3,9 +3,7 @@ import { Emotion, EmotionCategory, EmotionEntry, EmotionSummary, EmotionTrend } 
 import { EmotionsService } from '../../application/EmotionsService';
 import { ApiEmotionsRepository } from '../../infrastructure/ApiEmotionsRepository';
 
-// Initialize dependencies
-const emotionsRepository = new ApiEmotionsRepository();
-const emotionsService = new EmotionsService(emotionsRepository, emotionsRepository);
+// Dependencies will be injected through props
 
 // Context interface
 export interface EmotionsContextProps {
@@ -47,8 +45,14 @@ export interface EmotionsContextProps {
 // Create the context
 const EmotionsContext = createContext<EmotionsContextProps | undefined>(undefined);
 
+// Provider component interface
+interface EmotionsProviderProps {
+  children: React.ReactNode;
+  service: EmotionsService;
+}
+
 // Provider component
-export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
+export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, service }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -57,7 +61,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const emotions = await emotionsService.getAllEmotions();
+      const emotions = await service.getAllEmotions();
       return emotions;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -65,13 +69,13 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   const getEmotionById = useCallback(async (id: string): Promise<Emotion | null> => {
     setIsLoading(true);
     setError(null);
     try {
-      const emotion = await emotionsService.getEmotionById(id);
+      const emotion = await service.getEmotionById(id);
       return emotion;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -85,7 +89,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const emotions = await emotionsService.getEmotionsByCategory(category);
+      const emotions = await service.getEmotionsByCategory(category);
       return emotions;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -100,7 +104,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const entries = await emotionsService.getEntriesByDate(1, date); // TODO: get real user ID
+      const entries = await service.getEntriesByDate(1, date); // TODO: get real user ID
       return entries;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -114,7 +118,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const entries = await emotionsService.getEntriesByDateRange(1, fromDate, toDate); // TODO: get real user ID
+      const entries = await service.getEntriesByDateRange(1, fromDate, toDate); // TODO: get real user ID
       return entries;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -128,7 +132,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const entry = await emotionsService.getEntryById(id);
+      const entry = await service.getEntryById(id);
       return entry;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -152,7 +156,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const entry = await emotionsService.trackEmotion(
+      const entry = await service.trackEmotion(
         1, // TODO: get real user ID
         emotionId,
         emotionName,
@@ -176,7 +180,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const entry = await emotionsService.updateEmotionEntry(id, 1, updates); // TODO: get real user ID
+      const entry = await service.updateEmotionEntry(id, 1, updates); // TODO: get real user ID
       return entry;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -190,7 +194,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const success = await emotionsService.deleteEmotionEntry(id, 1); // TODO: get real user ID
+      const success = await service.deleteEmotionEntry(id, 1); // TODO: get real user ID
       return success;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -205,7 +209,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const summary = await emotionsService.getSummaryForDate(1, date); // TODO: get real user ID
+      const summary = await service.getSummaryForDate(1, date); // TODO: get real user ID
       return summary;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -226,7 +230,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const trends = await emotionsService.getTrends(1, fromDate, toDate); // TODO: get real user ID
+      const trends = await service.getTrends(1, fromDate, toDate); // TODO: get real user ID
       return trends;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -244,7 +248,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const emotions = await emotionsService.getMostFrequentEmotions(1, fromDate, toDate, limit); // TODO: get real user ID
+      const emotions = await service.getMostFrequentEmotions(1, fromDate, toDate, limit); // TODO: get real user ID
       return emotions;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -262,7 +266,7 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      const emotions = await emotionsService.getHighestIntensityEmotions(1, fromDate, toDate, limit); // TODO: get real user ID
+      const emotions = await service.getHighestIntensityEmotions(1, fromDate, toDate, limit); // TODO: get real user ID
       return emotions;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');

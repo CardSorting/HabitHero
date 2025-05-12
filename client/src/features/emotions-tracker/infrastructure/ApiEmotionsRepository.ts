@@ -292,7 +292,7 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
    */
   async getTrends(userId: number, fromDate: string, toDate: string): Promise<EmotionTrend[]> {
     try {
-      const response = await fetch(`/api/emotions/analytics/trends?fromDate=${fromDate}&toDate=${toDate}`);
+      const response = await fetch(`/api/emotions/analytics/trends?from=${fromDate}&to=${toDate}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch emotion trends for date range ${fromDate} to ${toDate}`);
@@ -314,7 +314,7 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
    */
   async getMostFrequentEmotions(userId: number, fromDate: string, toDate: string, limit?: number): Promise<{emotion: string, count: number}[]> {
     try {
-      let url = `/api/emotions/analytics/frequent?fromDate=${fromDate}&toDate=${toDate}`;
+      let url = `/api/emotions/analytics/frequent?from=${fromDate}&to=${toDate}`;
       if (limit) {
         url += `&limit=${limit}`;
       }
@@ -341,7 +341,7 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
    */
   async getHighestIntensityEmotions(userId: number, fromDate: string, toDate: string, limit?: number): Promise<{emotion: string, intensity: number}[]> {
     try {
-      let url = `/api/emotions/analytics/highest-intensity?fromDate=${fromDate}&toDate=${toDate}`;
+      let url = `/api/emotions/analytics/highest-intensity?from=${fromDate}&to=${toDate}`;
       if (limit) {
         url += `&limit=${limit}`;
       }

@@ -426,54 +426,57 @@ const WellnessChallenges: React.FC = () => {
         <div className="fixed bottom-20 right-4">
           <Button 
             size="lg" 
-            className="h-14 w-14 rounded-full shadow-lg"
+            className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-primary to-primary/90 hover:shadow-xl transition-all duration-300 border-0"
             onClick={() => setCreateModalOpen(true)}
           >
             <Plus className="h-6 w-6" />
+            <span className="sr-only">Create New Challenge</span>
           </Button>
         </div>
         
-        {/* New challenge dialog */}
+        {/* New challenge dialog - Apple Health Style */}
         <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Create Challenge</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="sm:max-w-[425px] rounded-xl border-0 shadow-lg overflow-hidden p-0">
+            {/* Header with gradient background */}
+            <div className="bg-gradient-to-br from-primary/90 to-primary p-5 text-white">
+              <DialogTitle className="text-xl font-semibold mb-1">Create Challenge</DialogTitle>
+              <DialogDescription className="text-white/90 text-sm">
                 Set up a new wellness challenge to track your progress
               </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <div className="space-y-4">
+            </div>
+            
+            <div className="p-5">
+              <div className="space-y-5">
                 <div>
-                  <label htmlFor="challenge-name" className="text-sm font-medium">
+                  <label htmlFor="challenge-name" className="text-sm font-medium block mb-1.5">
                     Challenge Name
                   </label>
                   <input
                     id="challenge-name"
                     placeholder="Daily Meditation"
-                    className="flex h-10 w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="flex h-11 w-full rounded-xl border-0 bg-slate-100 px-4 py-2 text-sm shadow-inner focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium">Challenge Type</label>
-                  <div className="grid grid-cols-2 gap-2 mt-1 max-h-56 overflow-y-auto">
+                  <label className="text-sm font-medium block mb-1.5">Challenge Type</label>
+                  <div className="grid grid-cols-2 gap-3 mt-1 max-h-56 overflow-y-auto pr-1 pb-1 hide-scrollbar">
                     {challengeTypes.map((type) => (
                       <div 
                         key={type.name}
-                        className="border rounded-md p-2 flex items-center cursor-pointer hover:bg-accent"
+                        className="border-0 rounded-xl bg-slate-100 p-3 flex items-center cursor-pointer hover:bg-slate-200 transition-colors duration-200"
                       >
-                        <div className={`p-1 rounded-full ${type.color} mr-2`}>
+                        <div className={`p-2 rounded-full ${type.color} mr-3 shadow-sm`}>
                           {React.cloneElement(type.icon, { className: 'h-4 w-4' })}
                         </div>
-                        <span className="text-sm">{type.displayName}</span>
+                        <span className="text-sm font-medium">{type.displayName}</span>
                       </div>
                     ))}
                   </div>
                 </div>
                 
                 <div>
-                  <label htmlFor="target" className="text-sm font-medium">
+                  <label htmlFor="target" className="text-sm font-medium block mb-1.5">
                     Daily Target
                   </label>
                   <input
@@ -481,19 +484,23 @@ const WellnessChallenges: React.FC = () => {
                     type="number"
                     min="1"
                     placeholder="10"
-                    className="flex h-10 w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="flex h-11 w-full rounded-xl border-0 bg-slate-100 px-4 py-2 text-sm shadow-inner focus:ring-1 focus:ring-primary"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1.5 ml-1">
                     The number of times or minutes per day
                   </p>
                 </div>
               </div>
               
-              <div className="flex justify-end gap-2 mt-6">
+              <div className="flex justify-end gap-3 mt-7">
                 <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
+                  <Button variant="outline" className="rounded-xl border border-slate-200 h-11">
+                    Cancel
+                  </Button>
                 </DialogClose>
-                <Button>Create</Button>
+                <Button className="rounded-xl h-11 px-6 shadow-sm">
+                  Create Challenge
+                </Button>
               </div>
             </div>
           </DialogContent>

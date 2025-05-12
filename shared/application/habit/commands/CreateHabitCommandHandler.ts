@@ -7,7 +7,7 @@ import { HabitDescription } from "../../../domain/habit/HabitDescription";
 import { HabitFrequency } from "../../../domain/habit/HabitFrequency";
 import { HabitReminder } from "../../../domain/habit/HabitReminder";
 import { UserId } from "../../../domain/user/UserId";
-import { EventBus } from "../../shared/EventBus";
+import { EventBus } from "../../../application/shared/EventBus";
 
 /**
  * Handler for creating a new habit

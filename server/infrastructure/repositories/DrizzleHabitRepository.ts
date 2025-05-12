@@ -4,7 +4,7 @@ import { HabitId } from "../../../shared/domain/habit/HabitId";
 import { UserId } from "../../../shared/domain/user/UserId";
 import { db } from "../../db";
 import { habits, habitCompletions } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 /**
  * Implementation of HabitRepository using Drizzle ORM
@@ -137,10 +137,10 @@ export class DrizzleHabitRepository implements HabitRepository {
         .select()
         .from(habitCompletions)
         .where(
-          eq(habitCompletions.habitId, habitData.id)
-        )
-        .where(
-          eq(habitCompletions.date, date)
+          and(
+            eq(habitCompletions.habitId, habitData.id),
+            eq(habitCompletions.date, date)
+          )
         );
       
       if (existingCompletion) {

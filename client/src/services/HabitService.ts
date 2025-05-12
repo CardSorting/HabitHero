@@ -48,13 +48,35 @@ export class HabitService {
   useCreateHabit() {
     return useMutation({
       mutationFn: async (habitData: InsertHabit) => {
-        const response = await apiRequest('POST', '/api/habits', habitData);
-        const data = await response.json();
-        return data as Habit;
+        console.log("HabitService: Creating habit with data:", habitData);
+        
+        try {
+          console.log("HabitService: Before API request");
+          const response = await apiRequest('POST', '/api/habits', habitData);
+          console.log("HabitService: API Response received:", response);
+          
+          if (!response.ok) {
+            // Try to get error details
+            const errorText = await response.text();
+            console.error("HabitService: API Error Response:", response.status, errorText);
+            throw new Error(`Server error: ${response.status} - ${errorText}`);
+          }
+          
+          const data = await response.json();
+          console.log("HabitService: Parsed response data:", data);
+          return data as Habit;
+        } catch (error) {
+          console.error("HabitService: Error in createHabit mutation:", error);
+          throw error;
+        }
       },
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log("HabitService: Habit created successfully:", data);
         // Invalidate habits query to refresh the list
         this.queryClient.invalidateQueries({ queryKey: ['/api/habits'] });
+      },
+      onError: (error) => {
+        console.error("HabitService: Error in mutation handler:", error);
       }
     });
   }

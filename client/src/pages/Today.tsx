@@ -59,7 +59,10 @@ const Today: React.FC = () => {
     try {
       console.log("Attempting to create habit with data:", data);
       
-      await createHabit(data);
+      // Log what happens during creation
+      console.log("Before calling createHabit");
+      const result = await createHabit(data);
+      console.log("After calling createHabit - result:", result);
       
       toast({
         title: "Habit created",
@@ -71,7 +74,17 @@ const Today: React.FC = () => {
       // Make sure the habits list is refreshed
       refetchHabits();
     } catch (error) {
-      console.error("Error creating habit:", error);
+      console.error("Error creating habit - full error:", error);
+      
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      } else {
+        console.error("Non-Error object thrown:", error);
+      }
+      
       toast({
         title: "Error",
         description: `Failed to create habit: ${error instanceof Error ? error.message : 'Unknown error'}`,

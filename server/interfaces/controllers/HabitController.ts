@@ -117,6 +117,7 @@ export class HabitController {
   async createHabit(req: AuthRequest, res: Response): Promise<void> {
     try {
       console.log("POST /api/habits received with body:", req.body);
+      console.log("Request headers:", req.headers);
       
       const userId = req.user?.id;
       if (!userId) {
@@ -128,7 +129,19 @@ export class HabitController {
       console.log("Creating habit for authenticated user:", userId);
       
       try {
+        // Log the raw request data
+        console.log("Raw request data:", {
+          body: req.body,
+          userId: userId,
+          contentType: req.headers['content-type']
+        });
+        
         // Create command from request data
+        console.log("Creating command with data:", {
+          ...req.body,
+          userId
+        });
+        
         const command = CreateHabitCommand.create({
           ...req.body,
           userId
@@ -137,6 +150,7 @@ export class HabitController {
         console.log("Validated habit data:", command);
         
         // Execute command handler
+        console.log("Executing command handler...");
         const newHabit = await this.createHabitCommandHandler.execute(command);
         
         console.log("Habit created successfully:", newHabit);
@@ -144,13 +158,25 @@ export class HabitController {
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
           console.log("Validation error:", validationError.errors);
+          console.log("Validation error format issues:", validationError.format());
           res.status(400).json({ message: validationError.errors });
           return;
         }
+        console.log("Non-validation error in inner try block:", validationError);
         throw validationError;
       }
     } catch (error) {
       console.error("Error creating habit:", error);
+      
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      } else {
+        console.error("Non-Error object thrown:", error);
+      }
+      
       res.status(500).json({ message: error instanceof Error ? error.message : "Unknown error" });
     }
   }

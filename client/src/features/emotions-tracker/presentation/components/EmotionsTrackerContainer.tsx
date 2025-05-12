@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEmotions } from '../context/EmotionsContext';
 import EmotionTrackingTab from './tabs/EmotionTrackingTab';
-import { EmotionInsightsTab } from './tabs/EmotionInsightsTab';
+import EmotionInsightsTab from './tabs/EmotionInsightsTab';
 import EmotionJournalTab from './tabs/EmotionJournalTab';
 // Import as default
 import EmotionHistoryTabDefault from './tabs/EmotionHistoryTab';

@@ -308,10 +308,28 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
    */
   async getTrends(userId: number, fromDate: string, toDate: string): Promise<EmotionTrend[]> {
     try {
+      // Ensure we have both date parameters to avoid 400 errors
+      if (!fromDate || !toDate) {
+        const today = new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        
+        const formatDate = (date: Date) => {
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        };
+        
+        fromDate = fromDate || formatDate(oneWeekAgo);
+        toDate = toDate || formatDate(today);
+        
+        console.log(`Using default date range ${fromDate} to ${toDate} for trends`);
+      }
+      
       const response = await fetch(`/api/emotions/analytics/trends?from=${fromDate}&to=${toDate}`);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch emotion trends for date range ${fromDate} to ${toDate}`);
+        console.warn(`Failed to fetch emotion trends: ${response.status} ${response.statusText}`);
+        // Return empty array for now
+        return [];
       }
       
       return await response.json();

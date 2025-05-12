@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { PageTransition } from '@/components/page-transition';
@@ -25,10 +25,37 @@ import {
 /**
  * Mobile-first implementation of the Wellness Challenges feature
  */
+// Interface for tracking abandoned challenges
+interface AbandonedChallenge {
+  id: string;
+  timestamp: number;
+}
+
 const WellnessChallenges: React.FC = () => {
   const { user } = useAuth();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [, navigate] = useLocation();
+  const [abandonedChallenges, setAbandonedChallenges] = useState<string[]>([]);
+  
+  // Load abandoned challenges from localStorage
+  useEffect(() => {
+    const storedAbandoned = localStorage.getItem('abandonedChallenges');
+    if (storedAbandoned) {
+      try {
+        const parsed: AbandonedChallenge[] = JSON.parse(storedAbandoned);
+        // Only consider challenges abandoned in the last 30 days
+        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+        const validAbandoned = parsed
+          .filter(challenge => challenge.timestamp > thirtyDaysAgo)
+          .map(challenge => challenge.id);
+        
+        setAbandonedChallenges(validAbandoned);
+      } catch (e) {
+        console.error('Error parsing abandoned challenges', e);
+        setAbandonedChallenges([]);
+      }
+    }
+  }, []);
   
   // Categories of wellness challenges
   const challengeTypes = [
@@ -58,124 +85,144 @@ const WellnessChallenges: React.FC = () => {
             {/* Challenge Cards */}
             <div className="space-y-3">
               {/* Emotions Challenge */}
-              <Card className="overflow-hidden border-l-4 border-l-red-400">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <div className="bg-red-100 p-2 rounded-full mr-3">
-                        <Heart className="h-5 w-5 text-red-500" />
+              {!abandonedChallenges.includes('1') && (
+                <Card className="overflow-hidden border-l-4 border-l-red-400">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <div className="bg-red-100 p-2 rounded-full mr-3">
+                          <Heart className="h-5 w-5 text-red-500" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Daily Gratitude Practice</h3>
+                          <p className="text-xs text-muted-foreground">Emotions • Daily</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold">Daily Gratitude Practice</h3>
-                        <p className="text-xs text-muted-foreground">Emotions • Daily</p>
+                      <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
+                        Active
                       </div>
                     </div>
-                    <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
-                      Active
+                    
+                    <div className="mb-3">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Progress Today</span>
+                        <span className="font-medium">1/3</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-red-400 rounded-full" style={{ width: '33%' }}></div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Progress Today</span>
-                      <span className="font-medium">1/3</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-red-400 rounded-full" style={{ width: '33%' }}></div>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => navigate('/wellness-challenges/1')}
-                  >
-                    View Challenge
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardContent>
-              </Card>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => navigate('/wellness-challenges/1')}
+                    >
+                      View Challenge
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
               
               {/* Meditation Challenge */}
-              <Card className="overflow-hidden border-l-4 border-l-blue-400">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <div className="bg-blue-100 p-2 rounded-full mr-3">
-                        <Brain className="h-5 w-5 text-blue-500" />
+              {!abandonedChallenges.includes('3') && (
+                <Card className="overflow-hidden border-l-4 border-l-blue-400">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <div className="bg-blue-100 p-2 rounded-full mr-3">
+                          <Brain className="h-5 w-5 text-blue-500" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Morning Mindfulness</h3>
+                          <p className="text-xs text-muted-foreground">Meditation • Daily</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold">Morning Mindfulness</h3>
-                        <p className="text-xs text-muted-foreground">Meditation • Daily</p>
+                      <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
+                        Active
                       </div>
                     </div>
-                    <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
-                      Active
+                    
+                    <div className="mb-3">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Progress Today</span>
+                        <span className="font-medium">0/10 min</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-400 rounded-full" style={{ width: '0%' }}></div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Progress Today</span>
-                      <span className="font-medium">0/10 min</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-400 rounded-full" style={{ width: '0%' }}></div>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => navigate('/wellness-challenges/3')}
-                  >
-                    View Challenge
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardContent>
-              </Card>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => navigate('/wellness-challenges/3')}
+                    >
+                      View Challenge
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
               
               {/* Activity Challenge */}
-              <Card className="overflow-hidden border-l-4 border-l-orange-400">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <div className="bg-orange-100 p-2 rounded-full mr-3">
-                        <Activity className="h-5 w-5 text-orange-500" />
+              {!abandonedChallenges.includes('7') && (
+                <Card className="overflow-hidden border-l-4 border-l-orange-400">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <div className="bg-orange-100 p-2 rounded-full mr-3">
+                          <Activity className="h-5 w-5 text-orange-500" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Daily Movement</h3>
+                          <p className="text-xs text-muted-foreground">Activity • Daily</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold">Daily Movement</h3>
-                        <p className="text-xs text-muted-foreground">Activity • Daily</p>
+                      <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
+                        Active
                       </div>
                     </div>
-                    <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
-                      Active
+                    
+                    <div className="mb-3">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Progress Today</span>
+                        <span className="font-medium">15/30 min</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-orange-400 rounded-full" style={{ width: '50%' }}></div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Progress Today</span>
-                      <span className="font-medium">15/30 min</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-orange-400 rounded-full" style={{ width: '50%' }}></div>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => navigate('/wellness-challenges/7')}
-                  >
-                    View Challenge
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardContent>
-              </Card>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => navigate('/wellness-challenges/7')}
+                    >
+                      View Challenge
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* No active challenges message */}
+              {abandonedChallenges.length >= 3 && (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <p className="text-muted-foreground mb-3">You don't have any active challenges</p>
+                    <Button 
+                      onClick={() => navigate('/wellness-challenges/categories/emotions')}
+                    >
+                      Browse Challenges
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
           

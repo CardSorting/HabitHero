@@ -110,15 +110,41 @@ const WellnessChallengeDetails: React.FC = () => {
     // Here we would make an API call to abandon the challenge
     setAbandonDialogOpen(false);
     
-    toast({
-      title: "Challenge abandoned",
-      description: "You can always start this challenge again from the challenges page.",
-    });
-    
-    // Redirect back to the challenges page
-    setTimeout(() => {
-      navigate('/wellness-challenges');
-    }, 1500);
+    // Update localStorage with the abandoned challenge
+    try {
+      const storedAbandoned = localStorage.getItem('abandonedChallenges');
+      let abandonedList = [];
+      
+      if (storedAbandoned) {
+        abandonedList = JSON.parse(storedAbandoned);
+      }
+      
+      // Add this challenge to the abandoned list with a timestamp
+      abandonedList.push({
+        id: challengeId,
+        timestamp: Date.now()
+      });
+      
+      // Save back to localStorage
+      localStorage.setItem('abandonedChallenges', JSON.stringify(abandonedList));
+      
+      toast({
+        title: "Challenge abandoned",
+        description: "You can always start this challenge again from the challenges page.",
+      });
+      
+      // Redirect back to the challenges page
+      setTimeout(() => {
+        navigate('/wellness-challenges');
+      }, 1500);
+    } catch (e) {
+      console.error('Error saving abandoned challenge', e);
+      toast({
+        title: "Error abandoning challenge",
+        description: "There was a problem abandoning this challenge. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (

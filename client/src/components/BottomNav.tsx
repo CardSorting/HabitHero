@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Home, BarChart2, Calendar, PieChart, Settings, HeartHandshake } from "lucide-react";
+import { Home, BarChart2, Calendar, PieChart, Settings, HeartHandshake, SmilePlus } from "lucide-react";
 import { motion } from "framer-motion";
 
 const BottomNav: React.FC = () => {
@@ -12,6 +12,7 @@ const BottomNav: React.FC = () => {
     { icon: Calendar, label: "Calendar", path: "/calendar" },
     { icon: PieChart, label: "Analytics", path: "/analytics" },
     { icon: HeartHandshake, label: "Therapy", path: "/therapy" },
+    { icon: SmilePlus, label: "Emotions", path: "/emotions" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 

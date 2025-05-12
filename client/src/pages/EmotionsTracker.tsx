@@ -1,14 +1,15 @@
 // EmotionsTracker - Main page component for the Emotions Tracker feature
 
-import React, { useEffect, useState } from 'react';
-import { useApiRequest } from '@lib/query';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import EmotionsTrackerContainer from '../features/emotions-tracker/presentation/components/EmotionsTrackerContainer';
+import { apiRequest } from '../lib/queryClient';
 
 const EmotionsTracker: React.FC = () => {
-  const { data: user, isLoading } = useApiRequest({ 
+  const { data: user, isLoading } = useQuery({ 
     queryKey: ['/api/user'],
-    enabled: true
+    queryFn: () => apiRequest('/api/user')
   });
   
   if (isLoading) {

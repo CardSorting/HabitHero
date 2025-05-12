@@ -180,15 +180,26 @@ const WellnessChallenges: React.FC = () => {
         <div className="p-4">
           {/* Active Challenges Section */}
           <div className="mb-6">
+            {/* Title row */}
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold">Your Active Challenges</h2>
               
               {activeChallenges.length > 0 && (
-                <div className="flex items-center">
+                <div className="text-xs text-muted-foreground">
+                  {filteredChallenges.length} {filteredChallenges.length === 1 ? 'challenge' : 'challenges'}
+                </div>
+              )}
+            </div>
+            
+            {/* Filter row - separate from title row */}
+            {activeChallenges.length > 0 && (
+              <div className="mb-4">
+                {/* All button and scrollable filters */}
+                <div className="flex overflow-hidden items-center">
                   <Button 
                     variant={categoryFilter === 'all' ? 'default' : 'outline'} 
                     size="sm" 
-                    className={`h-8 rounded-full px-3 mr-2 text-xs font-medium transition-all ${
+                    className={`h-8 rounded-full px-3 mr-2 text-xs font-medium transition-all shrink-0 ${
                       categoryFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-accent'
                     }`}
                     onClick={() => setCategoryFilter('all')}
@@ -196,14 +207,13 @@ const WellnessChallenges: React.FC = () => {
                     All
                   </Button>
                   
-                  {/* Horizontal scrollable category filters */}
-                  <div className="flex -mx-1 overflow-x-auto px-1 py-1 hide-scrollbar">
+                  <div className="overflow-x-auto hide-scrollbar pb-1 flex">
                     {challengeTypes.map(type => (
                       <Button 
                         key={type.name}
                         variant={categoryFilter === type.name ? 'default' : 'outline'} 
                         size="sm" 
-                        className={`h-8 rounded-full mr-2 px-3 text-xs font-medium whitespace-nowrap transition-all flex items-center ${
+                        className={`h-8 rounded-full mr-2 px-3 text-xs font-medium shrink-0 whitespace-nowrap transition-all flex items-center ${
                           categoryFilter === type.name 
                             ? 'bg-primary text-primary-foreground shadow-sm' 
                             : 'hover:bg-accent'
@@ -216,8 +226,8 @@ const WellnessChallenges: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             
             {/* Show management controls if there are enough challenges */}
             {filteredChallenges.length > 3 && (

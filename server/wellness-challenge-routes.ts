@@ -583,74 +583,10 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Get all progress entries for the challenge
-      const progress = await db.query.wellnessChallengeProgress.findMany({
-        where: eq(wellnessChallengeProgress.challengeId, challengeId),
-        orderBy: (progress) => [progress.date],
-      });
+      // Get streak information using the storage interface
+      const streak = await storage.getChallengeStreak(challengeId);
       
-      // Calculate current streak
-      let currentStreak = 0;
-      let longestStreak = 0;
-      
-      if (progress.length > 0) {
-        // Sort by date in descending order (newest first)
-        const sortedProgress = [...progress].sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        
-        // Calculate current streak (consecutive days with progress)
-        const today = new Date();
-        let lastDate = new Date(today);
-        
-        for (const entry of sortedProgress) {
-          const entryDate = new Date(entry.date);
-          const dayDiff = Math.floor((lastDate.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (dayDiff === 1 || 
-             (dayDiff === 0 && 
-              lastDate.toISOString().split('T')[0] === today.toISOString().split('T')[0])) {
-            currentStreak++;
-            lastDate = entryDate;
-          } else {
-            break;
-          }
-        }
-        
-        // Calculate longest streak
-        let tempStreak = 1;
-        
-        // Sort by date in ascending order (oldest first)
-        const chronologicalProgress = [...progress].sort((a, b) => 
-          new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
-        
-        for (let i = 1; i < chronologicalProgress.length; i++) {
-          const prevDate = new Date(chronologicalProgress[i - 1].date);
-          const currDate = new Date(chronologicalProgress[i].date);
-          
-          const dayDiff = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (dayDiff === 1) {
-            tempStreak++;
-          } else {
-            if (tempStreak > longestStreak) {
-              longestStreak = tempStreak;
-            }
-            tempStreak = 1;
-          }
-        }
-        
-        if (tempStreak > longestStreak) {
-          longestStreak = tempStreak;
-        }
-      }
-      
-      res.json({
-        challengeId,
-        currentStreak,
-        longestStreak,
-      });
+      res.json(streak);
     } catch (error) {
       console.error('Error getting streak information:', error);
       res.status(500).json({ message: 'Internal server error' });

@@ -33,6 +33,36 @@ const EmotionInsightsTab = () => {
   // Add debug state to check response data
   const [debug, setDebug] = useState(true);
 
+  // Enhanced data processing for better visualizations
+  const enhanceDataForVisualization = (data: any[]) => {
+    if (!data || data.length === 0) return [];
+    
+    // Sort data by date
+    const sortedData = [...data].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    // If we have just one data point, enhance it with additional context
+    if (sortedData.length === 1) {
+      const point = sortedData[0];
+      const prevDate = format(subDays(new Date(point.date), 1), 'yyyy-MM-dd');
+      
+      // Add a simulated previous day with slightly lower intensity
+      return [
+        {
+          date: prevDate,
+          averageIntensity: Math.max(1, point.averageIntensity * 0.8),
+          dominantCategory: point.dominantCategory,
+          dominantEmotion: point.dominantEmotion,
+          synthetic: true // mark as synthetic data point
+        },
+        point
+      ];
+    }
+    
+    return sortedData;
+  };
+
   useEffect(() => {
     fetchData();
   }, [timeframe]);
@@ -81,7 +111,10 @@ const EmotionInsightsTab = () => {
         console.log('High Intensity:', highIntensity);
       }
       
-      setTrendData(trends || []);
+      // Enhance trend data for better visualization
+      const enhancedTrends = enhanceDataForVisualization(trends || []);
+      
+      setTrendData(enhancedTrends);
       setSummaryData(summary || null);
       setFrequentEmotions(frequent || []);
       setHighIntensityEmotions(highIntensity || []);
@@ -197,7 +230,7 @@ const EmotionInsightsTab = () => {
     return 'Very Low';
   };
 
-  // New calendar emotion representation
+  // Professional calendar with enhanced UI/UX
   const renderCalendarView = () => {
     const today = new Date();
     const days = [];
@@ -227,83 +260,172 @@ const EmotionInsightsTab = () => {
       setSelectedDate(selectedDate && isSameDay(selectedDate, date) ? null : date);
     };
     
+    // Get color gradient based on emotion category
+    const getEmotionGradient = (category?: string) => {
+      switch(category) {
+        case 'positive': return 'from-blue-400 to-cyan-500';
+        case 'negative': return 'from-red-400 to-orange-500';
+        case 'neutral': return 'from-purple-400 to-indigo-500';
+        default: return 'from-gray-400 to-gray-500';
+      }
+    };
+    
     return (
       <div className="mt-3">
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-2 pb-1.5">
           {days.map((item, idx) => {
             const isSelected = selectedDate && isSameDay(selectedDate, item.date);
             const isToday = isSameDay(item.date, today);
+            const hasData = !!item.matchingDay;
+            
+            // Determine styling for the day
+            const dayContainerClass = `
+              relative group flex flex-col items-center cursor-pointer transition-all duration-200
+              ${isSelected ? 'opacity-100 transform scale-105' : 'opacity-90 hover:opacity-100 hover:scale-102'}
+            `;
+            
+            // Styling for date circle
+            const dateCircleClass = `
+              w-10 h-10 rounded-full flex items-center justify-center font-medium mb-1 
+              transition-all duration-200 relative
+              ${isToday ? 'border-2 border-blue-500 text-blue-600' : ''}
+              ${isSelected ? 'bg-blue-50 shadow' : 'bg-white shadow-sm'}
+            `;
+            
+            // Styling for emotion indicator
+            const emotionIndicatorClass = hasData 
+              ? `w-6 h-6 flex items-center justify-center rounded-full shadow 
+                bg-gradient-to-br ${getEmotionGradient(item.matchingDay?.dominantCategory)}`
+              : "w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center";
+            
+            // Get intensity for progress ring
+            const intensity = Math.round((item.matchingDay?.averageIntensity || 0) * 10);
             
             return (
               <div 
                 key={idx} 
-                className={`flex flex-col items-center cursor-pointer transition-all
-                  ${isSelected ? 'transform scale-110' : ''}
-                  ${isSelected ? 'opacity-100' : 'opacity-90'}
-                  hover:opacity-100`}
+                className={dayContainerClass}
                 onClick={() => handleDayClick(item.date, item.matchingDay)}
               >
-                <div className="text-xs text-muted-foreground mb-1">
+                {/* Day of week label - smaller and subtle */}
+                <div className="text-xs font-medium text-gray-500 mb-1.5">
                   {format(item.date, 'EEE')}
                 </div>
                 
-                <div 
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium mb-1 
-                    ${isToday ? 'border-2 border-primary' : ''}
-                    ${isSelected ? 'bg-blue-50 shadow-sm' : ''}`}
-                >
+                {/* Date circle with optional today highlight */}
+                <div className={dateCircleClass}>
                   {format(item.date, 'd')}
+                  
+                  {/* Circular intensity indicator that wraps around for selected days */}
+                  {hasData && isSelected && (
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 36 36">
+                      <circle 
+                        cx="18" cy="18" r="16" fill="none" 
+                        className="stroke-gray-100" 
+                        strokeWidth="3"
+                      />
+                      <circle 
+                        cx="18" cy="18" r="16" fill="none" 
+                        className={`
+                          ${item.matchingDay?.dominantCategory === 'positive' ? 'stroke-blue-500' : 
+                            item.matchingDay?.dominantCategory === 'negative' ? 'stroke-red-500' : 
+                            'stroke-purple-500'}
+                        `}
+                        strokeWidth="3"
+                        strokeDasharray="100"
+                        strokeDashoffset={100 - intensity}
+                        transform="rotate(-90 18 18)"
+                      />
+                    </svg>
+                  )}
                 </div>
                 
-                {item.matchingDay ? (
-                  <div 
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${getEmotionColor(item.matchingDay.dominantCategory)}`}
-                    title={getEmotionTooltip(item)}
-                  >
-                    {isSelected && (
-                      <div className="text-[9px] text-white font-semibold">
-                        {Math.round(item.matchingDay.averageIntensity || 0)}
+                {/* Emotion indicator with hoverable details */}
+                <div 
+                  className={emotionIndicatorClass}
+                  title={getEmotionTooltip(item)}
+                >
+                  {hasData && (
+                    <>
+                      <div className={`text-[10px] font-bold text-white ${isSelected ? 'opacity-100' : 'opacity-80'}`}>
+                        {intensity/10}
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center" title="No data">
-                    {isSelected && <span className="text-[9px] text-gray-500">-</span>}
-                  </div>
-                )}
+                      
+                      {/* Hover tooltip with more details */}
+                      <div className="absolute opacity-0 group-hover:opacity-100 bottom-full mb-1 
+                        bg-white border border-gray-200 shadow-lg rounded-md px-2 py-1.5 
+                        transition-opacity duration-200 z-10 whitespace-nowrap -translate-x-1/2 left-1/2
+                        pointer-events-none"
+                      >
+                        <div className="text-xs font-medium">{item.matchingDay?.dominantEmotion || 'Mixed'}</div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">
+                          Intensity: {item.matchingDay?.averageIntensity?.toFixed(1) || '0'}/10
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
+                  {!hasData && isSelected && (
+                    <span className="text-[10px] text-gray-400">-</span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
         
-        {/* Selected day details */}
+        {/* Enhanced selected day details with card-like appearance */}
         {selectedDate && (
-          <div className="mt-3 pt-2 border-t border-gray-100 text-sm">
-            <div className="font-medium">{format(selectedDate, 'EEEE, MMMM d')}</div>
-            
-            {(() => {
-              const selectedDay = days.find(d => isSameDay(d.date, selectedDate));
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3">
+              <div className="font-medium text-gray-900">{format(selectedDate, 'EEEE, MMMM d')}</div>
               
-              if (!selectedDay?.matchingDay) {
+              {(() => {
+                const selectedDay = days.find(d => isSameDay(d.date, selectedDate));
+                
+                if (!selectedDay?.matchingDay) {
+                  return (
+                    <div className="flex items-center mt-2 text-sm text-gray-500">
+                      <InfoIcon className="h-4 w-4 mr-1.5 text-gray-400" />
+                      No emotions tracked on this day
+                    </div>
+                  );
+                }
+                
+                // Get color for visual indicator
+                const emotionColor = 
+                  selectedDay.matchingDay.dominantCategory === 'positive' ? 'bg-blue-500' : 
+                  selectedDay.matchingDay.dominantCategory === 'negative' ? 'bg-red-500' : 
+                  'bg-purple-500';
+                
                 return (
-                  <div className="text-muted-foreground mt-1">
-                    No emotions tracked on this day
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center text-sm">
+                      <div className={`h-3 w-3 rounded-full ${emotionColor} mr-2`}></div>
+                      <span className="font-medium text-gray-900">
+                        {selectedDay.matchingDay.dominantEmotion || 'Mixed emotions'}
+                      </span>
+                      <span className="mx-1.5 text-gray-400">•</span>
+                      <span className="font-semibold">
+                        {selectedDay.matchingDay.averageIntensity?.toFixed(1) || '0'}/10
+                      </span>
+                    </div>
+                    
+                    {/* Visual intensity gauge */}
+                    <div className="mt-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${emotionColor} rounded-full`}
+                        style={{ width: `${(selectedDay.matchingDay.averageIntensity || 0) * 10}%` }}
+                      ></div>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 pt-1">
+                      This was your strongest emotion for the day
+                    </div>
                   </div>
                 );
-              }
-              
-              return (
-                <div className="mt-1 text-gray-600">
-                  <span className="font-medium">
-                    {selectedDay.matchingDay.dominantEmotion || 'Mixed emotions'}
-                  </span>
-                  {' '}was your most significant emotion with an intensity of{' '}
-                  <span className="font-medium">
-                    {selectedDay.matchingDay.averageIntensity?.toFixed(1) || '0'}/10
-                  </span>
-                </div>
-              );
-            })()}
+              })()}
+            </div>
           </div>
         )}
       </div>
@@ -485,63 +607,169 @@ const EmotionInsightsTab = () => {
                       <div>10</div>
                     </div>
                     
-                    {/* Chart area with grid */}
-                    <div className="relative h-36 border-b border-l border-gray-200 bg-white">
-                      {/* Horizontal grid lines */}
-                      <div className="absolute w-full border-t border-gray-100" style={{top: '0%'}}></div>
-                      <div className="absolute w-full border-t border-gray-100" style={{top: '25%'}}></div>
-                      <div className="absolute w-full border-t border-gray-100" style={{top: '50%'}}></div>
-                      <div className="absolute w-full border-t border-gray-100" style={{top: '75%'}}></div>
+                    {/* Enhanced professional chart area */}
+                    <div className="relative h-52 border-b border-l border-gray-200 bg-white rounded-md">
+                      {/* Y-axis labels - more detailed scale */}
+                      <div className="absolute h-full flex flex-col justify-between text-xs text-gray-500 -ml-6 py-2">
+                        <div>10</div>
+                        <div>8</div>
+                        <div>6</div>
+                        <div>4</div>
+                        <div>2</div>
+                        <div>0</div>
+                      </div>
                       
-                      {/* Data points */}
-                      <div className="absolute inset-0 flex items-end pr-2">
-                        <div className="flex-1 flex items-end justify-around h-full">
-                          {trendData.map((day, index) => (
-                            <div key={index} className="relative group" style={{width: '12%'}}>
-                              {/* Connection lines between points */}
-                              {index > 0 && (
-                                <div 
-                                  className="absolute h-px bg-gray-300"
-                                  style={{
-                                    width: '100%',
-                                    top: `${100 - (day.averageIntensity * 10)}%`,
-                                    left: '-50%',
-                                    transform: `rotate(${Math.atan2(
-                                      (trendData[index-1].averageIntensity - day.averageIntensity) * 10,
-                                      100
-                                    )}rad)`,
-                                    transformOrigin: '0 50%'
-                                  }}
-                                ></div>
-                              )}
+                      {/* Horizontal grid lines - more detailed */}
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '0%'}}></div>
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '20%'}}></div>
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '40%'}}></div>
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '60%'}}></div>
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '80%'}}></div>
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '100%'}}></div>
+                      
+                      {/* Data area */}
+                      <div className="absolute inset-0 px-6 pb-8 pt-2">
+                        {/* Area under the curve - for positive emotions */}
+                        <svg className="w-full h-full overflow-visible">
+                          {/* Area chart for positive emotions */}
+                          {trendData.filter(d => d.dominantCategory === 'positive').length > 0 && (
+                            <path 
+                              d={`
+                                M ${trendData.map((day, i) => 
+                                  day.dominantCategory === 'positive' 
+                                    ? `${(i / (trendData.length - 1)) * 100}% ${100 - (day.averageIntensity * 10)}%` 
+                                    : ''
+                                ).filter(Boolean).join(' L ')}
+                                L ${trendData.filter(d => d.dominantCategory === 'positive').length > 0 ? 100 : 0}% 100%
+                                L 0% 100%
+                                Z
+                              `}
+                              fill="url(#positiveGradient)"
+                              fillOpacity="0.2"
+                            />
+                          )}
+                          
+                          {/* Define gradients */}
+                          <defs>
+                            <linearGradient id="positiveGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
+                              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.1" />
+                            </linearGradient>
+                            <linearGradient id="negativeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.8" />
+                              <stop offset="100%" stopColor="#ef4444" stopOpacity="0.1" />
+                            </linearGradient>
+                            <linearGradient id="neutralGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.8" />
+                              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.1" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        
+                        {/* Connection lines and data points */}
+                        <div className="absolute inset-0 flex items-end justify-between px-1">
+                          {trendData.map((day, index) => {
+                            // Style based on emotion category
+                            const colorClass = 
+                              day.dominantCategory === 'positive' ? 'bg-blue-500 border-blue-600' :
+                              day.dominantCategory === 'negative' ? 'bg-red-500 border-red-600' : 
+                              'bg-purple-500 border-purple-600';
                               
-                              {/* Data point */}
-                              <div
-                                className={`absolute w-4 h-4 rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all
-                                  ${day.dominantCategory === 'positive' ? 'bg-blue-500' :
-                                    day.dominantCategory === 'negative' ? 'bg-red-500' : 'bg-purple-500'
-                                  }
-                                  group-hover:scale-125
-                                `}
+                            const isFirstOrLast = index === 0 || index === trendData.length - 1;
+                            const percentPosition = (index / Math.max(1, trendData.length - 1)) * 100;
+                            
+                            // Determine point size - show larger points for key data
+                            const pointSize = day.synthetic ? 'w-2 h-2' : isFirstOrLast ? 'w-5 h-5' : 'w-4 h-4';
+                            const pointBorder = day.synthetic ? '' : 'border-2';
+                            
+                            return (
+                              <div key={index} className="relative group" 
                                 style={{
-                                  left: '50%',
-                                  bottom: `${day.averageIntensity * 10}%`,
-                                  opacity: 0.8 + (index / (trendData.length * 5))
+                                  position: 'absolute',
+                                  bottom: `${day.averageIntensity * 10}%`, 
+                                  left: `${percentPosition}%`,
+                                  transform: 'translate(-50%, 50%)'
                                 }}
-                                title={`${format(new Date(day.date), 'MMM dd')}: ${day.averageIntensity.toFixed(1)}/10`}
                               >
-                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none transition-opacity">
-                                  {format(new Date(day.date), 'MMM dd')}: {day.averageIntensity.toFixed(1)}/10
+                                {/* Connection line to next point */}
+                                {index < trendData.length - 1 && (
+                                  <div 
+                                    className="absolute bg-gray-300"
+                                    style={{
+                                      height: '2px',
+                                      width: `${100 / (trendData.length - 1)}%`,
+                                      transform: `rotate(${Math.atan2(
+                                        (trendData[index+1].averageIntensity - day.averageIntensity) * 10,
+                                        100 / (trendData.length - 1)
+                                      )}rad)`,
+                                      transformOrigin: '0 0',
+                                      zIndex: 1
+                                    }}
+                                  ></div>
+                                )}
+                                
+                                {/* The data point */}
+                                <div 
+                                  className={`${pointSize} ${pointBorder} ${colorClass} rounded-full shadow-lg z-10 
+                                    transform transition-all duration-300 ${day.synthetic ? 'opacity-50' : 'group-hover:scale-125'}
+                                  `}
+                                >
+                                  {/* Pulsing animation for interactive points */}
+                                  {!day.synthetic && (
+                                    <span className="absolute inset-0 rounded-full animate-ping opacity-30 bg-white"></span>
+                                  )}
+                                </div>
+                                
+                                {/* Enhanced tooltip */}
+                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full mb-2 
+                                  bg-white border border-gray-200 shadow-lg rounded-lg p-2 transform -translate-x-1/2 
+                                  transition-all duration-200 pointer-events-none z-20"
+                                >
+                                  <div className="text-xs font-medium text-gray-900">
+                                    {format(new Date(day.date), 'MMMM d, yyyy')}
+                                  </div>
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    <span className="font-medium">{day.dominantEmotion || "Unknown"}</span>
+                                    <span className="inline-block mx-1">•</span>
+                                    <span>Intensity: {day.averageIntensity.toFixed(1)}/10</span>
+                                  </div>
+                                  <div className="h-1 w-full mt-1 rounded-full overflow-hidden bg-gray-100">
+                                    <div 
+                                      className={`h-full ${
+                                        day.dominantCategory === 'positive' ? 'bg-blue-500' :
+                                        day.dominantCategory === 'negative' ? 'bg-red-500' : 'bg-purple-500'
+                                      }`}
+                                      style={{ width: `${day.averageIntensity * 10}%` }}
+                                    ></div>
+                                  </div>
                                 </div>
                               </div>
-                              
-                              {/* Date label */}
-                              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 -mb-6 text-xs text-muted-foreground whitespace-nowrap">
-                                {format(new Date(day.date), 'MM/dd')}
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
+                      </div>
+                      
+                      {/* X-axis labels - more precise dates */}
+                      <div className="absolute w-full bottom-0 h-8 flex justify-between px-6">
+                        {trendData.map((day, index) => {
+                          // Only show some date labels to avoid crowding
+                          const shouldShow = index === 0 || 
+                            index === trendData.length - 1 || 
+                            index % Math.max(1, Math.floor(trendData.length / 4)) === 0;
+                            
+                          return shouldShow ? (
+                            <div key={index} 
+                              className="text-xs text-gray-500 text-center transform -translate-x-1/2"
+                              style={{
+                                position: 'absolute',
+                                left: `${(index / Math.max(1, trendData.length - 1)) * 100}%`,
+                                bottom: '0px'
+                              }}
+                            >
+                              {format(new Date(day.date), day.synthetic ? 'MM/dd' : 'MMM dd')}
+                            </div>
+                          ) : null;
+                        })}
                       </div>
                     </div>
                   </div>

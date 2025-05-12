@@ -7,8 +7,8 @@
  * - Interpersonal Effectiveness
  */
 
-import { db } from './server/db.js';
-import { wellnessChallenges } from './shared/schema.js';
+import { db } from './server/db.ts';
+import { wellnessChallenges } from './shared/schema.ts';
 
 // 50 challenges per category
 const mindfulnessChallenges = [
@@ -1841,15 +1841,27 @@ async function seedDBTChallenges() {
       
       for (const challenge of challenges) {
         try {
+          // Map the DBT-specific categories to one of the valid enum types
+          // We'll use 'custom' for all DBT challenges and distinguish them by title/description
+          const mappedType = 'custom';
+          
+          // Process frequency to match the enum values (daily, weekly, monthly)
+          let frequency = 'daily';
+          if (typeof challenge.frequency === 'string') {
+            const freq = challenge.frequency.toLowerCase();
+            if (freq === 'daily' || freq === 'weekly' || freq === 'monthly') {
+              frequency = freq;
+            }
+          }
+          
           const [insertedChallenge] = await db.insert(wellnessChallenges).values({
-            title: challenge.title,
+            title: `[${category}] ${challenge.title}`,
             description: challenge.description,
-            type: challenge.category,
-            frequency: challenge.frequency.toLowerCase(),
+            type: mappedType,
+            frequency: frequency,
             status: 'active',
-            difficulty: challenge.difficulty.toLowerCase(),
-            duration: challenge.duration,
-            targetValue: challenge.target,
+            // Removed difficulty field as it's not in the schema
+            targetValue: challenge.target || 1,
             userId: userId,
             startDate: startDate.toISOString().split('T')[0],
             endDate: endDate.toISOString().split('T')[0],

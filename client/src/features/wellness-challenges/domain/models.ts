@@ -1,27 +1,32 @@
 /**
- * Models for the Wellness Challenge System using domain-driven design principles
- * These models represent the core business entities and value objects
+ * Domain models for the wellness challenge system following DDD principles
  */
+import { z } from 'zod';
 
-// Enums and Value Objects
-export enum ChallengeFrequency {
-  DAILY = 'daily',
-  WEEKLY = 'weekly',
-  MONTHLY = 'monthly'
-}
+// Type definitions - Value Objects & basic types
+export type DateString = string; // ISO 8601 format (YYYY-MM-DD)
+export type PositiveNumber = number;
+export type UUID = string;
 
-export enum ChallengeStatus {
-  ACTIVE = 'active',
-  COMPLETED = 'completed',
-  ABANDONED = 'abandoned'
-}
-
+// Enums - Value Objects
 export enum ChallengeType {
   EMOTIONS = 'emotions',
   MEDITATION = 'meditation',
   JOURNALING = 'journaling',
   ACTIVITY = 'activity',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
+}
+
+export enum ChallengeFrequency {
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+  MONTHLY = 'monthly',
+}
+
+export enum ChallengeStatus {
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+  ABANDONED = 'abandoned',
 }
 
 export enum EmotionIntensity {
@@ -29,31 +34,23 @@ export enum EmotionIntensity {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
-  VERY_HIGH = 'very_high'
+  VERY_HIGH = 'very_high',
 }
 
-// Date value object
-export type DateString = string; // YYYY-MM-DD format
-
-// Core Entities
+// Entity models
 export interface WellnessChallenge {
   id: number;
   userId: number;
   title: string;
   description?: string;
-  type: ChallengeType;
+  challengeType: ChallengeType;
   frequency: ChallengeFrequency;
   startDate: DateString;
   endDate: DateString;
-  targetValue: number;
+  targetValue: PositiveNumber;
   status: ChallengeStatus;
   createdAt: string;
   updatedAt: string;
-  
-  // Derived properties
-  progress?: number;
-  completionPercentage?: number;
-  daysRemaining?: number;
 }
 
 export interface ChallengeGoal {
@@ -61,12 +58,8 @@ export interface ChallengeGoal {
   challengeId: number;
   title: string;
   description?: string;
-  targetValue: number;
+  targetValue: PositiveNumber;
   createdAt: string;
-  
-  // Derived properties
-  currentValue?: number;
-  isCompleted?: boolean;
 }
 
 export interface ChallengeProgress {
@@ -79,65 +72,13 @@ export interface ChallengeProgress {
   updatedAt: string;
 }
 
-export interface EmotionCategory {
-  id: number;
-  name: string;
-  description?: string;
-  color?: string;
-  createdAt: string;
-}
-
-export interface Emotion {
-  id: number;
-  categoryId: number;
-  name: string;
-  description?: string;
-  createdAt: string;
-  
-  // Derived properties
-  category?: EmotionCategory;
-}
-
-export interface UserEmotion {
-  id: number;
-  userId: number;
-  categoryId: number;
-  name: string;
-  description?: string;
-  createdAt: string;
-  
-  // Derived properties
-  category?: EmotionCategory;
-}
-
-// Aggregate Roots
+// Extended model with aggregate relationships
 export interface WellnessChallengeWithDetails extends WellnessChallenge {
   goals: ChallengeGoal[];
   progressEntries: ChallengeProgress[];
 }
 
-// Events
-export interface ChallengeCreatedEvent {
-  challenge: WellnessChallenge;
-  timestamp: string;
-}
-
-export interface ChallengeCompletedEvent {
-  challengeId: number;
-  completionDate: DateString;
-  finalProgress: number;
-  timestamp: string;
-}
-
-export interface DailyProgressUpdatedEvent {
-  challengeId: number;
-  date: DateString;
-  value: number;
-  previousValue?: number;
-  timestamp: string;
-}
-
-// Analytics and Summary Models
+// View models (DTOs)
 export interface ChallengeSummary {
   totalChallenges: number;
   activeChallenges: number;
@@ -150,42 +91,47 @@ export interface ChallengeStreak {
   challengeId: number;
   currentStreak: number;
   longestStreak: number;
-  lastCompletedDate?: DateString;
 }
 
-export interface EmotionTracking {
-  date: DateString;
-  emotions: { 
-    name: string; 
-    intensity: EmotionIntensity;
-    category: string;
-  }[];
-}
+// Validation schemas
+export const createChallengeSchema = z.object({
+  userId: z.number().positive(),
+  title: z.string().min(1).max(100),
+  description: z.string().optional(),
+  challengeType: z.nativeEnum(ChallengeType),
+  frequency: z.nativeEnum(ChallengeFrequency),
+  startDate: z.string(), // ISO date string
+  endDate: z.string(), // ISO date string
+  targetValue: z.number().positive(),
+});
 
-// View Models (for UI)
-export interface ChallengeCardViewModel {
-  id: number;
-  title: string;
-  type: ChallengeType;
-  frequency: ChallengeFrequency;
-  progress: number;
-  daysRemaining: number;
-  progressColor: string;
-  status: ChallengeStatus;
-}
+export const updateChallengeSchema = z.object({
+  title: z.string().min(1).max(100).optional(),
+  description: z.string().optional(),
+  challengeType: z.nativeEnum(ChallengeType).optional(),
+  frequency: z.nativeEnum(ChallengeFrequency).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  targetValue: z.number().positive().optional(),
+  status: z.nativeEnum(ChallengeStatus).optional(),
+});
 
-export interface ChallengeCalendarViewModel {
-  date: DateString;
-  isCompleted: boolean;
-  value: number;
-  targetValue: number;
-  notes?: string;
-}
+export const createChallengeGoalSchema = z.object({
+  challengeId: z.number().positive(),
+  title: z.string().min(1).max(100),
+  description: z.string().optional(),
+  targetValue: z.number().positive(),
+});
 
-export interface EmotionCalendarViewModel {
-  date: DateString;
-  emotions: string[];
-  dominantEmotion?: string;
-  dominantCategory?: string;
-  colorCode: string;
-}
+export const createChallengeProgressSchema = z.object({
+  challengeId: z.number().positive(),
+  date: z.string(), // ISO date string
+  value: z.number().min(0),
+  notes: z.string().optional(),
+});
+
+// Types based on validation schemas
+export type CreateChallengeData = z.infer<typeof createChallengeSchema>;
+export type UpdateChallengeData = z.infer<typeof updateChallengeSchema>;
+export type CreateChallengeGoalData = z.infer<typeof createChallengeGoalSchema>;
+export type CreateChallengeProgressData = z.infer<typeof createChallengeProgressSchema>;

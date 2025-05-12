@@ -24,7 +24,6 @@ interface DiaryContextType {
   // Data update operations (local state only, no API calls)
   handleSleepChange: (date: DateString, field: keyof SleepData, value: string) => void;
   handleEmotionChange: (date: DateString, emotion: string, value: string) => void;
-  handleUrgeChange: (date: DateString, urge: string, field: 'level' | 'action', value: string) => void;
   handleEventChange: (date: DateString, value: string) => void;
   handleSkillChange: (category: string, skill: string, date: DateString, checked: boolean) => void;
   handleMedicationChange: (date: DateString, value: string) => void;
@@ -32,7 +31,6 @@ interface DiaryContextType {
   // Data retrieval helpers
   getSleepValue: (date: DateString, field: keyof SleepData) => string;
   getEmotionValue: (date: DateString, emotion: string) => string;
-  getUrgeValue: (date: DateString, urge: string, field: 'level' | 'action') => string;
   getEventValue: (date: DateString) => string;
   getMedicationValue: (date: DateString) => string;
   getSkillChecked: (category: string, skill: string, date: DateString) => boolean;
@@ -433,25 +431,7 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
         }));
       }
       
-      // Get urges data
-      const urges = await diaryService.getUrges(date);
-      if (urges.length > 0) {
-        const urgesMap: { [urgeType: string]: { level: string, action: string } } = {};
-        urges.forEach(entry => {
-          urgesMap[entry.urgeType] = {
-            level: entry.level || '',
-            action: entry.action || ''
-          };
-        });
-        
-        setDiaryData(prev => ({
-          ...prev,
-          urges: {
-            ...prev.urges,
-            [date]: urgesMap
-          }
-        }));
-      }
+      // Urges data loading removed
       
       // Get skills data
       const skills = await diaryService.getSkills(date);
@@ -510,7 +490,6 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       // Gather all dates with pending changes
       const dates = Object.keys(diaryData.sleep)
         .concat(Object.keys(diaryData.emotions))
-        .concat(Object.keys(diaryData.urges))
         .concat(Object.keys(diaryData.events))
         .filter((date, index, self) => self.indexOf(date) === index) as DateString[];
       
@@ -535,31 +514,7 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
           }
         }
         
-        // Save urges data
-        if (diaryData.urges[date]) {
-          for (const [urgeType, urgeData] of Object.entries(diaryData.urges[date])) {
-            if (urgeData.level) {
-              await diaryService.saveUrge(
-                date, 
-                urgeType, 
-                'level', 
-                urgeData.level, 
-                urgeData.level,
-                urgeData.action
-              );
-            }
-            if (urgeData.action) {
-              await diaryService.saveUrge(
-                date, 
-                urgeType, 
-                'action', 
-                urgeData.action, 
-                urgeData.level,
-                urgeData.action
-              );
-            }
-          }
-        }
+        // Urges section removed
         
         // Save skills data
         for (const category in diaryData.skills) {

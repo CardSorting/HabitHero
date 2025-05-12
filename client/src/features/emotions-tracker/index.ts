@@ -1,14 +1,30 @@
-// Main barrel file for the Emotions Tracker feature
-// Makes it easy to import components from the feature
+/**
+ * Entry point for the Emotions Tracker feature
+ * This file exports all the public components, services and types
+ * needed to use the feature in the application
+ */
 
-// Re-export domain models
-export * from './domain/models';
+// Domain exports
+export { EmotionCategory } from './domain/models';
+export type { 
+  Emotion, 
+  EmotionEntry, 
+  EmotionSummary, 
+  EmotionTrend 
+} from './domain/models';
 
-// Re-export application services
+// Application exports
 export { EmotionsService } from './application/EmotionsService';
 
-// Re-export context
-export { EmotionsProvider, useEmotions } from './presentation/context/EmotionsContext';
+// Interface exports
+export { 
+  IEmotionsRepository, 
+  IEmotionEntriesRepository 
+} from './domain/repositories';
 
-// Re-export main component
-export { default as EmotionsTrackerContainer } from './presentation/components/EmotionsTrackerContainer';
+// Presentation exports
+export { EmotionsTrackerContainer } from './presentation/components/EmotionsTrackerContainer';
+export { useEmotions, EmotionsProvider } from './presentation/context/EmotionsContext';
+
+// Infrastructure exports
+export { ApiEmotionsRepository } from './infrastructure/ApiEmotionsRepository';

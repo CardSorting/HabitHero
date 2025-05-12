@@ -1,169 +1,239 @@
-// EmotionsService - Application Service
-// Acts as a facade over commands and queries for the UI layer
-
+import { format } from 'date-fns';
 import { 
-  DateString, 
-  EmotionDTO, 
-  EmotionTrackingEntry,
-  EmotionSummaryDTO,
-  EmotionTrendDTO
+  IEmotionsRepository, 
+  IEmotionEntriesRepository 
+} from '../domain/repositories';
+import { 
+  Emotion, 
+  EmotionCategory, 
+  EmotionDate, 
+  EmotionEntry, 
+  EmotionSummary, 
+  EmotionTrend 
 } from '../domain/models';
-import { IEmotionsRepository } from '../domain/repositories';
 import { 
-  EmotionCommandHandlers, 
   TrackEmotionCommand, 
-  UpdateEmotionEntryCommand, 
-  DeleteEmotionEntryCommand 
+  TrackEmotionCommandHandler,
+  UpdateEmotionEntryCommand,
+  UpdateEmotionEntryCommandHandler,
+  DeleteEmotionEntryCommand,
+  DeleteEmotionEntryCommandHandler
 } from './commands';
-import { 
-  EmotionQueryHandlers, 
+import {
   GetAllEmotionsQuery,
-  GetEmotionByIdQuery,
-  GetEmotionEntriesQuery,
-  GetEmotionEntryQuery,
+  GetAllEmotionsQueryHandler,
+  GetEmotionsByCategoryQuery,
+  GetEmotionsByCategoryQueryHandler,
+  GetEmotionEntriesByDateQuery,
+  GetEmotionEntriesByDateQueryHandler,
+  GetEmotionEntriesByDateRangeQuery,
+  GetEmotionEntriesByDateRangeQueryHandler,
   GetEmotionSummaryQuery,
+  GetEmotionSummaryQueryHandler,
   GetEmotionTrendsQuery,
+  GetEmotionTrendsQueryHandler,
   GetMostFrequentEmotionsQuery,
-  GetHighestIntensityEmotionsQuery
+  GetMostFrequentEmotionsQueryHandler,
+  GetHighestIntensityEmotionsQuery,
+  GetHighestIntensityEmotionsQueryHandler
 } from './queries';
 
-// Interface for emitting domain events
-export interface EventEmitter {
-  emit(eventName: string, payload: any): void;
-}
-
-// Main application service for emotions tracking
+/**
+ * EmotionsService
+ * Service class that acts as a facade to the application layer
+ * for the emotion tracking feature
+ */
 export class EmotionsService {
-  private commandHandlers: EmotionCommandHandlers;
-  private queryHandlers: EmotionQueryHandlers;
-  private eventEmitter?: EventEmitter;
-  private userId: number;
+  private getAllEmotionsQueryHandler: GetAllEmotionsQueryHandler;
+  private getEmotionsByCategoryQueryHandler: GetEmotionsByCategoryQueryHandler;
+  private getEmotionEntriesByDateQueryHandler: GetEmotionEntriesByDateQueryHandler;
+  private getEmotionEntriesByDateRangeQueryHandler: GetEmotionEntriesByDateRangeQueryHandler;
+  private getEmotionSummaryQueryHandler: GetEmotionSummaryQueryHandler;
+  private getEmotionTrendsQueryHandler: GetEmotionTrendsQueryHandler;
+  private getMostFrequentEmotionsQueryHandler: GetMostFrequentEmotionsQueryHandler;
+  private getHighestIntensityEmotionsQueryHandler: GetHighestIntensityEmotionsQueryHandler;
   
-  constructor(repository: IEmotionsRepository, userId: number, eventEmitter?: EventEmitter) {
-    this.commandHandlers = new EmotionCommandHandlers(repository);
-    this.queryHandlers = new EmotionQueryHandlers(repository);
-    this.eventEmitter = eventEmitter;
-    this.userId = userId;
+  private trackEmotionCommandHandler: TrackEmotionCommandHandler;
+  private updateEmotionEntryCommandHandler: UpdateEmotionEntryCommandHandler;
+  private deleteEmotionEntryCommandHandler: DeleteEmotionEntryCommandHandler;
+  
+  constructor(
+    private emotionsRepository: IEmotionsRepository,
+    private entriesRepository: IEmotionEntriesRepository
+  ) {
+    // Initialize query handlers
+    this.getAllEmotionsQueryHandler = new GetAllEmotionsQueryHandler(emotionsRepository);
+    this.getEmotionsByCategoryQueryHandler = new GetEmotionsByCategoryQueryHandler(emotionsRepository);
+    this.getEmotionEntriesByDateQueryHandler = new GetEmotionEntriesByDateQueryHandler(entriesRepository);
+    this.getEmotionEntriesByDateRangeQueryHandler = new GetEmotionEntriesByDateRangeQueryHandler(entriesRepository);
+    this.getEmotionSummaryQueryHandler = new GetEmotionSummaryQueryHandler(entriesRepository);
+    this.getEmotionTrendsQueryHandler = new GetEmotionTrendsQueryHandler(entriesRepository);
+    this.getMostFrequentEmotionsQueryHandler = new GetMostFrequentEmotionsQueryHandler(entriesRepository);
+    this.getHighestIntensityEmotionsQueryHandler = new GetHighestIntensityEmotionsQueryHandler(entriesRepository);
+    
+    // Initialize command handlers
+    this.trackEmotionCommandHandler = new TrackEmotionCommandHandler(entriesRepository);
+    this.updateEmotionEntryCommandHandler = new UpdateEmotionEntryCommandHandler(entriesRepository);
+    this.deleteEmotionEntryCommandHandler = new DeleteEmotionEntryCommandHandler(entriesRepository);
   }
   
-  // Command methods
+  /**
+   * Get all predefined emotions
+   */
+  async getAllEmotions(): Promise<Emotion[]> {
+    const query = new GetAllEmotionsQuery();
+    return this.getAllEmotionsQueryHandler.execute(query);
+  }
   
-  // Track a new emotion
+  /**
+   * Get emotions by category
+   * @param category Emotion category
+   */
+  async getEmotionsByCategory(category: EmotionCategory): Promise<Emotion[]> {
+    const query = new GetEmotionsByCategoryQuery(category);
+    return this.getEmotionsByCategoryQueryHandler.execute(query);
+  }
+  
+  /**
+   * Track a new emotion
+   * @param userId User ID
+   * @param emotionId Emotion ID
+   * @param emotionName Emotion name
+   * @param intensity Emotion intensity (1-10)
+   * @param date Date when emotion was felt
+   * @param notes Optional notes about the emotion
+   * @param triggers Optional triggers for the emotion
+   * @param copingMechanisms Optional coping mechanisms used
+   * @param categoryId Optional category ID
+   */
   async trackEmotion(
-    date: DateString,
+    userId: number,
     emotionId: string,
     emotionName: string,
-    categoryId: string,
     intensity: number,
+    date: Date,
     notes?: string,
     triggers?: string[],
-    copingMechanisms?: string[]
-  ): Promise<EmotionTrackingEntry> {
+    copingMechanisms?: string[],
+    categoryId?: string
+  ): Promise<EmotionEntry> {
     const command = new TrackEmotionCommand(
-      this.userId,
-      date,
-      emotionId,
-      emotionName,
-      categoryId,
-      intensity,
-      notes,
-      triggers,
-      copingMechanisms
+      userId, 
+      emotionId, 
+      emotionName, 
+      intensity, 
+      date, 
+      notes, 
+      triggers, 
+      copingMechanisms, 
+      categoryId
     );
-    
-    const { entry, events } = await this.commandHandlers.handleTrackEmotion(command);
-    
-    // Emit events if we have an event emitter
-    if (this.eventEmitter) {
-      events.forEach(event => {
-        this.eventEmitter?.emit(event.eventName, event);
-      });
-    }
-    
-    return entry;
+    return this.trackEmotionCommandHandler.execute(command);
   }
   
-  // Update an emotion entry
+  /**
+   * Update an existing emotion entry
+   * @param id Entry ID
+   * @param userId User ID
+   * @param updates Updates to apply
+   */
   async updateEmotionEntry(
-    id: number,
-    intensity?: number,
-    notes?: string,
-    triggers?: string[],
-    copingMechanisms?: string[]
-  ): Promise<EmotionTrackingEntry> {
-    const command = new UpdateEmotionEntryCommand(
-      id,
-      intensity,
-      notes,
-      triggers,
-      copingMechanisms
-    );
-    
-    const { entry, events } = await this.commandHandlers.handleUpdateEmotionEntry(command);
-    
-    // Emit events if we have an event emitter
-    if (this.eventEmitter) {
-      events.forEach(event => {
-        this.eventEmitter?.emit(event.eventName, event);
-      });
+    id: string,
+    userId: number,
+    updates: {
+      intensity?: number;
+      notes?: string;
+      triggers?: string[];
+      copingMechanisms?: string[];
     }
-    
-    return entry;
+  ): Promise<EmotionEntry> {
+    const command = new UpdateEmotionEntryCommand(id, userId, updates);
+    return this.updateEmotionEntryCommandHandler.execute(command);
   }
   
-  // Delete an emotion entry
-  async deleteEmotionEntry(id: number): Promise<boolean> {
-    const command = new DeleteEmotionEntryCommand(id);
-    return await this.commandHandlers.handleDeleteEmotionEntry(command);
+  /**
+   * Delete an emotion entry
+   * @param id Entry ID
+   * @param userId User ID
+   */
+  async deleteEmotionEntry(id: string, userId: number): Promise<boolean> {
+    const command = new DeleteEmotionEntryCommand(id, userId);
+    return this.deleteEmotionEntryCommandHandler.execute(command);
   }
   
-  // Query methods
-  
-  // Get all predefined emotions
-  async getAllEmotions(): Promise<EmotionDTO[]> {
-    const query = new GetAllEmotionsQuery();
-    return await this.queryHandlers.handleGetAllEmotions(query);
+  /**
+   * Get emotion entries for a specific date
+   * @param userId User ID
+   * @param date Date to get entries for
+   */
+  async getEntriesByDate(userId: number, date: EmotionDate): Promise<EmotionEntry[]> {
+    const query = new GetEmotionEntriesByDateQuery(userId, date);
+    return this.getEmotionEntriesByDateQueryHandler.execute(query);
   }
   
-  // Get emotion by ID
-  async getEmotionById(id: string): Promise<EmotionDTO | null> {
-    const query = new GetEmotionByIdQuery(id);
-    return await this.queryHandlers.handleGetEmotionById(query);
+  /**
+   * Get emotion entries for a date range
+   * @param userId User ID
+   * @param fromDate Start date
+   * @param toDate End date
+   */
+  async getEntriesByDateRange(userId: number, fromDate: EmotionDate, toDate: EmotionDate): Promise<EmotionEntry[]> {
+    const query = new GetEmotionEntriesByDateRangeQuery(userId, fromDate, toDate);
+    return this.getEmotionEntriesByDateRangeQueryHandler.execute(query);
   }
   
-  // Get emotion entries for a date range
-  async getEmotionEntries(dateFrom: DateString, dateTo: DateString): Promise<EmotionTrackingEntry[]> {
-    const query = new GetEmotionEntriesQuery(this.userId, dateFrom, dateTo);
-    return await this.queryHandlers.handleGetEmotionEntries(query);
+  /**
+   * Get summary of emotions for a specific date
+   * @param userId User ID
+   * @param date Date to get summary for
+   */
+  async getSummaryForDate(userId: number, date: EmotionDate): Promise<EmotionSummary> {
+    const query = new GetEmotionSummaryQuery(userId, date);
+    return this.getEmotionSummaryQueryHandler.execute(query);
   }
   
-  // Get a specific emotion entry
-  async getEmotionEntry(id: number): Promise<EmotionTrackingEntry | null> {
-    const query = new GetEmotionEntryQuery(id);
-    return await this.queryHandlers.handleGetEmotionEntry(query);
+  /**
+   * Get emotion trends over a date range
+   * @param userId User ID
+   * @param fromDate Start date
+   * @param toDate End date
+   */
+  async getTrends(userId: number, fromDate: EmotionDate, toDate: EmotionDate): Promise<EmotionTrend[]> {
+    const query = new GetEmotionTrendsQuery(userId, fromDate, toDate);
+    return this.getEmotionTrendsQueryHandler.execute(query);
   }
   
-  // Get emotion summary for a specific date
-  async getEmotionSummary(date: DateString): Promise<EmotionSummaryDTO> {
-    const query = new GetEmotionSummaryQuery(this.userId, date);
-    return await this.queryHandlers.handleGetEmotionSummary(query);
+  /**
+   * Get most frequent emotions over a date range
+   * @param userId User ID
+   * @param fromDate Start date
+   * @param toDate End date
+   * @param limit Maximum number of emotions to return
+   */
+  async getMostFrequentEmotions(
+    userId: number, 
+    fromDate: EmotionDate, 
+    toDate: EmotionDate, 
+    limit?: number
+  ): Promise<{emotion: string, count: number}[]> {
+    const query = new GetMostFrequentEmotionsQuery(userId, fromDate, toDate, limit);
+    return this.getMostFrequentEmotionsQueryHandler.execute(query);
   }
   
-  // Get emotion trends over a date range
-  async getEmotionTrends(dateFrom: DateString, dateTo: DateString): Promise<EmotionTrendDTO[]> {
-    const query = new GetEmotionTrendsQuery(this.userId, dateFrom, dateTo);
-    return await this.queryHandlers.handleGetEmotionTrends(query);
-  }
-  
-  // Get most frequently logged emotions
-  async getMostFrequentEmotions(dateFrom: DateString, dateTo: DateString, limit: number = 5): Promise<{emotionId: string, count: number}[]> {
-    const query = new GetMostFrequentEmotionsQuery(this.userId, dateFrom, dateTo, limit);
-    return await this.queryHandlers.handleGetMostFrequentEmotions(query);
-  }
-  
-  // Get emotions with highest intensity
-  async getHighestIntensityEmotions(dateFrom: DateString, dateTo: DateString, limit: number = 5): Promise<{emotionId: string, maxIntensity: number}[]> {
-    const query = new GetHighestIntensityEmotionsQuery(this.userId, dateFrom, dateTo, limit);
-    return await this.queryHandlers.handleGetHighestIntensityEmotions(query);
+  /**
+   * Get emotions with highest intensity over a date range
+   * @param userId User ID
+   * @param fromDate Start date
+   * @param toDate End date
+   * @param limit Maximum number of emotions to return
+   */
+  async getHighestIntensityEmotions(
+    userId: number, 
+    fromDate: EmotionDate, 
+    toDate: EmotionDate, 
+    limit?: number
+  ): Promise<{emotion: string, intensity: number}[]> {
+    const query = new GetHighestIntensityEmotionsQuery(userId, fromDate, toDate, limit);
+    return this.getHighestIntensityEmotionsQueryHandler.execute(query);
   }
 }

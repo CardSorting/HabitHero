@@ -1,127 +1,110 @@
-// Command handlers for the emotions tracker (write operations)
-// Following CQRS pattern, commands handle state changes
-
+import { format } from 'date-fns';
 import { 
-  DateString, 
-  EmotionTrackingEntry,
-  EmotionTrackedEvent,
-  HighIntensityEmotionTrackedEvent
-} from '../domain/models';
-import { IEmotionsRepository } from '../domain/repositories';
-import { DefaultEmotionTrackingEntryFactory } from '../domain/factories';
+  IEmotionEntriesRepository 
+} from '../domain/repositories';
+import { EmotionDate, EmotionEntry } from '../domain/models';
 
-// Command classes
+/**
+ * Command to track an emotion
+ */
 export class TrackEmotionCommand {
   constructor(
     public readonly userId: number,
-    public readonly date: DateString,
     public readonly emotionId: string,
     public readonly emotionName: string,
-    public readonly categoryId: string,
     public readonly intensity: number,
+    public readonly date: EmotionDate,
     public readonly notes?: string,
     public readonly triggers?: string[],
-    public readonly copingMechanisms?: string[]
+    public readonly copingMechanisms?: string[],
+    public readonly categoryId?: string
   ) {}
 }
 
+/**
+ * TrackEmotionCommandHandler
+ * Handles the TrackEmotionCommand
+ */
+export class TrackEmotionCommandHandler {
+  constructor(private entriesRepository: IEmotionEntriesRepository) {}
+  
+  /**
+   * Execute the command to track an emotion
+   * @param command TrackEmotionCommand instance
+   */
+  async execute(command: TrackEmotionCommand): Promise<EmotionEntry> {
+    const dateString = typeof command.date === 'string' 
+      ? command.date 
+      : format(command.date, 'yyyy-MM-dd');
+    
+    return this.entriesRepository.createEntry({
+      userId: command.userId,
+      emotionId: command.emotionId,
+      emotionName: command.emotionName,
+      intensity: command.intensity,
+      date: dateString,
+      notes: command.notes,
+      triggers: command.triggers,
+      copingMechanisms: command.copingMechanisms,
+      categoryId: command.categoryId || 'unknown'
+    });
+  }
+}
+
+/**
+ * Command to update an emotion entry
+ */
 export class UpdateEmotionEntryCommand {
   constructor(
-    public readonly id: number,
-    public readonly intensity?: number,
-    public readonly notes?: string,
-    public readonly triggers?: string[],
-    public readonly copingMechanisms?: string[]
+    public readonly id: string,
+    public readonly userId: number,
+    public readonly updates: {
+      intensity?: number;
+      notes?: string;
+      triggers?: string[];
+      copingMechanisms?: string[];
+    }
   ) {}
 }
 
+/**
+ * UpdateEmotionEntryCommandHandler
+ * Handles the UpdateEmotionEntryCommand
+ */
+export class UpdateEmotionEntryCommandHandler {
+  constructor(private entriesRepository: IEmotionEntriesRepository) {}
+  
+  /**
+   * Execute the command to update an emotion entry
+   * @param command UpdateEmotionEntryCommand instance
+   */
+  async execute(command: UpdateEmotionEntryCommand): Promise<EmotionEntry> {
+    return this.entriesRepository.updateEntry(command.id, command.updates);
+  }
+}
+
+/**
+ * Command to delete an emotion entry
+ */
 export class DeleteEmotionEntryCommand {
   constructor(
-    public readonly id: number
+    public readonly id: string,
+    public readonly userId: number
   ) {}
 }
 
-// Command handlers
-export class EmotionCommandHandlers {
-  private repository: IEmotionsRepository;
-  private factory: DefaultEmotionTrackingEntryFactory;
+/**
+ * DeleteEmotionEntryCommandHandler
+ * Handles the DeleteEmotionEntryCommand
+ */
+export class DeleteEmotionEntryCommandHandler {
+  constructor(private entriesRepository: IEmotionEntriesRepository) {}
   
-  constructor(repository: IEmotionsRepository) {
-    this.repository = repository;
-    this.factory = new DefaultEmotionTrackingEntryFactory();
-  }
-  
-  // Track a new emotion
-  async handleTrackEmotion(command: TrackEmotionCommand): Promise<{ entry: EmotionTrackingEntry, events: any[] }> {
-    // Create new emotion tracking entry using the factory
-    const entry = this.factory.create(
-      command.userId,
-      command.date,
-      command.emotionId,
-      command.emotionName,
-      command.categoryId,
-      command.intensity,
-      command.notes,
-      command.triggers,
-      command.copingMechanisms
-    );
-    
-    // Save to repository
-    const savedEntry = await this.repository.saveEmotionEntry(entry);
-    
-    // Generate domain events
-    const events: any[] = [];
-    
-    // Always emit the base event
-    const trackedEvent = this.factory.createTrackedEvent(savedEntry);
-    events.push(trackedEvent);
-    
-    // Conditionally emit high intensity event
-    const highIntensityEvent = this.factory.createHighIntensityEvent(savedEntry);
-    if (highIntensityEvent) {
-      events.push(highIntensityEvent);
-    }
-    
-    return { entry: savedEntry, events };
-  }
-  
-  // Update an existing emotion entry
-  async handleUpdateEmotionEntry(command: UpdateEmotionEntryCommand): Promise<{ entry: EmotionTrackingEntry, events: any[] }> {
-    // Get the existing entry
-    const existingEntry = await this.repository.getEmotionEntry(command.id);
-    if (!existingEntry) {
-      throw new Error(`Emotion entry with id ${command.id} not found`);
-    }
-    
-    // Update the entry with new values
-    const updatedEntry: EmotionTrackingEntry = {
-      ...existingEntry,
-      intensity: command.intensity !== undefined ? command.intensity : existingEntry.intensity,
-      notes: command.notes !== undefined ? command.notes : existingEntry.notes,
-      triggers: command.triggers !== undefined ? command.triggers : existingEntry.triggers,
-      copingMechanisms: command.copingMechanisms !== undefined ? command.copingMechanisms : existingEntry.copingMechanisms,
-      updatedAt: new Date()
-    };
-    
-    // Save to repository
-    const savedEntry = await this.repository.saveEmotionEntry(updatedEntry);
-    
-    // Generate events
-    const events: any[] = [];
-    
-    // Only emit high intensity event if intensity was updated and is high
-    if (command.intensity !== undefined && command.intensity >= 8) {
-      const highIntensityEvent = this.factory.createHighIntensityEvent(savedEntry);
-      if (highIntensityEvent) {
-        events.push(highIntensityEvent);
-      }
-    }
-    
-    return { entry: savedEntry, events };
-  }
-  
-  // Delete an emotion entry
-  async handleDeleteEmotionEntry(command: DeleteEmotionEntryCommand): Promise<boolean> {
-    return await this.repository.deleteEmotionEntry(command.id);
+  /**
+   * Execute the command to delete an emotion entry
+   * @param command DeleteEmotionEntryCommand instance
+   */
+  async execute(command: DeleteEmotionEntryCommand): Promise<boolean> {
+    return this.entriesRepository.deleteEntry(command.id);
   }
 }

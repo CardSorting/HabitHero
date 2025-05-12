@@ -58,7 +58,15 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
         return this.predefinedEmotions;
       }
       
-      return await response.json();
+      const data = await response.json();
+      
+      // Check if response contains a message indicating to use predefined emotions
+      if (data && (data.message === "Use client-side predefined emotions" || !Array.isArray(data))) {
+        console.log('Using predefined emotions as server instructed to use client-side data');
+        return this.predefinedEmotions;
+      }
+      
+      return Array.isArray(data) ? data : this.predefinedEmotions;
     } catch (error) {
       console.error('Error fetching emotions:', error);
       // Return predefined emotions as fallback

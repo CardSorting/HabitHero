@@ -16,9 +16,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  BarChart, PieChart, LineChart, 
   Activity, TrendingUp, Calendar, Info, ChevronRight 
 } from 'lucide-react';
+import { 
+  PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip, Sector, 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line 
+} from 'recharts';
 
 const EmotionInsightsTab = () => {
   const { getEmotionTrends, getEmotionSummary, getMostFrequentEmotions, getHighestIntensityEmotions } = useEmotions();
@@ -842,221 +845,63 @@ const EmotionInsightsTab = () => {
                     </div>
                   ) : (
                     <div className="flex flex-col md:flex-row">
-                      {/* Circular Pie Chart Visualization */}
+                      {/* Recharts Pie Chart Visualization */}
                       <div className="relative w-full md:w-1/3 flex items-center justify-center pb-8">
-                        <div className="relative w-52 h-52">
-                          {/* SVG Pie Chart with Improved Visuals */}
-                          <svg className="w-full h-full" viewBox="0 0 100 100">
-                            {/* Background circle */}
-                            <circle cx={50} cy={50} r={45} fill="#f9fafb" stroke="#e5e7eb" strokeWidth={1} />
-                            
-                            {/* Defs section for gradients */}
-                            <defs>
-                              <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#3b82f6" />
-                                <stop offset="100%" stopColor="#60a5fa" />
-                              </linearGradient>
-                              <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#10b981" />
-                                <stop offset="100%" stopColor="#34d399" />
-                              </linearGradient>
-                              <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#8b5cf6" />
-                                <stop offset="100%" stopColor="#a78bfa" />
-                              </linearGradient>
-                              <linearGradient id="yellowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#f59e0b" />
-                                <stop offset="100%" stopColor="#fbbf24" />
-                              </linearGradient>
-                              <linearGradient id="indigoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#6366f1" />
-                                <stop offset="100%" stopColor="#818cf8" />
-                              </linearGradient>
-                            </defs>
-                            
-                            {frequentEmotions.map((item, index) => {
-                              // Calculate percentage
-                              const total = frequentEmotions.reduce((sum, item) => sum + item.count, 0);
-                              const percentage = (item.count / total) * 100;
-                              
-                              // Generate color fill references to the gradients defined above
-                              const colorFills = [
-                                'url(#blueGradient)', 
-                                'url(#greenGradient)', 
-                                'url(#purpleGradient)', 
-                                'url(#yellowGradient)', 
-                                'url(#indigoGradient)'
-                              ];
-                              
-                              // Calculate the start and end angles
-                              let previousPercentages = frequentEmotions
-                                .slice(0, index)
-                                .reduce((sum, item) => sum + (item.count / total) * 100, 0);
-                              
-                              const startAngle = (previousPercentages / 100) * 360;
-                              const endAngle = ((previousPercentages + percentage) / 100) * 360;
-                              
-                              // Convert angles to radians
-                              const startRad = (startAngle - 90) * (Math.PI / 180);
-                              const endRad = (endAngle - 90) * (Math.PI / 180);
-                              
-                              // Calculate the path coordinates
-                              const x1 = 50 + 40 * Math.cos(startRad);
-                              const y1 = 50 + 40 * Math.sin(startRad);
-                              const x2 = 50 + 40 * Math.cos(endRad);
-                              const y2 = 50 + 40 * Math.sin(endRad);
-                              
-                              // Create the arc flag (0 for small arc, 1 for large arc)
-                              const largeArcFlag = percentage > 50 ? 1 : 0;
-                              
-                              // SVG path for the pie slice
-                              const path = [
-                                `M 50 50`,
-                                `L ${x1} ${y1}`,
-                                `A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-                                `Z`
-                              ].join(' ');
-                              
-                              // For small slices, add a slight "pull out" effect for emphasis
-                              const pullout = percentage < 10 ? 3 : 0;
-                              const midAngle = (startAngle + endAngle) / 2;
-                              const midRad = (midAngle - 90) * (Math.PI / 180);
-                              const translateX = pullout * Math.cos(midRad);
-                              const translateY = pullout * Math.sin(midRad);
-                              
-                              return (
-                                <g key={index} transform={`translate(${translateX} ${translateY})`}>
-                                  {/* Main pie slice with gradient fill */}
-                                  <path 
-                                    d={path}
-                                    fill={colorFills[index % colorFills.length]}
-                                    stroke="#fff"
-                                    strokeWidth={1}
-                                    data-emotion={item.emotion}
-                                    className="hover:opacity-90 transition-all duration-300 cursor-pointer"
-                                  />
-                                  
-                                  {/* Highlight effect on top */}
-                                  <path 
-                                    d={path}
-                                    fill="url(#blueGradient)"
-                                    stroke="#fff"
-                                    strokeWidth={1}
-                                    fillOpacity={0.1}
-                                    className="hover:fill-opacity-0"
-                                  />
-                                  
-                                  {/* Add subtle pattern to make it more visually interesting */}
-                                  {percentage > 15 && (
-                                    <path 
-                                      d={path}
-                                      fill="none"
-                                      stroke="rgba(255,255,255,0.6)"
-                                      strokeWidth={0.5}
-                                      strokeDasharray="2,2"
-                                      className="opacity-30"
-                                    />
-                                  )}
-                                </g>
-                              );
-                            })}
-                            
-                            {/* Center circle for aesthetics */}
-                            <circle cx={50} cy={50} r={25} fill="white" stroke="#e5e7eb" strokeWidth={1} />
-                            
-                            {/* Center text showing total count */}
-                            <text 
-                              x={50} 
-                              y={45} 
-                              fontSize={10} 
-                              textAnchor="middle" 
-                              fill="#6b7280"
-                              className="font-medium"
-                            >
-                              TOTAL
-                            </text>
-                            <text 
-                              x={50} 
-                              y={58} 
-                              fontSize={14} 
-                              textAnchor="middle" 
-                              fill="#111827"
-                              fontWeight="bold"
-                            >
-                              {frequentEmotions.reduce((sum, item) => sum + item.count, 0)}
-                            </text>
-                          </svg>
-                          
-                          {/* Enhanced legend circles positioned around the pie */}
-                          {frequentEmotions.map((item, index) => {
-                            const total = frequentEmotions.reduce((sum, item) => sum + item.count, 0);
-                            const percentage = (item.count / total) * 100;
-                            const previousPercentages = frequentEmotions
-                              .slice(0, index)
-                              .reduce((sum, item) => sum + (item.count / total) * 100, 0);
-                              
-                            const midAngle = ((previousPercentages + (percentage/2)) / 100) * 360;
-                            const midRad = (midAngle - 90) * (Math.PI / 180);
-                            
-                            // Position legend items at the mid-angle of each slice
-                            const x = 50 + 54 * Math.cos(midRad);
-                            const y = 50 + 54 * Math.sin(midRad);
-                            
-                            // Adjust text anchor based on position
-                            const textAnchor = x > 50 ? "start" : "end";
-                            const gradientIds = ['url(#blueGradient)', 'url(#greenGradient)', 'url(#purpleGradient)', 'url(#yellowGradient)', 'url(#indigoGradient)'];
-                            const solidColors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#6366f1'];
-                            
-                            return (
-                              <g key={`legend-${index}`} className="text-xs">
-                                {/* Colored legend circle with highlight effects */}
-                                <circle 
-                                  cx={x} 
-                                  cy={y} 
-                                  r={4} 
-                                  fill={solidColors[index % solidColors.length]}
-                                  stroke="#fff"
-                                  strokeWidth={0.5}
-                                />
-                                
-                                {/* Add shine effect */}
-                                <circle 
-                                  cx={x} 
-                                  cy={y} 
-                                  r={4} 
-                                  fill="#fff"
-                                  fillOpacity={0.3}
-                                  clipPath={`circle(2px at ${x - 1} ${y - 1})`}
-                                />
-                                
-                                {/* Percentage text with improved visibility */}
-                                <text 
-                                  x={x + (x > 50 ? 6 : -6)} 
-                                  y={y} 
-                                  fontSize={9} 
-                                  textAnchor={textAnchor} 
-                                  dominantBaseline="middle"
-                                  fill="#4b5563"
-                                  fontWeight="bold"
-                                  className="font-medium"
-                                >
-                                  {Math.round(percentage)}%
-                                </text>
-                                
-                                {/* Emotion name below percentage */}
-                                <text 
-                                  x={x + (x > 50 ? 6 : -6)} 
-                                  y={y + 10} 
-                                  fontSize={7} 
-                                  textAnchor={textAnchor} 
-                                  dominantBaseline="middle"
-                                  fill="#6b7280"
-                                >
-                                  {item.emotion}
-                                </text>
-                              </g>
-                            );
-                          })}
+                        <div className="relative w-64 h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={frequentEmotions.map(item => ({
+                                  name: item.emotion,
+                                  value: item.count
+                                }))}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={30}
+                                outerRadius={60}
+                                paddingAngle={2}
+                                dataKey="value"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                              >
+                                {frequentEmotions.map((_, index) => {
+                                  const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#6366f1'];
+                                  return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="#fff" />;
+                                })}
+                              </Pie>
+                              <Tooltip
+                                formatter={(value, name) => [`${value} occurrences`, name]}
+                                contentStyle={{ borderRadius: '6px', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}
+                              />
+                              <Legend 
+                                verticalAlign="bottom" 
+                                iconType="circle" 
+                                layout="horizontal"
+                                wrapperStyle={{ paddingTop: '10px' }}
+                              />
+                              <text 
+                                x="50%" 
+                                y="50%" 
+                                textAnchor="middle" 
+                                dominantBaseline="middle"
+                                fill="#111"
+                                fontSize={14}
+                                fontWeight="bold"
+                              >
+                                {frequentEmotions.reduce((sum, item) => sum + item.count, 0)}
+                              </text>
+                              <text 
+                                x="50%" 
+                                y="37%" 
+                                textAnchor="middle" 
+                                dominantBaseline="middle"
+                                fill="#666"
+                                fontSize={10}
+                              >
+                                TOTAL
+                              </text>
+                            </PieChart>
+                          </ResponsiveContainer>
                         </div>
                       </div>
                       

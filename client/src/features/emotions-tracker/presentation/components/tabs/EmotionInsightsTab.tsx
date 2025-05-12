@@ -712,24 +712,10 @@ const EmotionInsightsTab = () => {
                 <h3 className="text-lg font-semibold">Emotion Trends</h3>
               </div>
               
-              {/* Trends visualization - Apple Health Style */}
-              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+              {/* Simplified Emotion Trends Chart */}
+              <div className="bg-white p-4 rounded-lg border border-gray-100 mb-4">
                 <div className="text-sm font-medium text-gray-700 mb-3 flex justify-between items-center">
                   <span>Emotion Intensity Over Time</span>
-                  <div className="flex items-center space-x-2 text-xs">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full bg-blue-500 mr-1"></div>
-                      <span>Positive</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full bg-red-500 mr-1"></div>
-                      <span>Negative</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full bg-purple-500 mr-1"></div>
-                      <span>Neutral</span>
-                    </div>
-                  </div>
                 </div>
                 
                 {trendData.length === 0 ? (
@@ -738,224 +724,101 @@ const EmotionInsightsTab = () => {
                   </div>
                 ) : (
                   <div>
-                    {/* Intensity scale */}
-                    <div className="flex justify-between text-xs text-muted-foreground mb-1 px-2">
-                      <div>0</div>
-                      <div>Intensity</div>
-                      <div>10</div>
+                    {/* Category legend at top */}
+                    <div className="flex items-center justify-center space-x-4 mb-4 text-xs">
+                      <div className="flex items-center">
+                        <div className="h-3 w-3 rounded-full bg-blue-500 mr-1"></div>
+                        <span>Positive</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="h-3 w-3 rounded-full bg-red-500 mr-1"></div>
+                        <span>Negative</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="h-3 w-3 rounded-full bg-purple-500 mr-1"></div>
+                        <span>Neutral</span>
+                      </div>
                     </div>
                     
-                    {/* Enhanced professional chart area */}
-                    <div className="relative h-52 border-b border-l border-gray-200 bg-white rounded-md">
-                      {/* Y-axis labels - more detailed scale */}
-                      <div className="absolute h-full flex flex-col justify-between text-xs text-gray-500 -ml-6 py-2">
-                        <div>10</div>
-                        <div>8</div>
-                        <div>6</div>
-                        <div>4</div>
-                        <div>2</div>
-                        <div>0</div>
+                    {/* Simplified Emotions Trend Chart (Column Bar Style) */}
+                    <div className="relative h-48 flex items-end space-x-1 mx-4 border-b border-gray-200 pt-2">
+                      {/* Y-axis labels and gridlines */}
+                      <div className="absolute inset-y-0 left-0 w-8 -ml-10 flex flex-col justify-between">
+                        <div className="text-xs text-gray-500">10</div>
+                        <div className="text-xs text-gray-500">5</div>
+                        <div className="text-xs text-gray-500">0</div>
                       </div>
                       
-                      {/* Horizontal grid lines - more detailed */}
+                      {/* Horizontal grid lines */}
                       <div className="absolute w-full border-t border-gray-100" style={{top: '0%'}}></div>
-                      <div className="absolute w-full border-t border-gray-100" style={{top: '20%'}}></div>
-                      <div className="absolute w-full border-t border-gray-100" style={{top: '40%'}}></div>
-                      <div className="absolute w-full border-t border-gray-100" style={{top: '60%'}}></div>
-                      <div className="absolute w-full border-t border-gray-100" style={{top: '80%'}}></div>
+                      <div className="absolute w-full border-t border-gray-100" style={{top: '50%'}}></div>
                       <div className="absolute w-full border-t border-gray-100" style={{top: '100%'}}></div>
                       
-                      {/* Data area */}
-                      <div className="absolute inset-0 px-6 pb-8 pt-2">
-                        {/* Area under the curve - for positive emotions */}
-                        <svg className="w-full h-full overflow-visible">
-                          {/* Area chart for positive emotions */}
-                          {trendData.filter(d => d.dominantCategory === 'positive').length > 0 && (
-                            <path 
-                              d={`
-                                M ${trendData.map((day, i) => 
-                                  day.dominantCategory === 'positive' 
-                                    ? `${(i / (trendData.length - 1)) * 100}% ${100 - (day.averageIntensity * 10)}%` 
-                                    : ''
-                                ).filter(Boolean).join(' L ')}
-                                L ${trendData.filter(d => d.dominantCategory === 'positive').length > 0 ? 100 : 0}% 100%
-                                L 0% 100%
-                                Z
-                              `}
-                              fill="url(#positiveGradient)"
-                              fillOpacity="0.2"
-                            />
-                          )}
-                          
-                          {/* Define gradients */}
-                          <defs>
-                            <linearGradient id="positiveGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
-                              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.1" />
-                            </linearGradient>
-                            <linearGradient id="negativeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.8" />
-                              <stop offset="100%" stopColor="#ef4444" stopOpacity="0.1" />
-                            </linearGradient>
-                            <linearGradient id="neutralGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.8" />
-                              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.1" />
-                            </linearGradient>
-                          </defs>
-                        </svg>
+                      {/* Column bars */}
+                      {trendData.map((day, index) => {
+                        // Determine color based on emotion category
+                        let barColor;
+                        let textColor;
+                        if (day.dominantCategory === 'positive') {
+                          barColor = 'bg-gradient-to-t from-blue-600 to-blue-400';
+                          textColor = 'text-blue-600';
+                        } else if (day.dominantCategory === 'negative') {
+                          barColor = 'bg-gradient-to-t from-red-600 to-red-400';
+                          textColor = 'text-red-600';
+                        } else {
+                          barColor = 'bg-gradient-to-t from-purple-600 to-purple-400';
+                          textColor = 'text-purple-600';
+                        }
                         
-                        {/* Connection lines and data points */}
-                        <div className="absolute inset-0 flex items-end justify-between px-1">
-                          {trendData.map((day, index) => {
-                            // Style based on emotion category
-                            const colorClass = 
-                              day.dominantCategory === 'positive' ? 'bg-blue-500 border-blue-600' :
-                              day.dominantCategory === 'negative' ? 'bg-red-500 border-red-600' : 
-                              'bg-purple-500 border-purple-600';
-                              
-                            const isFirstOrLast = index === 0 || index === trendData.length - 1;
-                            const percentPosition = (index / Math.max(1, trendData.length - 1)) * 100;
-                            
-                            // Determine point size - show larger points for key data
-                            const pointSize = day.synthetic ? 'w-2 h-2' : isFirstOrLast ? 'w-5 h-5' : 'w-4 h-4';
-                            const pointBorder = day.synthetic ? '' : 'border-2';
-                            
-                            return (
-                              <div key={index} className="relative group" 
-                                style={{
-                                  position: 'absolute',
-                                  bottom: `${day.averageIntensity * 10}%`, 
-                                  left: `${percentPosition}%`,
-                                  transform: 'translate(-50%, 50%)'
-                                }}
-                              >
-                                {/* Connection line to next point */}
-                                {index < trendData.length - 1 && (
-                                  <div 
-                                    className="absolute bg-gray-300"
-                                    style={{
-                                      height: '2px',
-                                      width: `${100 / (trendData.length - 1)}%`,
-                                      transform: `rotate(${Math.atan2(
-                                        (trendData[index+1].averageIntensity - day.averageIntensity) * 10,
-                                        100 / (trendData.length - 1)
-                                      )}rad)`,
-                                      transformOrigin: '0 0',
-                                      zIndex: 1
-                                    }}
-                                  ></div>
-                                )}
-                                
-                                {/* The data point */}
-                                <div 
-                                  className={`${pointSize} ${pointBorder} ${colorClass} rounded-full shadow-lg z-10 
-                                    transform transition-all duration-300 ${day.synthetic ? 'opacity-50' : 'group-hover:scale-125'}
-                                  `}
-                                >
-                                  {/* Pulsing animation for interactive points */}
-                                  {!day.synthetic && (
-                                    <span className="absolute inset-0 rounded-full animate-ping opacity-30 bg-white"></span>
-                                  )}
-                                </div>
-                                
-                                {/* Professional data visualization tooltip */}
-                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full mb-2
-                                  bg-white border border-gray-200 shadow-lg rounded-lg p-3 transform -translate-x-1/2
-                                  transition-all duration-200 pointer-events-none z-20 min-w-[200px]"
-                                >
-                                  {/* Tooltip header with date and indicator */}
-                                  <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {format(new Date(day.date), 'MMMM d, yyyy')}
-                                    </div>
-                                    <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium
-                                      ${day.dominantCategory === 'positive' ? 'bg-blue-100 text-blue-700' :
-                                        day.dominantCategory === 'negative' ? 'bg-red-100 text-red-700' : 
-                                        'bg-purple-100 text-purple-700'}
-                                    `}>
-                                      {day.dominantCategory?.charAt(0).toUpperCase() + day.dominantCategory?.slice(1) || 'Unknown'}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Emotion information */}
-                                  <div className="mb-2">
-                                    <div className="text-xs text-gray-500 mb-1">Primary Emotion</div>
-                                    <div className="text-sm font-semibold">{day.dominantEmotion || "Unknown"}</div>
-                                  </div>
-                                  
-                                  {/* Intensity meter */}
-                                  <div className="mb-1">
-                                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                      <span>Intensity</span>
-                                      <span className="font-medium">{day.averageIntensity.toFixed(1)}/10</span>
-                                    </div>
-                                    
-                                    {/* Professional gauge visualization */}
-                                    <div className="h-2 w-full rounded-full overflow-hidden bg-gray-100 relative">
-                                      {/* Background segments for scale visualization */}
-                                      <div className="absolute inset-0 flex">
-                                        <div className="w-1/3 h-full border-r border-white opacity-50"></div>
-                                        <div className="w-1/3 h-full border-r border-white opacity-50"></div>
-                                        <div className="w-1/3 h-full"></div>
-                                      </div>
-                                      
-                                      {/* Intensity bar with gradient */}
-                                      <div 
-                                        className={`h-full relative ${
-                                          day.dominantCategory === 'positive' ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
-                                          day.dominantCategory === 'negative' ? 'bg-gradient-to-r from-red-400 to-red-600' : 
-                                          'bg-gradient-to-r from-purple-400 to-purple-600'
-                                        }`}
-                                        style={{ width: `${day.averageIntensity * 10}%` }}
-                                      >
-                                        {/* Add shine effect */}
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"></div>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Intensity scale */}
-                                    <div className="flex justify-between text-[9px] text-gray-400 mt-0.5">
-                                      <span>Low</span>
-                                      <span>Medium</span>
-                                      <span>High</span>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Extra insight - only for non-synthetic data */}
-                                  {!day.synthetic && (
-                                    <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500">
-                                      {getIntensityLabel(day.averageIntensity)} intensity level recorded
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      
-                      {/* X-axis labels - more precise dates */}
-                      <div className="absolute w-full bottom-0 h-8 flex justify-between px-6">
-                        {trendData.map((day, index) => {
-                          // Only show some date labels to avoid crowding
-                          const shouldShow = index === 0 || 
-                            index === trendData.length - 1 || 
-                            index % Math.max(1, Math.floor(trendData.length / 4)) === 0;
-                            
-                          return shouldShow ? (
-                            <div key={index} 
-                              className="text-xs text-gray-500 text-center transform -translate-x-1/2"
-                              style={{
-                                position: 'absolute',
-                                left: `${(index / Math.max(1, trendData.length - 1)) * 100}%`,
-                                bottom: '0px'
-                              }}
+                        const height = `${day.averageIntensity * 10}%`;
+                        const isToday = isSameDay(new Date(day.date), new Date());
+                        
+                        return (
+                          <div key={index} className="flex-1 flex flex-col items-center group relative">
+                            {/* Bar */}
+                            <div 
+                              className={`w-full ${barColor} rounded-t-md shadow-sm relative group-hover:opacity-80 transition-all`}
+                              style={{ height }}
                             >
-                              {format(new Date(day.date), day.synthetic ? 'MM/dd' : 'MMM dd')}
+                              {/* Add shine effect */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-white via-transparent to-transparent opacity-30"></div>
+                              
+                              {/* Intensity label on hover */}
+                              <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 rounded px-1.5 py-0.5 text-[10px] font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                {day.averageIntensity.toFixed(1)}/10
+                              </div>
                             </div>
-                          ) : null;
-                        })}
-                      </div>
+                            
+                            {/* Date label */}
+                            <div className={`text-[10px] mt-1.5 ${textColor} font-medium ${isToday ? 'font-bold' : ''}`}>
+                              {format(new Date(day.date), 'MMM d')}
+                            </div>
+                            
+                            {/* Information overlay on hover */}
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 shadow-lg rounded-lg p-2.5 w-44 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                              <div className="text-xs font-semibold mb-1">
+                                {format(new Date(day.date), 'MMMM d, yyyy')}
+                              </div>
+                              <div className="flex items-center text-xs">
+                                <div className={`h-2 w-2 rounded-full ${day.dominantCategory === 'positive' ? 'bg-blue-500' : day.dominantCategory === 'negative' ? 'bg-red-500' : 'bg-purple-500'} mr-1.5`}></div>
+                                <span className="font-medium">{day.dominantEmotion || 'Unknown'}</span>
+                              </div>
+                              <div className="mt-1.5 flex items-center justify-between text-xs">
+                                <span className="text-gray-500">Intensity:</span>
+                                <span className="font-bold">{day.averageIntensity.toFixed(1)}/10</span>
+                              </div>
+                              <div className="h-1.5 w-full bg-gray-100 rounded-full mt-1 overflow-hidden">
+                                <div className={`h-full ${day.dominantCategory === 'positive' ? 'bg-blue-500' : day.dominantCategory === 'negative' ? 'bg-red-500' : 'bg-purple-500'}`} style={{width: `${day.averageIntensity * 10}%`}}></div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Legend at bottom */}
+                    <div className="text-center text-xs text-gray-500 mt-4 bg-gray-50 py-1 rounded">
+                      Hover over bars to see detailed information
                     </div>
                   </div>
                 )}
@@ -982,22 +845,47 @@ const EmotionInsightsTab = () => {
                       {/* Circular Pie Chart Visualization */}
                       <div className="relative w-full md:w-1/3 flex items-center justify-center pb-8">
                         <div className="relative w-52 h-52">
-                          {/* SVG Pie Chart */}
+                          {/* SVG Pie Chart with Improved Visuals */}
                           <svg className="w-full h-full" viewBox="0 0 100 100">
+                            {/* Background circle */}
                             <circle cx="50" cy="50" r="45" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1" />
+                            
+                            {/* Defs section for gradients */}
+                            <defs>
+                              <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#3b82f6" />
+                                <stop offset="100%" stopColor="#60a5fa" />
+                              </linearGradient>
+                              <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#10b981" />
+                                <stop offset="100%" stopColor="#34d399" />
+                              </linearGradient>
+                              <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#8b5cf6" />
+                                <stop offset="100%" stopColor="#a78bfa" />
+                              </linearGradient>
+                              <linearGradient id="yellowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#f59e0b" />
+                                <stop offset="100%" stopColor="#fbbf24" />
+                              </linearGradient>
+                              <linearGradient id="indigoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#6366f1" />
+                                <stop offset="100%" stopColor="#818cf8" />
+                              </linearGradient>
+                            </defs>
                             
                             {frequentEmotions.map((item, index) => {
                               // Calculate percentage
                               const total = frequentEmotions.reduce((sum, item) => sum + item.count, 0);
                               const percentage = (item.count / total) * 100;
                               
-                              // Generate colors array for pie slices
-                              const colors = [
-                                '#3b82f6', // blue
-                                '#10b981', // green
-                                '#8b5cf6', // purple
-                                '#f59e0b', // yellow
-                                '#6366f1'  // indigo
+                              // Generate color fill references to the gradients defined above
+                              const colorFills = [
+                                'url(#blueGradient)', 
+                                'url(#greenGradient)', 
+                                'url(#purpleGradient)', 
+                                'url(#yellowGradient)', 
+                                'url(#indigoGradient)'
                               ];
                               
                               // Calculate the start and end angles
@@ -1029,16 +917,47 @@ const EmotionInsightsTab = () => {
                                 `Z`
                               ].join(' ');
                               
+                              // For small slices, add a slight "pull out" effect for emphasis
+                              const pullout = percentage < 10 ? 3 : 0;
+                              const midAngle = (startAngle + endAngle) / 2;
+                              const midRad = (midAngle - 90) * (Math.PI / 180);
+                              const translateX = pullout * Math.cos(midRad);
+                              const translateY = pullout * Math.sin(midRad);
+                              
                               return (
-                                <path 
-                                  key={index}
-                                  d={path}
-                                  fill={colors[index % colors.length]}
-                                  stroke="#fff"
-                                  strokeWidth="1"
-                                  data-emotion={item.emotion}
-                                  className="hover:opacity-80 transition-opacity cursor-pointer"
-                                />
+                                <g key={index} transform={`translate(${translateX} ${translateY})`}>
+                                  {/* Main pie slice with gradient fill */}
+                                  <path 
+                                    d={path}
+                                    fill={colorFills[index % colorFills.length]}
+                                    stroke="#fff"
+                                    strokeWidth="1"
+                                    data-emotion={item.emotion}
+                                    className="hover:opacity-90 transition-all duration-300 cursor-pointer"
+                                  />
+                                  
+                                  {/* Highlight effect on top */}
+                                  <path 
+                                    d={path}
+                                    fill="url(#blueGradient)"
+                                    stroke="#fff"
+                                    strokeWidth="1"
+                                    fillOpacity="0.1"
+                                    className="hover:fill-opacity-0"
+                                  />
+                                  
+                                  {/* Add subtle pattern to make it more visually interesting */}
+                                  {percentage > 15 && (
+                                    <path 
+                                      d={path}
+                                      fill="none"
+                                      stroke="rgba(255,255,255,0.6)"
+                                      strokeWidth="0.5"
+                                      strokeDasharray="2,2"
+                                      className="opacity-30"
+                                    />
+                                  )}
+                                </g>
                               );
                             })}
                             
@@ -1068,7 +987,7 @@ const EmotionInsightsTab = () => {
                             </text>
                           </svg>
                           
-                          {/* Legend circles positioned around the pie */}
+                          {/* Enhanced legend circles positioned around the pie */}
                           {frequentEmotions.map((item, index) => {
                             const total = frequentEmotions.reduce((sum, item) => sum + item.count, 0);
                             const percentage = (item.count / total) * 100;
@@ -1085,26 +1004,55 @@ const EmotionInsightsTab = () => {
                             
                             // Adjust text anchor based on position
                             const textAnchor = x > 50 ? "start" : "end";
-                            const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#6366f1'];
+                            const gradientIds = ['url(#blueGradient)', 'url(#greenGradient)', 'url(#purpleGradient)', 'url(#yellowGradient)', 'url(#indigoGradient)'];
+                            const solidColors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#6366f1'];
                             
                             return (
                               <g key={`legend-${index}`} className="text-xs">
+                                {/* Colored legend circle with highlight effects */}
                                 <circle 
                                   cx={x} 
                                   cy={y} 
-                                  r="3" 
-                                  fill={colors[index % colors.length]} 
+                                  r="4" 
+                                  fill={solidColors[index % solidColors.length]}
+                                  stroke="#fff"
+                                  strokeWidth="0.5"
                                 />
+                                
+                                {/* Add shine effect */}
+                                <circle 
+                                  cx={x} 
+                                  cy={y} 
+                                  r="4" 
+                                  fill="#fff"
+                                  fillOpacity="0.3"
+                                  clipPath={`circle(2px at ${x - 1} ${y - 1})`}
+                                />
+                                
+                                {/* Percentage text with improved visibility */}
                                 <text 
-                                  x={x + (x > 50 ? 5 : -5)} 
+                                  x={x + (x > 50 ? 6 : -6)} 
                                   y={y} 
-                                  fontSize="8" 
+                                  fontSize="9" 
                                   textAnchor={textAnchor} 
                                   dominantBaseline="middle"
                                   fill="#4b5563"
+                                  fontWeight="bold"
                                   className="font-medium"
                                 >
                                   {Math.round(percentage)}%
+                                </text>
+                                
+                                {/* Emotion name below percentage */}
+                                <text 
+                                  x={x + (x > 50 ? 6 : -6)} 
+                                  y={y + 10} 
+                                  fontSize="7" 
+                                  textAnchor={textAnchor} 
+                                  dominantBaseline="middle"
+                                  fill="#6b7280"
+                                >
+                                  {item.emotion}
                                 </text>
                               </g>
                             );

@@ -1,11 +1,12 @@
 // DiaryCardTabs Component - UI presentation layer
 // Handles the tabs for different diary card sections
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 // Import from the barrel file
 import { SleepTab, EmotionsTab, UrgesTab, SkillsTab, EventsTab } from './tabs';
 import { DateString } from '../../domain/models';
+import { useDiary } from '../context/DiaryContext';
 
 interface DiaryCardTabsProps {
   dayHeaders: {
@@ -22,8 +23,28 @@ const DiaryCardTabs: React.FC<DiaryCardTabsProps> = ({
   selectedDate,
   viewMode
 }) => {
+  const [activeTab, setActiveTab] = useState('sleep');
+  const { loadDataForDate } = useDiary();
+  
+  // Load data for each date when tab changes
+  useEffect(() => {
+    // Make sure we have data for the visible dates when tab changes
+    dayHeaders.forEach(header => {
+      loadDataForDate(header.date);
+    });
+  }, [activeTab, dayHeaders, loadDataForDate]);
+  
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+  
   return (
-    <Tabs defaultValue="sleep" className="mb-6">
+    <Tabs 
+      defaultValue="sleep" 
+      className="mb-6"
+      onValueChange={handleTabChange}
+    >
       <TabsList className="grid grid-cols-5 mb-4 rounded-xl">
         <TabsTrigger value="sleep" className="rounded-l-xl">Sleep</TabsTrigger>
         <TabsTrigger value="emotions">Emotions</TabsTrigger>

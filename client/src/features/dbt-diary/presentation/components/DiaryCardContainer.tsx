@@ -4,13 +4,14 @@
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, isSameDay, isToday } from 'date-fns';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { useToast } from '@/hooks/use-toast';
 import DiaryCardTabs from './DiaryCardTabs';
 import { DiaryProvider, useDiary } from '../context/DiaryContext';
 import { DateString } from '../../domain/models';
@@ -24,9 +25,17 @@ const DiaryCardContent: React.FC = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 6 }));
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const { toast } = useToast();
   
   // Use the diary context
-  const { loadWeekData, diaryData, isLoading } = useDiary();
+  const { 
+    loadWeekData, 
+    diaryData, 
+    isLoading, 
+    saveAllChanges, 
+    hasPendingChanges,
+    loadDataForDate 
+  } = useDiary();
   
   // Generate dates for the week (Saturday to Friday)
   const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -48,11 +57,17 @@ const DiaryCardContent: React.FC = () => {
   
   const weekRangeText = `${format(weekDates[0], "MMM d")} - ${format(weekDates[6], "MMM d, yyyy")}`;
   
-  // Load week data when the week changes
+  // Load week data when the week changes - now only loads first day by default
   useEffect(() => {
     const dates = weekDates.map(date => format(date, "yyyy-MM-dd") as DateString);
     loadWeekData(dates);
   }, [currentWeekStart, loadWeekData]);
+  
+  // Load data for the selected date when it changes
+  useEffect(() => {
+    const dateStr = format(selectedDate, "yyyy-MM-dd") as DateString;
+    loadDataForDate(dateStr);
+  }, [selectedDate, loadDataForDate]);
   
   // Navigate to previous week
   const handlePrevWeek = () => {
@@ -67,6 +82,14 @@ const DiaryCardContent: React.FC = () => {
   // Toggle between day and week view
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'day' ? 'week' : 'day');
+    
+    // If switching to week view, load data for all visible dates
+    if (viewMode === 'day') {
+      weekDates.forEach(date => {
+        const dateStr = format(date, "yyyy-MM-dd") as DateString;
+        loadDataForDate(dateStr);
+      });
+    }
   };
   
   // Handle date selection from calendar
@@ -78,6 +101,25 @@ const DiaryCardContent: React.FC = () => {
       if (!isSameDay(startOfSelectedWeek, currentWeekStart)) {
         setCurrentWeekStart(startOfSelectedWeek);
       }
+    }
+  };
+  
+  // Handle saving all changes
+  const handleSaveChanges = async () => {
+    try {
+      await saveAllChanges();
+      toast({
+        title: "Success",
+        description: "Your diary entries have been saved.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      toast({
+        title: "Error",
+        description: "There was a problem saving your entries. Please try again.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -216,6 +258,17 @@ const DiaryCardContent: React.FC = () => {
             <CalendarDays className="h-4 w-4" />
             <span className="hidden sm:inline">{viewMode === 'day' ? 'Week View' : 'Day View'}</span>
           </Button>
+          
+          <Button
+            variant={hasPendingChanges ? "default" : "outline"}
+            size="sm"
+            className="h-9 gap-1"
+            onClick={handleSaveChanges}
+            disabled={!hasPendingChanges || isLoading}
+          >
+            <Save className="h-4 w-4" />
+            <span className="hidden sm:inline">Save Changes</span>
+          </Button>
         </div>
       </motion.header>
       
@@ -270,6 +323,11 @@ const DiaryCardContent: React.FC = () => {
                     : 'Weekly average'
                   }
                 </p>
+                {hasPendingChanges && (
+                  <Badge variant="outline" className="mt-1">
+                    Unsaved changes
+                  </Badge>
+                )}
               </div>
               <div className="ml-auto flex items-center gap-4">
                 <div className="text-right">
@@ -307,6 +365,25 @@ const DiaryCardContent: React.FC = () => {
           viewMode={viewMode}
         />
       </motion.main>
+      
+      {/* Floating save button for mobile */}
+      {hasPendingChanges && (
+        <motion.div 
+          className="fixed bottom-6 right-6 md:hidden"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <Button 
+            onClick={handleSaveChanges}
+            size="lg"
+            className="rounded-full shadow-lg"
+            disabled={isLoading}
+          >
+            <Save className="h-5 w-5 mr-2" />
+            Save Changes
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 };

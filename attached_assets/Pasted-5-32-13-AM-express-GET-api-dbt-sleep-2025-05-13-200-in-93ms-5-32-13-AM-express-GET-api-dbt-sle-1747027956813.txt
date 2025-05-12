@@ -1,0 +1,32 @@
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-13 200 in 93ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-16 200 in 95ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-11 200 in 99ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-15 200 in 98ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-10 200 in 98ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-14 200 in 186ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-13 304 in 82ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-10 304 in 84ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-12 200 in 89ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-16 304 in 91ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-15 304 in 83ms
+5:32:13 AM [express] GET /api/dbt/emotions/2025-05-16 200 in 87ms :: []
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-11 304 in 89ms
+5:32:13 AM [express] GET /api/dbt/emotions/2025-05-13 200 in 90ms :: []
+5:32:13 AM [express] GET /api/dbt/emotions/2025-05-11 200 in 89ms :: []
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-14 304 in 81ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-16 304 in 88ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-13 304 in 93ms
+5:32:13 AM [express] GET /api/dbt/emotions/2025-05-10 200 in 93ms :: []
+5:32:13 AM [express] GET /api/dbt/emotions/2025-05-15 200 in 95ms :: []
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-10 304 in 91ms
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-12 304 in 92ms
+5:32:13 AM [express] GET /api/dbt/emotions/2025-05-16 304 in 86ms :: []
+5:32:13 AM [express] GET /api/dbt/emotions/2025-05-12 200 in 89ms :: []
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-11 304 in 83ms
+5:32:13 AM [express] GET /api/dbt/emotions/2025-05-14 200 in 88ms :: []
+5:32:13 AM [express] GET /api/dbt/sleep/2025-05-15 304 in 85ms
+5:32:14 AM [express] GET /api/dbt/emotions/2025-05-13 304 in 84ms :: []
+5:32:14 AM [express] GET /api/dbt/urges/2025-05-16 200 in 83ms :: []
+5:32:14 AM [express] GET /api/dbt/sleep/2025-05-14 304 in 99ms
+5:32:14 AM [express] GET /api/dbt/urges/2025-05-13 200 in 98ms :: []
+5:32:14 AM [express] GET /api/dbt/urges/2025-05-11 200 in 102ms :: []

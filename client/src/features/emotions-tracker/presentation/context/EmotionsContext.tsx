@@ -83,7 +83,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   const getEmotionsByCategory = useCallback(async (category: EmotionCategory): Promise<Emotion[]> => {
     setIsLoading(true);
@@ -97,7 +97,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   // Entry queries
   const getEmotionsByDate = useCallback(async (date: string): Promise<EmotionEntry[]> => {
@@ -112,7 +112,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   const getEmotionsByDateRange = useCallback(async (fromDate: string, toDate: string): Promise<EmotionEntry[]> => {
     setIsLoading(true);
@@ -126,7 +126,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   const getEntryById = useCallback(async (id: string): Promise<EmotionEntry | null> => {
     setIsLoading(true);
@@ -140,7 +140,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   // Entry commands
   const trackEmotion = useCallback(async (
@@ -174,7 +174,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   const updateEmotionEntry = useCallback(async (id: string, updates: Partial<EmotionEntry>): Promise<EmotionEntry> => {
     setIsLoading(true);
@@ -188,7 +188,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   const deleteEmotionEntry = useCallback(async (id: string): Promise<boolean> => {
     setIsLoading(true);
@@ -202,7 +202,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   // Analytics
   const getEmotionSummary = useCallback(async (date: string): Promise<EmotionSummary> => {
@@ -224,7 +224,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   const getEmotionTrends = useCallback(async (fromDate: string, toDate: string): Promise<EmotionTrend[]> => {
     setIsLoading(true);
@@ -238,7 +238,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   const getMostFrequentEmotions = useCallback(async (
     fromDate: string,
@@ -256,7 +256,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   const getHighestIntensityEmotions = useCallback(async (
     fromDate: string,
@@ -274,7 +274,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [service]);
   
   // Context value
   const value: EmotionsContextProps = {
@@ -303,14 +303,11 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
 };
 
 // Custom hook for consuming the context
-// Need to export this specific way to avoid HMR issues
-// See: https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
-function useEmotionsHook() {
+// Export as function instead of const for HMR compatibility
+export function useEmotions() {
   const context = useContext(EmotionsContext);
   if (context === undefined) {
     throw new Error('useEmotions must be used within an EmotionsProvider');
   }
   return context;
 }
-
-export { useEmotionsHook as useEmotions };

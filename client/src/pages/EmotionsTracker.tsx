@@ -9,11 +9,11 @@ import { EmotionsService } from '../features/emotions-tracker/application/Emotio
 import { EmotionsProvider } from '../features/emotions-tracker/presentation/context/EmotionsContext';
 
 const EmotionsTrackerPage: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const { toast } = useToast();
   
   // Error handling for authentication
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p>Loading...</p>

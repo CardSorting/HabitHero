@@ -140,13 +140,18 @@ const EmotionInsightsTab = () => {
     }
     
     // Transform data for the bar chart
-    const chartData = trendData.map(day => ({
-      date: format(new Date(day.date), 'MMM d'),
-      fullDate: format(new Date(day.date), 'MMM d, yyyy'),
-      intensity: day.averageIntensity || 0,
-      category: day.dominantCategory || 'unknown',
-      emotion: day.dominantEmotion || 'Unknown'
-    }));
+    const chartData = trendData.map(day => {
+      // Ensure intensity is a proper number by converting explicitly
+      const intensity = parseFloat((day.averageIntensity || 0).toString());
+      
+      return {
+        date: format(new Date(day.date), 'MMM d'),
+        fullDate: format(new Date(day.date), 'MMM d, yyyy'),
+        intensity: isNaN(intensity) ? 0 : intensity, // Fallback to 0 if NaN
+        category: day.dominantCategory || 'unknown',
+        emotion: day.dominantEmotion || 'Unknown'
+      };
+    });
 
     // Define colors for different emotion categories
     const categoryColors = {
@@ -172,6 +177,11 @@ const EmotionInsightsTab = () => {
       }
       return null;
     };
+    
+    // Add additional debugging for chart data
+    if (debug) {
+      console.log('Chart Data for Bar Chart:', chartData);
+    }
     
     return (
       <div className="w-full h-72">
@@ -214,11 +224,15 @@ const EmotionInsightsTab = () => {
               dataKey="intensity" 
               radius={[4, 4, 0, 0]}
               barSize={30}
+              animationDuration={750}
+              isAnimationActive={true}
+              animationEasing="ease-in-out"
+              minPointSize={3}
             >
               {chartData.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={categoryColors[entry.category as keyof typeof categoryColors]} 
+                  fill={categoryColors[entry.category as keyof typeof categoryColors]}
                 />
               ))}
             </Bar>

@@ -57,11 +57,15 @@ export class GetEmotionCategoriesAnalysisQueryHandler {
       }
     });
     
+    // Format the dominant category if it exists
+    let formattedDominantCategory: string | null = null;
+    if (dominantCategory) {
+      formattedDominantCategory = dominantCategory.charAt(0).toUpperCase() + dominantCategory.slice(1);
+    }
+    
     return {
       categoriesDistribution,
-      dominantCategory: dominantCategory ? 
-        dominantCategory.charAt(0).toUpperCase() + dominantCategory.slice(1) : 
-        null,
+      dominantCategory: formattedDominantCategory,
       totalCount: trendData.length
     };
   }

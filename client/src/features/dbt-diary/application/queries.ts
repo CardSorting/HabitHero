@@ -5,7 +5,7 @@ import {
   DateString, 
   SleepData, 
   EmotionEntry, 
-  UrgeEntry, 
+  // UrgeEntry removed
   SkillEntry, 
   EventEntry,
   DiaryCardData
@@ -21,9 +21,7 @@ export class GetEmotionsQuery {
   constructor(public readonly date: DateString) {}
 }
 
-export class GetUrgesQuery {
-  constructor(public readonly date: DateString) {}
-}
+// GetUrgesQuery removed
 
 export class GetSkillsQuery {
   constructor(public readonly date: DateString) {}
@@ -49,9 +47,7 @@ export class DiaryQueryHandlers {
     return await this.repository.getEmotions(query.date);
   }
   
-  async handleGetUrges(query: GetUrgesQuery): Promise<UrgeEntry[]> {
-    return await this.repository.getUrges(query.date);
-  }
+  // handleGetUrges removed
   
   async handleGetSkills(query: GetSkillsQuery): Promise<SkillEntry[]> {
     return await this.repository.getSkills(query.date);
@@ -94,17 +90,7 @@ export class DiaryQueryHandlers {
         });
       }
       
-      // Get urges
-      const urges = await this.repository.getUrges(date);
-      if (urges.length > 0) {
-        result.urges[date] = {};
-        urges.forEach(urge => {
-          result.urges[date][urge.urgeType] = {
-            level: urge.level,
-            action: urge.action
-          };
-        });
-      }
+      // Urges processing removed
       
       // Get skills
       const skills = await this.repository.getSkills(date);

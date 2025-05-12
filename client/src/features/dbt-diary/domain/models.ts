@@ -60,7 +60,7 @@ export interface DiaryCardData {
   sleep: Record<DateString, SleepData>;
   medication: Record<DateString, string>;
   emotions: Record<DateString, Record<string, string>>;
-  urges: Record<DateString, Record<string, { level: string; action: string }>>;
+  urges: Record<DateString, Record<string, { level: string; action: string }>>; // Keeping for compatibility but not used
   events: Record<DateString, string>;
   skills: Record<string, Record<string, Record<DateString, boolean>>>;
 }

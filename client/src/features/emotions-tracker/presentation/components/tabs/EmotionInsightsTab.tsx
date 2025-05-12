@@ -139,197 +139,138 @@ const EmotionInsightsTab = () => {
       );
     }
     
-    // Transform data for the bar chart
-    const chartData = trendData.map(day => {
-      // Ensure intensity is a proper number by converting explicitly
-      const intensity = parseFloat((day.averageIntensity || 0).toString());
-      
-      return {
-        date: format(new Date(day.date), 'MMM d'),
-        fullDate: format(new Date(day.date), 'MMM d, yyyy'),
-        intensity: isNaN(intensity) ? 0 : intensity, // Fallback to 0 if NaN
-        category: day.dominantCategory || 'unknown',
-        emotion: day.dominantEmotion || 'Unknown'
-      };
-    });
-
-    // Define colors for different emotion categories
-    const categoryColors = {
-      positive: "#4CAF50",
-      negative: "#F44336", 
-      neutral: "#9E9E9E",
-      unknown: "#BDBDBD"
-    };
+    // Group data by emotion categories for the pie chart
+    const emotionCategories: {[key: string]: number} = {};
+    let totalIntensity = 0;
     
-    // Custom tooltip content
-    const CustomTooltip = ({ active, payload, label }: any) => {
-      if (active && payload && payload.length) {
-        const data = payload[0].payload;
-        
-        // Determine color for the emotion category
-        const categoryColor = categoryColors[data.category as keyof typeof categoryColors];
-        const emotionCategoryLabel = data.category.charAt(0).toUpperCase() + data.category.slice(1);
-        
-        return (
-          <div className="p-4 bg-white shadow-lg rounded-md border border-gray-200 max-w-xs">
-            <div className="flex items-center mb-2">
-              <div 
-                className="w-4 h-4 rounded-full mr-2" 
-                style={{ backgroundColor: categoryColor }}
-              ></div>
-              <p className="font-bold text-sm">{data.fullDate}</p>
-            </div>
-            
-            <div className="space-y-2">
-              <div>
-                <p className="text-xs text-gray-500">Primary Emotion</p>
-                <p className="font-medium">{data.emotion}</p>
-              </div>
-              
-              <div>
-                <p className="text-xs text-gray-500">Category</p>
-                <p className="font-medium">{emotionCategoryLabel}</p>
-              </div>
-              
-              <div>
-                <p className="text-xs text-gray-500">Intensity</p>
-                <div className="flex items-center">
-                  <span className="font-bold text-lg">{data.intensity.toFixed(1)}</span>
-                  <span className="text-gray-500 ml-1 text-sm">/10</span>
-                </div>
-                <div className="h-1.5 w-full bg-gray-100 rounded-full mt-1 overflow-hidden">
-                  <div 
-                    className="h-full rounded-full" 
-                    style={{ 
-                      width: `${data.intensity * 10}%`,
-                      backgroundColor: categoryColor
-                    }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+    trendData.forEach(day => {
+      if (day.dominantCategory) {
+        // Initialize category if not exists
+        if (!emotionCategories[day.dominantCategory]) {
+          emotionCategories[day.dominantCategory] = 0;
+        }
+        // Add the intensity to the category
+        emotionCategories[day.dominantCategory] += 1;
+        totalIntensity += 1;
       }
-      return null;
+    });
+    
+    // Convert to array for the pie chart
+    const pieData = Object.entries(emotionCategories).map(([category, count]) => ({
+      name: category.charAt(0).toUpperCase() + category.slice(1),
+      value: count
+    }));
+    
+    // Colors for different emotion categories
+    const COLORS = {
+      'Positive': '#4CAF50',
+      'Negative': '#F44336',
+      'Neutral': '#9E9E9E',
+      'Unknown': '#BDBDBD'
     };
     
-    // Add additional debugging for chart data
-    if (debug) {
-      console.log('Chart Data for Bar Chart:', chartData);
-    }
+    // Custom label for pie sections
+    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
+      const RADIAN = Math.PI / 180;
+      const radius = outerRadius * 1.1;
+      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+      
+      return percent > 0.05 ? (
+        <text 
+          x={x} 
+          y={y} 
+          fill={COLORS[name as keyof typeof COLORS] || '#666'}
+          textAnchor={x > cx ? 'start' : 'end'} 
+          dominantBaseline="central"
+          fontSize={12}
+          fontWeight="medium"
+        >
+          {name} ({(percent * 100).toFixed(0)}%)
+        </text>
+      ) : null;
+    };
     
     return (
-      <div className="w-full h-72">
+      <div className="w-full">
         <h3 className="font-medium mb-2 text-gray-700">Emotion Intensity Over Time</h3>
-        <div className="flex mb-2 text-sm">
-          <div className="flex items-center mr-4">
-            <div className="w-3 h-3 mr-1 rounded-full" style={{ backgroundColor: categoryColors.positive }}></div>
-            <span>Positive</span>
-          </div>
-          <div className="flex items-center mr-4">
-            <div className="w-3 h-3 mr-1 rounded-full" style={{ backgroundColor: categoryColors.negative }}></div>
-            <span>Negative</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 mr-1 rounded-full" style={{ backgroundColor: categoryColors.neutral }}></div>
-            <span>Neutral</span>
-          </div>
-        </div>
         
-        <div className="flex flex-col h-4/5">
-          {/* Chart Header with Timeline Selector */}
-          <div className="mb-3 flex justify-center">
-            <div className="inline-flex items-center space-x-2 bg-gray-50 p-1 rounded-lg">
-              {chartData.map((day, index) => (
-                <div 
-                  key={index} 
-                  className={`text-xs py-1 px-3 rounded-md cursor-pointer transition-all
-                  ${index === 0 ? 'bg-white shadow-sm font-medium' : 'hover:bg-gray-100'}`}
-                >
-                  {day.date}
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Pie/Circle Chart */}
-          <div className="flex-1 relative">
+        <div className="flex flex-col md:flex-row items-center">
+          {/* Left side - Pie Chart */}
+          <div className="w-full md:w-1/2 h-60 md:h-64 relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={chartData}
+                  data={pieData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
+                  labelLine={true}
                   outerRadius={80}
-                  innerRadius={40}
-                  paddingAngle={3}
-                  dataKey="intensity"
-                  nameKey="date"
-                  animationDuration={800}
-                  animationEasing="ease-out"
-                  isAnimationActive={true}
-                  startAngle={90}
-                  endAngle={-270}
+                  innerRadius={30}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={renderCustomizedLabel}
+                  paddingAngle={2}
                 >
-                  {chartData.map((entry, index) => (
+                  {pieData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={categoryColors[entry.category as keyof typeof categoryColors]} 
+                      fill={COLORS[entry.name as keyof typeof COLORS] || '#BDBDBD'} 
                       stroke="#fff"
-                      strokeWidth={2}
                     />
                   ))}
                 </Pie>
-                
-                {/* Add a center circle with info */}
-                <text 
-                  x="50%" 
-                  y="45%" 
-                  textAnchor="middle" 
-                  dominantBaseline="middle"
-                  className="font-bold"
-                  fontSize={16}
-                >
-                  {chartData.length > 0 ? chartData[0].intensity.toFixed(1) : '0.0'}
-                </text>
-                <text 
-                  x="50%" 
-                  y="55%" 
-                  textAnchor="middle" 
-                  dominantBaseline="middle"
-                  className="fill-gray-500"
-                  fontSize={12}
-                >
-                  Latest intensity
-                </text>
-                
                 <Tooltip 
-                  content={<CustomTooltip />}
-                  formatter={(value: any) => [value.toFixed(1), 'Intensity']} 
+                  formatter={(value) => [`${value} occurrences`, 'Count']}
                 />
+                {/* Center text */}
+                <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" className="font-bold" fontSize={18}>
+                  {totalIntensity}
+                </text>
+                <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" fill="#666" fontSize={12}>
+                  TOTAL
+                </text>
               </PieChart>
             </ResponsiveContainer>
-            
-            {/* Add emotion type labels around the pie chart */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 text-xs text-center font-medium text-gray-600">
-              Positive
-            </div>
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 text-xs text-center font-medium text-gray-600">
-              Negative
-            </div>
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 text-xs text-center font-medium text-gray-600">
-              Neutral
-            </div>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 text-xs text-center font-medium text-gray-600">
-              Mixed
-            </div>
+          </div>
+          
+          {/* Right side - Category list with progress bars */}
+          <div className="w-full md:w-1/2 pl-0 md:pl-4 mt-4 md:mt-0">
+            <ScrollArea className="h-48 md:h-64 pr-4">
+              <div className="space-y-4">
+                {pieData.map((item, index) => {
+                  const categoryColor = COLORS[item.name as keyof typeof COLORS] || '#BDBDBD';
+                  const percentage = (item.value / totalIntensity) * 100;
+                  
+                  return (
+                    <div key={index} className="mb-3">
+                      <div className="flex justify-between items-center text-sm mb-1">
+                        <div className="flex items-center">
+                          <div 
+                            className="w-3 h-3 rounded-full mr-2" 
+                            style={{ backgroundColor: categoryColor }}
+                          ></div>
+                          <span>{item.name}</span>
+                        </div>
+                        <span className="font-medium">{percentage.toFixed(0)}%</span>
+                      </div>
+                      
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{ 
+                            width: `${percentage}%`,
+                            backgroundColor: categoryColor
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
           </div>
         </div>
-        <p className="text-xs text-center text-gray-500 mt-1">
-          Hover over sections to see detailed information
-        </p>
       </div>
     );
   };

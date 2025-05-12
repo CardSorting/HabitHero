@@ -81,22 +81,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new habit
   app.post("/api/habits", isAuthenticated, async (req: AuthRequest, res) => {
     try {
+      console.log("POST /api/habits received with body:", req.body);
+      
       const userId = req.user?.id;
       if (!userId) {
+        console.log("Habit creation rejected: User not authenticated");
         return res.status(401).json({ message: "Unauthorized" });
       }
       
-      const habitData = insertHabitSchema.parse({
-        ...req.body,
-        userId
-      });
+      console.log("Creating habit for authenticated user:", userId);
       
-      const newHabit = await storage.createHabit(habitData);
-      res.status(201).json(newHabit);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: error.errors });
+      try {
+        const habitData = insertHabitSchema.parse({
+          ...req.body,
+          userId
+        });
+        
+        console.log("Parsed habit data:", habitData);
+        
+        const newHabit = await storage.createHabit(habitData);
+        console.log("Habit created successfully:", newHabit);
+        
+        res.status(201).json(newHabit);
+      } catch (validationError) {
+        if (validationError instanceof z.ZodError) {
+          console.log("Validation error:", validationError.errors);
+          return res.status(400).json({ message: validationError.errors });
+        }
+        throw validationError;
       }
+    } catch (error: any) {
+      console.error("Error creating habit:", error);
       res.status(500).json({ message: error.message });
     }
   });

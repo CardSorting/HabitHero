@@ -2,15 +2,13 @@
 // Acts as the composition root for the diary card feature
 
 import React, { useState, useEffect } from 'react';
-import { format, startOfWeek, addDays, isSameDay, isToday } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon, Save, Download } from 'lucide-react';
+import { Save, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProgressRing } from '@/components/ui/progress-ring';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import DiaryCardTabs from './DiaryCardTabs';
 import { DiaryProvider, useDiary } from '../context/DiaryContext';
@@ -80,49 +78,7 @@ const DiaryCardContent: React.FC = () => {
     }
   }, [selectedDate, loadDay, serverData]);
   
-  // Navigate to previous week
-  const handlePrevWeek = () => {
-    setCurrentWeekStart(prevWeekStart => addDays(prevWeekStart, -7));
-  };
-  
-  // Navigate to next week
-  const handleNextWeek = () => {
-    setCurrentWeekStart(prevWeekStart => addDays(prevWeekStart, 7));
-  };
-  
-  // Toggle between day and week view
-  const toggleViewMode = () => {
-    setViewMode(prev => prev === 'day' ? 'week' : 'day');
-    
-    // If switching to week view, only load data for past and present dates
-    if (viewMode === 'day') {
-      const currentDate = new Date();
-      
-      weekDates.forEach(date => {
-        // Only load data for non-future dates
-        if (date <= currentDate) {
-          const dateStr = format(date, "yyyy-MM-dd") as DateString;
-          
-          // Only load if not already loaded
-          if (!serverData[dateStr]) {
-            loadDay(dateStr);
-          }
-        }
-      });
-    }
-  };
-  
-  // Handle date selection from calendar
-  const handleSelectDate = (date: Date | undefined) => {
-    if (date) {
-      setSelectedDate(date);
-      // If changing to a date outside current week, update the week
-      const startOfSelectedWeek = startOfWeek(date, { weekStartsOn: 6 });
-      if (!isSameDay(startOfSelectedWeek, currentWeekStart)) {
-        setCurrentWeekStart(startOfSelectedWeek);
-      }
-    }
-  };
+  // These functions are removed as we no longer have week view functionality
   
   // Handle saving all changes
   const handleSaveChanges = async () => {
@@ -143,109 +99,56 @@ const DiaryCardContent: React.FC = () => {
     }
   };
   
-  // Load data for all days in current view
+  // Load data for today
   const handleLoadData = () => {
-    // Get all dates to load based on view mode
-    const datesToLoad = viewMode === 'day' 
-      ? [format(selectedDate, "yyyy-MM-dd") as DateString]
-      : weekDates.map(date => format(date, "yyyy-MM-dd") as DateString);
-    
-    // Load each date
-    datesToLoad.forEach(date => {
-      loadDay(date);
-    });
+    // Load today's date
+    const dateStr = format(selectedDate, "yyyy-MM-dd") as DateString;
+    loadDay(dateStr);
     
     toast({
       title: "Data Loading",
-      description: `Loading diary data for ${viewMode === 'day' ? 'selected day' : 'week'}.`,
+      description: "Loading diary data for today.",
       variant: "default"
     });
   };
   
-  // Calculate completion rate for selected day or week
+  // Calculate completion rate for today only
   const calculateCompletion = (): number => {
-    if (viewMode === 'day') {
-      // Focus on completion for selected day only
-      const dateStr = format(selectedDate, "yyyy-MM-dd");
-      const totalFields = 5; // 5 categories for a single day
-      let filledFields = 0;
-      
-      // Check sleep entry
-      if (diaryData.sleep[dateStr] && Object.values(diaryData.sleep[dateStr]).some(val => val)) {
-        filledFields++;
-      }
-      
-      // Check emotion entries
-      if (diaryData.emotions[dateStr] && Object.keys(diaryData.emotions[dateStr]).length > 0) {
-        filledFields++;
-      }
-      
-      // Check urge entries
-      if (diaryData.urges[dateStr] && Object.keys(diaryData.urges[dateStr]).length > 0) {
-        filledFields++;
-      }
-      
-      // Check skills entries for this day
-      let hasSkillsForDay = false;
-      for (const category in diaryData.skills) {
-        for (const skill in diaryData.skills[category]) {
-          if (diaryData.skills[category][skill][dateStr]) {
-            hasSkillsForDay = true;
-            break;
-          }
-        }
-        if (hasSkillsForDay) break;
-      }
-      if (hasSkillsForDay) {
-        filledFields++;
-      }
-      
-      // Check event entry
-      if (diaryData.events[dateStr]) {
-        filledFields++;
-      }
-      
-      return (filledFields / totalFields) * 100;
-    } else {
-      // Calculate average completion across the week
-      return weekDates
-        .map(date => {
-          const dateStr = format(date, "yyyy-MM-dd");
-          const totalFields = 5;
-          let filledFields = 0;
-          
-          if (diaryData.sleep[dateStr] && Object.values(diaryData.sleep[dateStr]).some(val => val)) {
-            filledFields++;
-          }
-          if (diaryData.emotions[dateStr] && Object.keys(diaryData.emotions[dateStr]).length > 0) {
-            filledFields++;
-          }
-          if (diaryData.urges[dateStr] && Object.keys(diaryData.urges[dateStr]).length > 0) {
-            filledFields++;
-          }
-          
-          let hasSkillsForDay = false;
-          for (const category in diaryData.skills) {
-            for (const skill in diaryData.skills[category]) {
-              if (diaryData.skills[category][skill][dateStr]) {
-                hasSkillsForDay = true;
-                break;
-              }
-            }
-            if (hasSkillsForDay) break;
-          }
-          if (hasSkillsForDay) {
-            filledFields++;
-          }
-          
-          if (diaryData.events[dateStr]) {
-            filledFields++;
-          }
-          
-          return filledFields / totalFields;
-        })
-        .reduce((sum, completionRate) => sum + completionRate, 0) / 7 * 100;
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    const totalFields = 4; // 4 categories for a single day (removed urges)
+    let filledFields = 0;
+    
+    // Check sleep entry
+    if (diaryData.sleep[dateStr] && Object.values(diaryData.sleep[dateStr]).some(val => val)) {
+      filledFields++;
     }
+    
+    // Check emotion entries
+    if (diaryData.emotions[dateStr] && Object.keys(diaryData.emotions[dateStr]).length > 0) {
+      filledFields++;
+    }
+    
+    // Check skills entries for this day
+    let hasSkillsForDay = false;
+    for (const category in diaryData.skills) {
+      for (const skill in diaryData.skills[category]) {
+        if (diaryData.skills[category][skill][dateStr]) {
+          hasSkillsForDay = true;
+          break;
+        }
+      }
+      if (hasSkillsForDay) break;
+    }
+    if (hasSkillsForDay) {
+      filledFields++;
+    }
+    
+    // Check event entry
+    if (diaryData.events[dateStr]) {
+      filledFields++;
+    }
+    
+    return (filledFields / totalFields) * 100;
   };
   
   const completionRate = calculateCompletion();
@@ -299,34 +202,14 @@ const DiaryCardContent: React.FC = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
-        className="flex items-center justify-between mb-6"
+        className="flex items-center justify-center mb-6"
       >
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={handlePrevWeek}
-          className="gap-1"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">Previous</span>
-        </Button>
-        
         <div className="flex flex-col items-center">
-          <h2 className="text-sm font-medium">{weekRangeText}</h2>
+          <h2 className="text-sm font-medium">Today's Diary Card</h2>
           <div className="text-xs text-muted-foreground">
-            {viewMode === 'day' ? format(selectedDate, "MMMM d, yyyy") : 'Week View'}
+            {todayDateText}
           </div>
         </div>
-        
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={handleNextWeek}
-          className="gap-1"
-        >
-          <span className="hidden sm:inline">Next</span>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
       </motion.div>
       
       <motion.div
@@ -341,10 +224,7 @@ const DiaryCardContent: React.FC = () => {
               <div>
                 <h3 className="text-lg font-medium">Completion Rate</h3>
                 <p className="text-sm text-muted-foreground">
-                  {viewMode === 'day' 
-                    ? `For ${isToday(selectedDate) ? 'today' : format(selectedDate, 'MMMM d')}` 
-                    : 'Weekly average'
-                  }
+                  For {isToday(selectedDate) ? 'today' : format(selectedDate, 'MMMM d')}
                 </p>
                 {hasPendingChanges && (
                   <Badge variant="outline" className="mt-1">
@@ -390,7 +270,7 @@ const DiaryCardContent: React.FC = () => {
         <DiaryCardTabs
           dayHeaders={dayHeaders}
           selectedDate={selectedDate}
-          viewMode={viewMode}
+          viewMode={'day'}
         />
       </motion.main>
       

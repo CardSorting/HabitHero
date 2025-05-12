@@ -2,6 +2,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { db } from './db';
 import { z } from 'zod';
 import { getCopingStrategy } from './anthropicService';
+import * as schema from '../shared/schema';
 
 // Define a type for authenticated requests
 type AuthRequest = Request & {
@@ -185,7 +186,7 @@ export function registerEmotionsRoutes(app: Express) {
       }
       
       // Create entry in the database
-      const newEntry = await db.insert(db.schema.emotionTrackingEntries).values({
+      const newEntry = await db.insert(schema.emotionTrackingEntries).values({
         userId: req.user.id,
         emotionId: validatedData.emotionId,
         emotionName: validatedData.emotionName,
@@ -241,7 +242,7 @@ export function registerEmotionsRoutes(app: Express) {
       const validatedData = updateSchema.parse(req.body);
       
       // Update entry in the database
-      const updatedEntry = await db.update(db.schema.emotionTrackingEntries)
+      const updatedEntry = await db.update(schema.emotionTrackingEntries)
         .set({
           ...validatedData,
           // Ensure arrays are handled properly

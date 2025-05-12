@@ -1,16 +1,17 @@
 /**
- * Repository interface for wellness challenges following Clean Architecture principles
+ * Repository interface for wellness challenges
+ * Following the repository pattern from DDD, this defines the interface
+ * for data access operations without committing to a specific implementation
  */
-import { 
-  WellnessChallenge, 
-  WellnessChallengeWithDetails, 
-  ChallengeGoal, 
-  ChallengeProgress, 
+import {
+  WellnessChallenge,
+  WellnessChallengeWithDetails,
+  ChallengeGoal,
+  ChallengeProgress,
   ChallengeSummary,
   ChallengeStreak,
-  ChallengeType,
-  ChallengeFrequency,
   ChallengeStatus,
+  ChallengeType,
   CreateChallengeData,
   UpdateChallengeData,
   CreateChallengeGoalData,
@@ -18,34 +19,92 @@ import {
 } from './models';
 
 /**
- * Repository interface providing data access capabilities for wellness challenge domain
- * This enforces the dependency rule of Clean Architecture by having domain not depend on data layer
+ * Repository interface for wellness challenges
+ * Defines data access methods without implementation details
  */
 export interface WellnessChallengeRepository {
-  // Challenge retrieval methods
-  getChallengeById(id: number): Promise<WellnessChallengeWithDetails>;
-  getChallengesForUser(userId: number): Promise<WellnessChallenge[]>;
-  getChallengesByStatus(userId: number, status: ChallengeStatus): Promise<WellnessChallenge[]>;
-  getChallengesByType(userId: number, type: ChallengeType): Promise<WellnessChallenge[]>;
-  getChallengesByFrequency(userId: number, frequency: ChallengeFrequency): Promise<WellnessChallenge[]>;
-  getChallengesByDateRange(userId: number, startDate: string, endDate: string): Promise<WellnessChallenge[]>;
+  /**
+   * Get all challenges
+   */
+  getAllChallenges(): Promise<WellnessChallenge[]>;
   
-  // Challenge management methods
+  /**
+   * Get challenges for specific user
+   */
+  getChallengesByUser(userId: number): Promise<WellnessChallenge[]>;
+  
+  /**
+   * Get challenges with specific status
+   */
+  getChallengesByStatus(status: ChallengeStatus): Promise<WellnessChallenge[]>;
+  
+  /**
+   * Get challenges of specific type
+   */
+  getChallengesByType(type: ChallengeType): Promise<WellnessChallenge[]>;
+  
+  /**
+   * Get active challenges for user
+   */
+  getActiveChallengesForUser(userId: number): Promise<WellnessChallenge[]>;
+  
+  /**
+   * Get a challenge by ID with its goals and progress
+   */
+  getChallengeById(id: number): Promise<WellnessChallengeWithDetails>;
+  
+  /**
+   * Get challenge summary statistics
+   */
+  getChallengeSummary(userId: number): Promise<ChallengeSummary>;
+  
+  /**
+   * Get streak information for a challenge
+   */
+  getChallengeStreak(challengeId: number): Promise<ChallengeStreak>;
+  
+  /**
+   * Create a new challenge
+   */
   createChallenge(data: CreateChallengeData): Promise<WellnessChallenge>;
+  
+  /**
+   * Update an existing challenge
+   */
   updateChallenge(id: number, data: UpdateChallengeData): Promise<WellnessChallenge>;
+  
+  /**
+   * Delete a challenge
+   */
   deleteChallenge(id: number): Promise<boolean>;
+  
+  /**
+   * Update challenge status
+   */
   updateChallengeStatus(id: number, status: ChallengeStatus): Promise<WellnessChallenge>;
   
-  // Goals related methods
+  /**
+   * Get goals for a challenge
+   */
+  getChallengeGoals(challengeId: number): Promise<ChallengeGoal[]>;
+  
+  /**
+   * Create a goal for a challenge
+   */
   createChallengeGoal(data: CreateChallengeGoalData): Promise<ChallengeGoal>;
-  getGoalsForChallenge(challengeId: number): Promise<ChallengeGoal[]>;
   
-  // Progress related methods
+  /**
+   * Get all progress entries for a challenge
+   */
+  getChallengeProgress(challengeId: number): Promise<ChallengeProgress[]>;
+  
+  /**
+   * Record progress for a challenge
+   */
   recordChallengeProgress(data: CreateChallengeProgressData): Promise<ChallengeProgress>;
-  getProgressForChallenge(challengeId: number): Promise<ChallengeProgress[]>;
-  getProgressForDate(userId: number, date: string): Promise<ChallengeProgress[]>;
   
-  // Analytics related methods
-  getChallengeSummary(userId: number): Promise<ChallengeSummary>;
-  getChallengeStreak(challengeId: number): Promise<ChallengeStreak>;
+  /**
+   * Get progress for a specific date
+   */
+  getChallengeProgressForDate(challengeId: number, date: string): Promise<ChallengeProgress[]>;
 }

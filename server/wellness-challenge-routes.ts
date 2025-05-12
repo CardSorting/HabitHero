@@ -420,33 +420,11 @@ export function registerWellnessChallengeRoutes(app: Express) {
         });
       }
       
-      // Check if progress entry for the same date already exists
-      const existingProgress = await db.query.wellnessChallengeProgress.findFirst({
-        where: and(
-          eq(wellnessChallengeProgress.challengeId, challengeId),
-          eq(wellnessChallengeProgress.date, parsedBody.data.date)
-        ),
-      });
+      // Use the storage interface to record progress
+      // This will handle checking if progress exists and either updating or creating it
+      const progress = await storage.recordWellnessChallengeProgress(parsedBody.data);
       
-      if (existingProgress) {
-        // Update existing progress
-        const updated = await db
-          .update(wellnessChallengeProgress)
-          .set({
-            value: parsedBody.data.value,
-            notes: parsedBody.data.notes,
-            updatedAt: new Date(),
-          })
-          .where(eq(wellnessChallengeProgress.id, existingProgress.id))
-          .returning();
-        
-        res.json(updated[0]);
-      } else {
-        // Insert new progress
-        const inserted = await db.insert(wellnessChallengeProgress).values(parsedBody.data).returning();
-        
-        res.status(201).json(inserted[0]);
-      }
+      res.status(201).json(progress);
     } catch (error) {
       console.error('Error recording progress:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -482,11 +460,8 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Get the progress entries
-      const progress = await db.query.wellnessChallengeProgress.findMany({
-        where: eq(wellnessChallengeProgress.challengeId, parsedChallengeId),
-        orderBy: (progress) => [progress.date],
-      });
+      // Get the progress entries using the storage interface
+      const progress = await storage.getWellnessChallengeProgress(parsedChallengeId);
       
       res.json(progress);
     } catch (error) {
@@ -529,17 +504,18 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Get the progress entries for the date range
-      const progress = await db.query.wellnessChallengeProgress.findMany({
-        where: and(
-          eq(wellnessChallengeProgress.challengeId, parsedChallengeId),
-          gte(wellnessChallengeProgress.date, from as string),
-          lte(wellnessChallengeProgress.date, to as string)
-        ),
-        orderBy: (progress) => [progress.date],
+      // Get the progress entries for a specific date
+      // Note: The storage interface doesn't have a specific method for date ranges yet,
+      // but we can use the getWellnessChallengeProgressForDate method and filter in-memory
+      // or extend the storage interface in the future
+      const progress = await storage.getWellnessChallengeProgress(parsedChallengeId);
+      
+      // Filter by date range client-side (until we add a dedicated method to the storage interface)
+      const filteredProgress = progress.filter(entry => {
+        return entry.date >= (from as string) && entry.date <= (to as string);
       });
       
-      res.json(progress);
+      res.json(filteredProgress);
     } catch (error) {
       console.error('Error getting progress for date range:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -568,29 +544,8 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(403).json({ message: 'Not authorized' });
       }
       
-      // Get counts of challenges by status
-      const totalChallenges = await db.query.wellnessChallenges.findMany({
-        where: eq(wellnessChallenges.userId, parsedUserId),
-      });
-      
-      const activeChallenges = totalChallenges.filter(c => c.status === 'active').length;
-      const completedChallenges = totalChallenges.filter(c => c.status === 'completed').length;
-      const abandonedChallenges = totalChallenges.filter(c => c.status === 'abandoned').length;
-      
-      // Calculate average completion rate
-      let averageCompletionRate = 0;
-      
-      if (completedChallenges > 0) {
-        averageCompletionRate = (completedChallenges / (completedChallenges + abandonedChallenges)) * 100;
-      }
-      
-      const summary = {
-        totalChallenges: totalChallenges.length,
-        activeChallenges,
-        completedChallenges,
-        abandonedChallenges,
-        averageCompletionRate,
-      };
+      // Get challenge summary using the storage interface
+      const summary = await storage.getChallengeSummary(parsedUserId);
       
       res.json(summary);
     } catch (error) {

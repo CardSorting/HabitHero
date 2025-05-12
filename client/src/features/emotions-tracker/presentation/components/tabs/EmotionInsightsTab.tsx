@@ -848,7 +848,7 @@ const EmotionInsightsTab = () => {
                           {/* SVG Pie Chart with Improved Visuals */}
                           <svg className="w-full h-full" viewBox="0 0 100 100">
                             {/* Background circle */}
-                            <circle cx="50" cy="50" r="45" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="1" />
+                            <circle cx={50} cy={50} r={45} fill="#f9fafb" stroke="#e5e7eb" strokeWidth={1} />
                             
                             {/* Defs section for gradients */}
                             <defs>
@@ -931,7 +931,7 @@ const EmotionInsightsTab = () => {
                                     d={path}
                                     fill={colorFills[index % colorFills.length]}
                                     stroke="#fff"
-                                    strokeWidth="1"
+                                    strokeWidth={1}
                                     data-emotion={item.emotion}
                                     className="hover:opacity-90 transition-all duration-300 cursor-pointer"
                                   />
@@ -941,8 +941,8 @@ const EmotionInsightsTab = () => {
                                     d={path}
                                     fill="url(#blueGradient)"
                                     stroke="#fff"
-                                    strokeWidth="1"
-                                    fillOpacity="0.1"
+                                    strokeWidth={1}
+                                    fillOpacity={0.1}
                                     className="hover:fill-opacity-0"
                                   />
                                   
@@ -952,7 +952,7 @@ const EmotionInsightsTab = () => {
                                       d={path}
                                       fill="none"
                                       stroke="rgba(255,255,255,0.6)"
-                                      strokeWidth="0.5"
+                                      strokeWidth={0.5}
                                       strokeDasharray="2,2"
                                       className="opacity-30"
                                     />
@@ -962,13 +962,13 @@ const EmotionInsightsTab = () => {
                             })}
                             
                             {/* Center circle for aesthetics */}
-                            <circle cx="50" cy="50" r="25" fill="white" stroke="#e5e7eb" strokeWidth="1" />
+                            <circle cx={50} cy={50} r={25} fill="white" stroke="#e5e7eb" strokeWidth={1} />
                             
                             {/* Center text showing total count */}
                             <text 
-                              x="50" 
-                              y="45" 
-                              fontSize="10" 
+                              x={50} 
+                              y={45} 
+                              fontSize={10} 
                               textAnchor="middle" 
                               fill="#6b7280"
                               className="font-medium"
@@ -976,9 +976,9 @@ const EmotionInsightsTab = () => {
                               TOTAL
                             </text>
                             <text 
-                              x="50" 
-                              y="58" 
-                              fontSize="14" 
+                              x={50} 
+                              y={58} 
+                              fontSize={14} 
                               textAnchor="middle" 
                               fill="#111827"
                               fontWeight="bold"
@@ -1013,19 +1013,19 @@ const EmotionInsightsTab = () => {
                                 <circle 
                                   cx={x} 
                                   cy={y} 
-                                  r="4" 
+                                  r={4} 
                                   fill={solidColors[index % solidColors.length]}
                                   stroke="#fff"
-                                  strokeWidth="0.5"
+                                  strokeWidth={0.5}
                                 />
                                 
                                 {/* Add shine effect */}
                                 <circle 
                                   cx={x} 
                                   cy={y} 
-                                  r="4" 
+                                  r={4} 
                                   fill="#fff"
-                                  fillOpacity="0.3"
+                                  fillOpacity={0.3}
                                   clipPath={`circle(2px at ${x - 1} ${y - 1})`}
                                 />
                                 
@@ -1033,7 +1033,7 @@ const EmotionInsightsTab = () => {
                                 <text 
                                   x={x + (x > 50 ? 6 : -6)} 
                                   y={y} 
-                                  fontSize="9" 
+                                  fontSize={9} 
                                   textAnchor={textAnchor} 
                                   dominantBaseline="middle"
                                   fill="#4b5563"
@@ -1047,7 +1047,7 @@ const EmotionInsightsTab = () => {
                                 <text 
                                   x={x + (x > 50 ? 6 : -6)} 
                                   y={y + 10} 
-                                  fontSize="7" 
+                                  fontSize={7} 
                                   textAnchor={textAnchor} 
                                   dominantBaseline="middle"
                                   fill="#6b7280"

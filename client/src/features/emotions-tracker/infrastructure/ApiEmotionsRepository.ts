@@ -97,6 +97,14 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
     try {
       // Try to get from server first
       const allEmotions = await this.getEmotions();
+      
+      // Ensure allEmotions is an array before filtering
+      if (!Array.isArray(allEmotions)) {
+        console.error('Invalid emotions data:', allEmotions);
+        // Return predefined emotions filtered by category as fallback
+        return this.predefinedEmotions.filter(emotion => emotion.category === category);
+      }
+      
       return allEmotions.filter(emotion => emotion.category === category);
     } catch (error) {
       console.error(`Error fetching emotions by category ${category}:`, error);

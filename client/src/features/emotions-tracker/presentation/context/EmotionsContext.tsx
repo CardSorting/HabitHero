@@ -299,8 +299,8 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
 };
 
 // Custom hook for consuming the context
-// Using a function declaration instead of arrow function for consistent component exports
-export function useEmotions(): EmotionsContextProps {
+// Using constant for consistent exports that don't trigger HMR issues
+export const useEmotions = () => {
   const context = useContext(EmotionsContext);
   if (context === undefined) {
     throw new Error('useEmotions must be used within an EmotionsProvider');

@@ -2,7 +2,7 @@
 // Acts as the composition root for the diary card feature
 
 import React, { useState, useEffect } from 'react';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay, isToday } from 'date-fns';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';

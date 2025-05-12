@@ -3,11 +3,8 @@
 
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import SleepTab from './tabs/SleepTab';
-import EmotionsTab from './tabs/EmotionsTab';
-import UrgesTab from './tabs/UrgesTab';
-import SkillsTab from './tabs/SkillsTab';
-import EventsTab from './tabs/EventsTab';
+// Import from the barrel file
+import { SleepTab, EmotionsTab, UrgesTab, SkillsTab, EventsTab } from './tabs';
 import { DateString } from '../../domain/models';
 
 interface DiaryCardTabsProps {

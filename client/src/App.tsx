@@ -14,6 +14,7 @@ import TherapyCompanion from "@/pages/TherapyCompanion";
 import EmotionsTracker from "@/pages/EmotionsTracker";
 import WellnessChallenges from "@/pages/WellnessChallenges";
 import WellnessChallengeDetails from "@/pages/WellnessChallengeDetails";
+import WellnessChallengeCategory from "@/pages/WellnessChallengeCategory";
 import AuthPage from "@/pages/auth-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import BottomNav from "@/components/BottomNav";
@@ -37,6 +38,7 @@ function Router() {
           <ProtectedRoute path="/therapy" component={TherapyCompanion} />
           <ProtectedRoute path="/emotions" component={EmotionsTracker} />
           <ProtectedRoute path="/wellness-challenges" component={WellnessChallenges} />
+          <ProtectedRoute path="/wellness-challenges/categories/:category" component={WellnessChallengeCategory} />
           <ProtectedRoute path="/wellness-challenges/:id" component={WellnessChallengeDetails} />
           <ProtectedRoute path="/settings" component={Settings} />
           <Route path="/auth" component={AuthPage} />

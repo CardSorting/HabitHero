@@ -181,13 +181,13 @@ const WellnessChallenges: React.FC = () => {
           
           {/* Challenge categories */}
           <div className="mb-6">
-            <h2 className="text-lg font-medium mb-3">Challenge Categories</h2>
+            <h2 className="text-lg font-medium mb-3">Browse Challenge Categories</h2>
             <div className="grid grid-cols-2 gap-3">
               {challengeTypes.map((type) => (
                 <Card 
                   key={type.name} 
                   className="cursor-pointer hover:bg-accent transition-colors"
-                  onClick={() => setCreateModalOpen(true)}
+                  onClick={() => navigate(`/wellness-challenges/categories/${type.name.toLowerCase()}`)}
                 >
                   <CardContent className="p-4 flex flex-col items-center text-center">
                     <div className={`p-3 rounded-full ${type.color} mb-2`}>

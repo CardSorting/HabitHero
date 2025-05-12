@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { PageTransition } from '@/components/page-transition';
@@ -16,7 +16,10 @@ import {
   Feather,
   Shield,
   Gauge,
-  Users
+  Users,
+  ChevronDown,
+  ChevronUp,
+  Filter
 } from 'lucide-react';
 import {
   Dialog,
@@ -24,8 +27,15 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 /**
  * Mobile-first implementation of the Wellness Challenges feature
@@ -38,9 +48,11 @@ interface AbandonedChallenge {
 
 const WellnessChallenges: React.FC = () => {
   const { user } = useAuth();
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [, navigate] = useLocation();
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [abandonedChallenges, setAbandonedChallenges] = useState<string[]>([]);
+  const [showingMore, setShowingMore] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState('all');
   
   // Fetch active challenges from API
   const { data: activeChallenges = [], isLoading: isLoadingChallenges } = useQuery<any[]>({
@@ -68,6 +80,20 @@ const WellnessChallenges: React.FC = () => {
     }
   }, []);
   
+  // Filter challenges based on category selection
+  const filteredChallenges = useMemo(() => {
+    if (categoryFilter === 'all') return activeChallenges;
+    return activeChallenges.filter((challenge: any) => 
+      challenge.type === categoryFilter
+    );
+  }, [activeChallenges, categoryFilter]);
+  
+  // Limit displayed challenges based on showingMore state
+  const displayedChallenges = useMemo(() => {
+    if (showingMore) return filteredChallenges;
+    return filteredChallenges.slice(0, 3);
+  }, [filteredChallenges, showingMore]);
+  
   // Categories of wellness challenges
   const challengeTypes = [
     { name: 'emotions', displayName: 'Emotions', icon: <Heart className="h-6 w-6 text-red-500" />, color: 'bg-red-100' },
@@ -80,6 +106,64 @@ const WellnessChallenges: React.FC = () => {
     { name: 'emotion_regulation', displayName: 'Emotion Regulation', icon: <Gauge className="h-6 w-6 text-purple-500" />, color: 'bg-purple-100' },
     { name: 'interpersonal_effectiveness', displayName: 'Interpersonal', icon: <Users className="h-6 w-6 text-blue-500" />, color: 'bg-blue-100' },
   ];
+  
+  // Helper function to get challenge icon and styling based on type
+  const getChallengeStyle = (challenge: any) => {
+    const defaultStyle = {
+      icon: <Heart className="h-5 w-5 text-red-500" />,
+      color: "bg-red-100",
+      border: "border-l-red-400",
+      progress: "bg-red-400"
+    };
+    
+    const typeStyles: Record<string, any> = {
+      emotions: defaultStyle,
+      meditation: {
+        icon: <Brain className="h-5 w-5 text-blue-500" />,
+        color: "bg-blue-100",
+        border: "border-l-blue-400",
+        progress: "bg-blue-400"
+      },
+      journaling: {
+        icon: <BookOpen className="h-5 w-5 text-green-500" />,
+        color: "bg-green-100",
+        border: "border-l-green-400",
+        progress: "bg-green-400"
+      },
+      activity: {
+        icon: <Activity className="h-5 w-5 text-orange-500" />,
+        color: "bg-orange-100",
+        border: "border-l-orange-400",
+        progress: "bg-orange-400"
+      },
+      mindfulness: {
+        icon: <Feather className="h-5 w-5 text-teal-500" />,
+        color: "bg-teal-100",
+        border: "border-l-teal-400",
+        progress: "bg-teal-400"
+      },
+      distress_tolerance: {
+        icon: <Shield className="h-5 w-5 text-red-500" />,
+        color: "bg-red-100",
+        border: "border-l-red-400",
+        progress: "bg-red-400"
+      },
+      emotion_regulation: {
+        icon: <Gauge className="h-5 w-5 text-purple-500" />,
+        color: "bg-purple-100",
+        border: "border-l-purple-400",
+        progress: "bg-purple-400"
+      },
+      interpersonal_effectiveness: {
+        icon: <Users className="h-5 w-5 text-blue-500" />,
+        color: "bg-blue-100",
+        border: "border-l-blue-400",
+        progress: "bg-blue-400"
+      }
+    };
+    
+    return typeStyles[challenge.type] || defaultStyle;
+  };
   
   return (
     <PageTransition>
@@ -96,7 +180,67 @@ const WellnessChallenges: React.FC = () => {
         <div className="p-4">
           {/* Active Challenges Section */}
           <div className="mb-6">
-            <h2 className="text-lg font-bold mb-3">Your Active Challenges</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold">Your Active Challenges</h2>
+              
+              {activeChallenges.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 flex items-center">
+                      <Filter className="h-4 w-4 mr-1" />
+                      Filter
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setCategoryFilter('all')}>
+                      All Categories
+                    </DropdownMenuItem>
+                    {challengeTypes.map(type => (
+                      <DropdownMenuItem 
+                        key={type.name}
+                        onClick={() => setCategoryFilter(type.name)}
+                        className="flex items-center"
+                      >
+                        <div className={`p-1 rounded-full ${type.color} mr-2`}>
+                          {React.cloneElement(type.icon, { className: 'h-3 w-3' })}
+                        </div>
+                        {type.displayName}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+            
+            {/* Show management controls if there are enough challenges */}
+            {filteredChallenges.length > 3 && (
+              <div className="flex justify-between items-center mb-3 text-sm">
+                <p className="text-muted-foreground">
+                  {showingMore 
+                    ? `Showing all ${filteredChallenges.length} challenges` 
+                    : `Showing ${Math.min(3, filteredChallenges.length)} of ${filteredChallenges.length}`
+                  }
+                </p>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowingMore(!showingMore)}
+                  className="flex items-center"
+                >
+                  {showingMore ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      Show More
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
             
             {/* Challenge Cards */}
             <div className="space-y-3">
@@ -107,99 +251,19 @@ const WellnessChallenges: React.FC = () => {
                     <p className="mt-2 text-gray-600">Loading challenges...</p>
                   </CardContent>
                 </Card>
-              ) : activeChallenges.length > 0 ? (
-                activeChallenges.map((challenge: any) => {
-                  // Determine the category icon and style
-                  let categoryIcon = <Heart className="h-5 w-5 text-red-500" />;
-                  let categoryColor = "bg-red-100";
-                  let borderColor = "border-l-red-400";
-                  let progressColor = "bg-red-400";
-                  
-                  if (challenge.type === 'meditation') {
-                    categoryIcon = <Brain className="h-5 w-5 text-blue-500" />;
-                    categoryColor = "bg-blue-100";
-                    borderColor = "border-l-blue-400";
-                    progressColor = "bg-blue-400";
-                  } else if (challenge.type === 'journaling') {
-                    categoryIcon = <BookOpen className="h-5 w-5 text-green-500" />;
-                    categoryColor = "bg-green-100";
-                    borderColor = "border-l-green-400";
-                    progressColor = "bg-green-400";
-                  } else if (challenge.type === 'activity') {
-                    categoryIcon = <Activity className="h-5 w-5 text-orange-500" />;
-                    categoryColor = "bg-orange-100";
-                    borderColor = "border-l-orange-400";
-                    progressColor = "bg-orange-400";
-                  } else if (challenge.type === 'mindfulness') {
-                    categoryIcon = <Feather className="h-5 w-5 text-teal-500" />;
-                    categoryColor = "bg-teal-100";
-                    borderColor = "border-l-teal-400";
-                    progressColor = "bg-teal-400";
-                  } else if (challenge.type === 'distress_tolerance') {
-                    categoryIcon = <Shield className="h-5 w-5 text-red-500" />;
-                    categoryColor = "bg-red-100";
-                    borderColor = "border-l-red-400";
-                    progressColor = "bg-red-400";
-                  } else if (challenge.type === 'emotion_regulation') {
-                    categoryIcon = <Gauge className="h-5 w-5 text-purple-500" />;
-                    categoryColor = "bg-purple-100";
-                    borderColor = "border-l-purple-400";
-                    progressColor = "bg-purple-400";
-                  } else if (challenge.type === 'interpersonal_effectiveness') {
-                    categoryIcon = <Users className="h-5 w-5 text-blue-500" />;
-                    categoryColor = "bg-blue-100";
-                    borderColor = "border-l-blue-400";
-                    progressColor = "bg-blue-400";
-                  }
-                  
-                  // Calculate progress (hardcoded for now - would be replaced with real progress data)
-                  const progressValue = 33;
-                  const currentValue = Math.round((challenge.targetValue || 1) * (progressValue / 100));
-                  
-                  return (
-                    <Card key={challenge.id} className={`overflow-hidden border-l-4 ${borderColor}`}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center">
-                            <div className={`${categoryColor} p-2 rounded-full mr-3`}>
-                              {categoryIcon}
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">{challenge.title}</h3>
-                              <p className="text-xs text-muted-foreground">
-                                {challenge.type.charAt(0).toUpperCase() + challenge.type.slice(1)} • {challenge.frequency}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
-                            Active
-                          </div>
-                        </div>
-                        
-                        <div className="mb-3">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span>Progress Today</span>
-                            <span className="font-medium">{currentValue}/{challenge.targetValue || 1}</span>
-                          </div>
-                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className={`h-full ${progressColor} rounded-full`} style={{ width: `${progressValue}%` }}></div>
-                          </div>
-                        </div>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => navigate(`/wellness-challenges/${challenge.id}`)}
-                        >
-                          View Challenge
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              ) : (
+              ) : filteredChallenges.length === 0 && categoryFilter !== 'all' ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <p className="text-muted-foreground mb-3">No challenges found in this category</p>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setCategoryFilter('all')}
+                    >
+                      Show All Categories
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : activeChallenges.length === 0 ? (
                 <Card>
                   <CardContent className="p-6 text-center">
                     <p className="text-muted-foreground mb-3">You don't have any active challenges</p>
@@ -210,6 +274,69 @@ const WellnessChallenges: React.FC = () => {
                     </Button>
                   </CardContent>
                 </Card>
+              ) : (
+                <>
+                  {displayedChallenges.map((challenge: any) => {
+                    const style = getChallengeStyle(challenge);
+                    const progressValue = 33; // Sample progress value
+                    const currentValue = Math.round((challenge.targetValue || 1) * (progressValue / 100));
+                    
+                    return (
+                      <Card key={challenge.id} className={`overflow-hidden border-l-4 ${style.border}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              <div className={`${style.color} p-2 rounded-full mr-3`}>
+                                {style.icon}
+                              </div>
+                              <div>
+                                <h3 className="font-semibold">{challenge.title}</h3>
+                                <p className="text-xs text-muted-foreground">
+                                  {challenge.type.charAt(0).toUpperCase() + challenge.type.slice(1)} • {challenge.frequency || 'Daily'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
+                              Active
+                            </div>
+                          </div>
+                          
+                          <div className="mb-3">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span>Progress Today</span>
+                              <span className="font-medium">{currentValue}/{challenge.targetValue || 1}</span>
+                            </div>
+                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div className={`h-full ${style.progress} rounded-full`} style={{ width: `${progressValue}%` }}></div>
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => navigate(`/wellness-challenges/${challenge.id}`)}
+                          >
+                            View Challenge
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                  
+                  {/* Show More/Less button at the bottom if there are more challenges */}
+                  {filteredChallenges.length > 3 && (
+                    <div className="text-center pt-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowingMore(!showingMore)}
+                      >
+                        {showingMore ? 'Show Less' : `Show ${filteredChallenges.length - 3} More`}
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -304,12 +431,10 @@ const WellnessChallenges: React.FC = () => {
               </div>
               
               <div className="flex justify-end gap-2 mt-6">
-                <Button variant="outline" onClick={() => setCreateModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => setCreateModalOpen(false)}>
-                  Create
-                </Button>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button>Create</Button>
               </div>
             </div>
           </DialogContent>

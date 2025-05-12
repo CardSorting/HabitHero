@@ -243,8 +243,8 @@ export class EmotionsService {
    */
   async getEmotionById(id: string): Promise<Emotion | null> {
     try {
-      const emotions = await this.getAllEmotions();
-      return emotions.find(emotion => emotion.id === id) || null;
+      // Using the repository method directly
+      return await this.emotionsRepository.getEmotionById(id);
     } catch (error) {
       console.error("Error getting emotion by ID:", error);
       return null;
@@ -257,10 +257,8 @@ export class EmotionsService {
    */
   async getEntryById(id: string): Promise<EmotionEntry | null> {
     try {
-      // For now, we'll implement a simple version
-      // In a real implementation, we should have a dedicated query handler
-      const entries = await this.entriesRepository.getAllEntries();
-      return entries.find(entry => entry.id === id) || null;
+      // Using the repository method directly
+      return await this.entriesRepository.getEntryById(id);
     } catch (error) {
       console.error("Error getting emotion entry by ID:", error);
       return null;

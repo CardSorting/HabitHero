@@ -107,7 +107,12 @@ const EmotionHistoryTab = () => {
                   <div className="flex items-center">
                     <div 
                       className="w-4 h-4 rounded-full mr-2" 
-                      style={{ backgroundColor: entry.color || '#888' }}
+                      style={{ 
+                        backgroundColor: 
+                          entry.categoryId === 'positive' ? '#10b981' : 
+                          entry.categoryId === 'negative' ? '#ef4444' : 
+                          entry.categoryId === 'neutral' ? '#6b7280' : '#888'
+                      }}
                     />
                     <CardTitle className="text-lg">{entry.emotionName}</CardTitle>
                   </div>

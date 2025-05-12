@@ -23,7 +23,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line 
 } from 'recharts';
 
-export const EmotionInsightsTab = () => {
+const EmotionInsightsTab = () => {
   const { getEmotionTrends, getEmotionSummary, getMostFrequentEmotions, getHighestIntensityEmotions } = useEmotions();
   const [timeframe, setTimeframe] = useState('7days');
   const [isLoading, setIsLoading] = useState(false);

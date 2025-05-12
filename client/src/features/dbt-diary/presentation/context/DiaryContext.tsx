@@ -1,7 +1,7 @@
 // DiaryContext - Context API for managing diary card state
 // Presentation layer - this is what the UI components will interact with
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { format } from 'date-fns';
 import { 
   DiaryCardData, 
@@ -11,6 +11,25 @@ import {
 } from '../../domain/models';
 import { DiaryService } from '../../application/DiaryService';
 import { ApiDiaryRepository } from '../../infrastructure/ApiDiaryRepository';
+
+// Utility function to check deep equality of objects
+const isDeepEqual = (obj1: any, obj2: any): boolean => {
+  if (obj1 === obj2) return true;
+  if (obj1 === null || obj2 === null) return false;
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return obj1 === obj2;
+  
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false;
+    if (!isDeepEqual(obj1[key], obj2[key])) return false;
+  }
+  
+  return true;
+};
 
 interface DiaryContextType {
   diaryData: DiaryCardData;
@@ -41,8 +60,39 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
   const [diaryData, setDiaryData] = useState<DiaryCardData>(defaultDiaryCardData);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
+  // Use refs to store previous values for comparison
+  const previousStateRef = useRef<DiaryCardData>(defaultDiaryCardData);
+  const pendingUpdatesRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  
   // Initialize the diary service with the repository
   const diaryService = new DiaryService(new ApiDiaryRepository(userId), userId);
+  
+  // Cancel any pending update
+  const cancelPendingUpdate = useCallback((key: string) => {
+    if (pendingUpdatesRef.current.has(key)) {
+      clearTimeout(pendingUpdatesRef.current.get(key)!);
+      pendingUpdatesRef.current.delete(key);
+    }
+  }, []);
+  
+  // Schedule a debounced API update
+  const scheduleUpdate = useCallback((key: string, updateFn: () => Promise<void>, delay = 500) => {
+    // Cancel any existing update for this key
+    cancelPendingUpdate(key);
+    
+    // Schedule new update
+    const timeoutId = setTimeout(async () => {
+      try {
+        await updateFn();
+      } catch (error) {
+        console.error(`Error in scheduled update for ${key}:`, error);
+      } finally {
+        pendingUpdatesRef.current.delete(key);
+      }
+    }, delay);
+    
+    pendingUpdatesRef.current.set(key, timeoutId);
+  }, [cancelPendingUpdate]);
   
   // Load week data
   const loadWeekData = useCallback(async (dates: DateString[]) => {
@@ -58,26 +108,40 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       
       // Then load from API for latest data
       const apiData = await diaryService.getWeekData(dates);
-      setDiaryData(apiData);
       
-      // Save to local storage for offline access
-      localStorage.setItem(`dbt-diary-${weekKey}`, JSON.stringify(apiData));
+      // Only update state if data is different
+      if (!isDeepEqual(apiData, diaryData)) {
+        setDiaryData(apiData);
+        
+        // Save to local storage for offline access
+        localStorage.setItem(`dbt-diary-${weekKey}`, JSON.stringify(apiData));
+      }
     } catch (error) {
       console.error('Error loading week data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [diaryService]);
+  }, [diaryService, diaryData]);
   
   // Save diary data to local storage when it changes
   useEffect(() => {
     // This is a backup mechanism
-    const currentDate = format(new Date(), 'yyyy-MM-dd');
-    localStorage.setItem(`dbt-diary-${currentDate}`, JSON.stringify(diaryData));
+    if (!isDeepEqual(diaryData, previousStateRef.current)) {
+      const currentDate = format(new Date(), 'yyyy-MM-dd');
+      localStorage.setItem(`dbt-diary-${currentDate}`, JSON.stringify(diaryData));
+      
+      // Update the previous state reference
+      previousStateRef.current = JSON.parse(JSON.stringify(diaryData));
+    }
   }, [diaryData]);
   
   // Sleep data handlers
   const handleSleepChange = useCallback(async (date: DateString, field: keyof SleepData, value: string) => {
+    // Skip if value hasn't changed
+    if (diaryData.sleep[date]?.[field] === value) {
+      return;
+    }
+    
     // Update local state immediately for responsiveness
     setDiaryData(prev => ({
       ...prev,
@@ -90,22 +154,37 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       }
     }));
     
-    try {
-      // Save to server
-      await diaryService.saveSleepData(
-        date, 
-        field, 
-        value, 
-        diaryData.sleep[date]
-      );
-    } catch (error) {
-      console.error('Error saving sleep data:', error);
+    // Empty values should not be saved to reduce API calls
+    if (value.trim() === '') {
+      return;
     }
-  }, [diaryService, diaryData.sleep]);
+    
+    // Create a unique key for this update
+    const updateKey = `sleep_${date}_${field}`;
+    
+    // Schedule the API call
+    scheduleUpdate(updateKey, async () => {
+      try {
+        await diaryService.saveSleepData(
+          date, 
+          field, 
+          value, 
+          diaryData.sleep[date]
+        );
+      } catch (error) {
+        console.error('Error saving sleep data:', error);
+      }
+    });
+  }, [diaryService, diaryData.sleep, scheduleUpdate]);
   
   // Emotion data handlers
   const handleEmotionChange = useCallback(async (date: DateString, emotion: string, value: string) => {
-    // Update local state
+    // Skip if value hasn't changed
+    if (diaryData.emotions[date]?.[emotion] === value) {
+      return;
+    }
+    
+    // Update local state immediately for responsiveness
     setDiaryData(prev => ({
       ...prev,
       emotions: {
@@ -117,17 +196,32 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       }
     }));
     
-    try {
-      // Save to server
-      await diaryService.saveEmotion(date, emotion, value);
-    } catch (error) {
-      console.error('Error saving emotion data:', error);
+    // Empty values should not be saved to reduce API calls
+    if (value.trim() === '') {
+      return;
     }
-  }, [diaryService]);
+    
+    // Create a unique key for this update
+    const updateKey = `emotion_${date}_${emotion}`;
+    
+    // Schedule the API call
+    scheduleUpdate(updateKey, async () => {
+      try {
+        await diaryService.saveEmotion(date, emotion, value);
+      } catch (error) {
+        console.error('Error saving emotion data:', error);
+      }
+    });
+  }, [diaryService, diaryData.emotions, scheduleUpdate]);
   
   // Urge data handlers
   const handleUrgeChange = useCallback(async (date: DateString, urge: string, field: 'level' | 'action', value: string) => {
-    // Update local state
+    // Skip if value hasn't changed
+    if (diaryData.urges[date]?.[urge]?.[field] === value) {
+      return;
+    }
+    
+    // Update local state immediately for responsiveness
     setDiaryData(prev => ({
       ...prev,
       urges: {
@@ -142,28 +236,43 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       }
     }));
     
-    try {
-      // Get current values
-      const currentLevel = diaryData.urges[date]?.[urge]?.level || '';
-      const currentAction = diaryData.urges[date]?.[urge]?.action || '';
-      
-      // Save to server
-      await diaryService.saveUrge(
-        date, 
-        urge, 
-        field, 
-        value, 
-        currentLevel, 
-        currentAction
-      );
-    } catch (error) {
-      console.error('Error saving urge data:', error);
+    // Empty values should not be saved to reduce API calls
+    if (value.trim() === '') {
+      return;
     }
-  }, [diaryService, diaryData.urges]);
+    
+    // Create a unique key for this update
+    const updateKey = `urge_${date}_${urge}_${field}`;
+    
+    // Schedule the API call
+    scheduleUpdate(updateKey, async () => {
+      try {
+        // Get current values
+        const currentLevel = diaryData.urges[date]?.[urge]?.level || '';
+        const currentAction = diaryData.urges[date]?.[urge]?.action || '';
+        
+        await diaryService.saveUrge(
+          date, 
+          urge, 
+          field, 
+          value, 
+          currentLevel, 
+          currentAction
+        );
+      } catch (error) {
+        console.error('Error saving urge data:', error);
+      }
+    });
+  }, [diaryService, diaryData.urges, scheduleUpdate]);
   
   // Event data handlers
   const handleEventChange = useCallback(async (date: DateString, value: string) => {
-    // Update local state
+    // Skip if value hasn't changed
+    if (diaryData.events[date] === value) {
+      return;
+    }
+    
+    // Update local state immediately for responsiveness
     setDiaryData(prev => ({
       ...prev,
       events: {
@@ -172,17 +281,32 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       }
     }));
     
-    try {
-      // Save to server
-      await diaryService.saveEvent(date, value);
-    } catch (error) {
-      console.error('Error saving event data:', error);
+    // Empty values should not be saved to reduce API calls
+    if (value.trim() === '') {
+      return;
     }
-  }, [diaryService]);
+    
+    // Create a unique key for this update
+    const updateKey = `event_${date}`;
+    
+    // Schedule the API call
+    scheduleUpdate(updateKey, async () => {
+      try {
+        await diaryService.saveEvent(date, value);
+      } catch (error) {
+        console.error('Error saving event data:', error);
+      }
+    });
+  }, [diaryService, diaryData.events, scheduleUpdate]);
   
   // Skill data handlers
   const handleSkillChange = useCallback(async (category: string, skill: string, date: DateString, checked: boolean) => {
-    // Update local state
+    // Skip if value hasn't changed
+    if (diaryData.skills[category]?.[skill]?.[date] === checked) {
+      return;
+    }
+    
+    // Update local state immediately for responsiveness
     setDiaryData(prev => ({
       ...prev,
       skills: {
@@ -197,17 +321,27 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       }
     }));
     
-    try {
-      // Save to server
-      await diaryService.saveSkill(date, category, skill, checked);
-    } catch (error) {
-      console.error('Error saving skill data:', error);
-    }
-  }, [diaryService]);
+    // Create a unique key for this update
+    const updateKey = `skill_${date}_${category}_${skill}`;
+    
+    // Schedule the API call
+    scheduleUpdate(updateKey, async () => {
+      try {
+        await diaryService.saveSkill(date, category, skill, checked);
+      } catch (error) {
+        console.error('Error saving skill data:', error);
+      }
+    });
+  }, [diaryService, diaryData.skills, scheduleUpdate]);
   
   // Medication data handlers (local only since there's no API endpoint)
   const handleMedicationChange = useCallback((date: DateString, value: string) => {
-    // Update local state only
+    // Skip if value hasn't changed
+    if (diaryData.medication[date] === value) {
+      return;
+    }
+    
+    // Update local state only (no API call needed)
     setDiaryData(prev => ({
       ...prev,
       medication: {
@@ -215,7 +349,7 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
         [date]: value
       }
     }));
-  }, []);
+  }, [diaryData.medication]);
   
   // Getters
   const getSleepValue = useCallback((date: DateString, field: keyof SleepData): string => {
@@ -242,6 +376,17 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     return diaryData.skills[category]?.[skill]?.[date] || false;
   }, [diaryData.skills]);
   
+  // Cleanup function to cancel all pending updates when the component unmounts
+  useEffect(() => {
+    return () => {
+      // Cancel all pending updates
+      const keys = Array.from(pendingUpdatesRef.current.keys());
+      keys.forEach(key => {
+        cancelPendingUpdate(key);
+      });
+    };
+  }, [cancelPendingUpdate]);
+
   const value = {
     diaryData,
     isLoading,

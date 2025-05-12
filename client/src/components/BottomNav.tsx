@@ -9,7 +9,9 @@ import {
   HeartHandshake, 
   SmilePlus, 
   MoreHorizontal, 
-  X 
+  X,
+  Target,
+  Award
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -32,6 +34,7 @@ const BottomNav: React.FC = () => {
     { icon: SmilePlus, label: "Emotions", path: "/emotions", priority: 90 },
     { icon: HeartHandshake, label: "Therapy", path: "/therapy", priority: 88 },
     { icon: Calendar, label: "Calendar", path: "/calendar", priority: 85 },
+    { icon: Target, label: "Challenges", path: "/wellness-challenges", priority: 80 },
     { icon: BarChart2, label: "Progress", path: "/progress", priority: 60 },
     { icon: PieChart, label: "Analytics", path: "/analytics", priority: 50 },
     { icon: Settings, label: "Settings", path: "/settings", priority: 40 },

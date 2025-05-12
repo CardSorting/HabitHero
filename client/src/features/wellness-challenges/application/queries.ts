@@ -46,7 +46,7 @@ export class GetChallengesByTypeQuery implements Query {
   
   constructor(
     public readonly userId: number,
-    public readonly type: ChallengeType,
+    public readonly challengeType: ChallengeType,
   ) {}
 }
 

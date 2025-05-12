@@ -402,7 +402,7 @@ export const ChallengeDetailsPage: React.FC = () => {
                     <p className="text-sm text-gray-600">
                       {completionRate < 70 
                         ? 'Try setting a specific time each day to complete this challenge.'
-                        : 'You're doing great! Consider increasing your target or trying a more challenging goal.'}
+                        : "You're doing great! Consider increasing your target or trying a more challenging goal."}
                     </p>
                   </div>
                 </div>

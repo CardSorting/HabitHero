@@ -1,30 +1,24 @@
-/**
- * Wellness Challenge Feature Module
- * Main export file for the wellness challenge feature
- */
+// Re-export all the components and functionality from the wellness challenges feature
 
-// Domain Exports
+// Domain Models
 export * from './domain/models';
-export * from './domain/services';
-export * from './domain/repositories';
 
-// Application Exports
+// Application Layer
 export * from './application/commands';
 export * from './application/queries';
-export * from './application/WellnessChallengeService';
+export * from './application/commandHandlers';
+export * from './application/queryHandlers';
 
-// Presentation Exports (Components)
-export { WellnessChallengeProvider } from './presentation/components/WellnessChallengeProvider';
-export { WellnessChallengesList } from './presentation/components/WellnessChallengesList';
-export { CreateChallengeForm } from './presentation/components/CreateChallengeForm';
-export { ChallengeProgressTracker } from './presentation/components/ChallengeProgressTracker';
+// Infrastructure
+export * from './infrastructure/ApiRepository';
 
-// Presentation Exports (Pages)
-export { ChallengesListPage } from './presentation/pages/ChallengesListPage';
-export { ChallengeDetailsPage } from './presentation/pages/ChallengeDetailsPage';
+// Presentation
+export * from './presentation/components';
+// Commented out until implementation is ready
+// export * from './presentation/context/WellnessChallengeContext';
+// export * from './presentation/pages/ChallengeDetailsPage';
+// export * from './presentation/pages/ChallengesListPage';
 
-// Context Hooks
-export {
-  useWellnessChallenge,
-  useWellnessChallengeOperation
-} from './presentation/context/WellnessChallengeContext';
+// Service Factory
+// Commented out until implementation is ready
+// export * from './presentation/services/serviceFactory';

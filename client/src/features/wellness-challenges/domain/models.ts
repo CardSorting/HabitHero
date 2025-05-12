@@ -10,11 +10,7 @@ export enum ChallengeCategory {
   EMOTIONS = "emotions",
   MEDITATION = "meditation",
   JOURNALING = "journaling",
-  ACTIVITY = "activity",
-  MINDFULNESS = "mindfulness",
-  DISTRESS_TOLERANCE = "distress_tolerance",
-  EMOTION_REGULATION = "emotion_regulation",
-  INTERPERSONAL_EFFECTIVENESS = "interpersonal_effectiveness"
+  ACTIVITY = "activity"
 }
 
 export enum ChallengeFrequency {

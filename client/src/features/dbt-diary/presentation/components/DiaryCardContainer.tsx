@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, isSameDay, isToday } from 'date-fns';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, Calendar as CalendarIcon, Save, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,13 +29,22 @@ const DiaryCardContent: React.FC = () => {
   
   // Use the diary context
   const { 
-    loadWeekData, 
     diaryData, 
     isLoading, 
-    saveAllChanges, 
+    saveChanges, 
     hasPendingChanges,
-    loadDataForDate 
+    loadInitialData,
+    loadDay
   } = useDiary();
+  
+  // Load initial cached data when component mounts
+  useEffect(() => {
+    loadInitialData();
+    
+    // Load today's data on first render
+    const today = format(new Date(), 'yyyy-MM-dd') as DateString;
+    loadDay(today);
+  }, [loadInitialData, loadDay]);
   
   // Generate dates for the week (Saturday to Friday)
   const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -57,17 +66,11 @@ const DiaryCardContent: React.FC = () => {
   
   const weekRangeText = `${format(weekDates[0], "MMM d")} - ${format(weekDates[6], "MMM d, yyyy")}`;
   
-  // Load week data when the week changes - now only loads first day by default
-  useEffect(() => {
-    const dates = weekDates.map(date => format(date, "yyyy-MM-dd") as DateString);
-    loadWeekData(dates);
-  }, [currentWeekStart, loadWeekData]);
-  
   // Load data for the selected date when it changes
   useEffect(() => {
     const dateStr = format(selectedDate, "yyyy-MM-dd") as DateString;
-    loadDataForDate(dateStr);
-  }, [selectedDate, loadDataForDate]);
+    loadDay(dateStr);
+  }, [selectedDate, loadDay]);
   
   // Navigate to previous week
   const handlePrevWeek = () => {
@@ -87,7 +90,7 @@ const DiaryCardContent: React.FC = () => {
     if (viewMode === 'day') {
       weekDates.forEach(date => {
         const dateStr = format(date, "yyyy-MM-dd") as DateString;
-        loadDataForDate(dateStr);
+        loadDay(dateStr);
       });
     }
   };
@@ -107,20 +110,39 @@ const DiaryCardContent: React.FC = () => {
   // Handle saving all changes
   const handleSaveChanges = async () => {
     try {
-      await saveAllChanges();
+      await saveChanges();
       toast({
         title: "Success",
-        description: "Your diary entries have been saved.",
+        description: "Your diary entries have been saved to the database.",
         variant: "default"
       });
     } catch (error) {
       console.error('Error saving changes:', error);
       toast({
         title: "Error",
-        description: "There was a problem saving your entries. Please try again.",
+        description: "There was a problem saving your entries. Your changes are still stored locally.",
         variant: "destructive"
       });
     }
+  };
+  
+  // Load data for all days in current view
+  const handleLoadData = () => {
+    // Get all dates to load based on view mode
+    const datesToLoad = viewMode === 'day' 
+      ? [format(selectedDate, "yyyy-MM-dd") as DateString]
+      : weekDates.map(date => format(date, "yyyy-MM-dd") as DateString);
+    
+    // Load each date
+    datesToLoad.forEach(date => {
+      loadDay(date);
+    });
+    
+    toast({
+      title: "Data Loading",
+      description: `Loading diary data for ${viewMode === 'day' ? 'selected day' : 'week'}.`,
+      variant: "default"
+    });
   };
   
   // Calculate completion rate for selected day or week
@@ -231,7 +253,7 @@ const DiaryCardContent: React.FC = () => {
           <p className="text-muted-foreground">Track your emotions, behaviors and skills practice</p>
         </div>
         
-        <div className="flex items-center mt-4 md:mt-0 gap-2">
+        <div className="flex items-center mt-4 md:mt-0 gap-2 flex-wrap justify-end">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 gap-1">
@@ -257,6 +279,17 @@ const DiaryCardContent: React.FC = () => {
           >
             <CalendarDays className="h-4 w-4" />
             <span className="hidden sm:inline">{viewMode === 'day' ? 'Week View' : 'Day View'}</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1"
+            onClick={handleLoadData}
+            disabled={isLoading}
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Load Data</span>
           </Button>
           
           <Button
@@ -328,6 +361,11 @@ const DiaryCardContent: React.FC = () => {
                     Unsaved changes
                   </Badge>
                 )}
+                {isLoading && (
+                  <Badge variant="outline" className="mt-1 ml-2">
+                    Loading...
+                  </Badge>
+                )}
               </div>
               <div className="ml-auto flex items-center gap-4">
                 <div className="text-right">
@@ -366,24 +404,35 @@ const DiaryCardContent: React.FC = () => {
         />
       </motion.main>
       
-      {/* Floating save button for mobile */}
-      {hasPendingChanges && (
-        <motion.div 
-          className="fixed bottom-6 right-6 md:hidden"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
+      {/* Floating action buttons for mobile */}
+      <motion.div 
+        className="fixed bottom-6 right-6 flex flex-col gap-3 md:hidden"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+        {/* Load data button */}
+        <Button 
+          onClick={handleLoadData}
+          size="icon"
+          className="rounded-full shadow-lg h-14 w-14"
+          disabled={isLoading}
+          variant="outline"
         >
+          <Download className="h-6 w-6" />
+        </Button>
+        
+        {/* Save changes button, only shown when there are pending changes */}
+        {hasPendingChanges && (
           <Button 
             onClick={handleSaveChanges}
-            size="lg"
-            className="rounded-full shadow-lg"
+            size="icon"
+            className="rounded-full shadow-lg h-14 w-14"
             disabled={isLoading}
           >
-            <Save className="h-5 w-5 mr-2" />
-            Save Changes
+            <Save className="h-6 w-6" />
           </Button>
-        </motion.div>
-      )}
+        )}
+      </motion.div>
     </div>
   );
 };

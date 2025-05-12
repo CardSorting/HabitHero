@@ -6,6 +6,7 @@ import { insertHabitSchema, User as SelectUser } from "@shared/schema";
 import { getTherapeuticResponse, getCopingStrategy, analyzeDailyReflection } from "./anthropicService";
 import { HabitController } from "./interfaces/controllers/HabitController";
 import { setupAuth } from "./auth";
+import { registerWellnessChallengeRoutes } from "./wellness-challenge-routes";
 
 // Reuse the AuthRequest type to match the existing User definition
 type AuthRequest = Request & {
@@ -27,6 +28,9 @@ export async function registerRoutes(app: Express): Promise<any> {
   
   // Initialize the habit controller
   const habitController = new HabitController();
+  
+  // Register wellness challenge routes
+  registerWellnessChallengeRoutes(app);
   
   // Get authenticated user
   app.get("/api/user", (req: AuthRequest, res) => {

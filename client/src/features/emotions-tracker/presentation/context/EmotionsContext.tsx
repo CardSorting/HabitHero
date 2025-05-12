@@ -1,373 +1,308 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { format } from 'date-fns';
-import { 
-  Emotion, 
-  EmotionCategory, 
-  EmotionEntry, 
-  EmotionSummary, 
-  EmotionTrend 
-} from '../../domain/models';
-import { ApiEmotionsRepository } from '../../infrastructure/ApiEmotionsRepository';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { Emotion, EmotionCategory, EmotionEntry, EmotionSummary, EmotionTrend } from '../../domain/models';
 import { EmotionsService } from '../../application/EmotionsService';
-import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/hooks/use-toast';
+import { ApiEmotionsRepository } from '../../infrastructure/ApiEmotionsRepository';
 
-interface EmotionsContextProps {
-  // Emotions state
-  emotions: Emotion[];
-  loadingEmotions: boolean;
+// Initialize dependencies
+const emotionsRepository = new ApiEmotionsRepository();
+const emotionsService = new EmotionsService(emotionsRepository, emotionsRepository);
+
+// Context interface
+export interface EmotionsContextProps {
+  // State values
+  isLoading: boolean;
+  error: string | null;
   
-  // Current date
-  selectedDate: Date;
-  setSelectedDate: (date: Date) => void;
+  // Emotion queries
+  getAllEmotions: () => Promise<Emotion[]>;
+  getEmotionById: (id: string) => Promise<Emotion | null>;
+  getEmotionsByCategory: (category: EmotionCategory) => Promise<Emotion[]>;
   
-  // Entries
-  entries: EmotionEntry[];
-  loadingEntries: boolean;
+  // Entry queries
+  getEmotionsByDate: (date: string) => Promise<EmotionEntry[]>;
+  getEmotionsByDateRange: (fromDate: string, toDate: string) => Promise<EmotionEntry[]>;
+  getEntryById: (id: string) => Promise<EmotionEntry | null>;
   
-  // Summary
-  summary: EmotionSummary | null;
-  loadingSummary: boolean;
-  
-  // Trends
-  trends: EmotionTrend[];
-  loadingTrends: boolean;
-  
-  // Statistics
-  frequentEmotions: {emotion: string, count: number}[];
-  highIntensityEmotions: {emotion: string, intensity: number}[];
-  loadingStatistics: boolean;
-  
-  // Date ranges for analytics
-  dateRange: {from: Date, to: Date};
-  setDateRange: (range: {from: Date, to: Date}) => void;
-  
-  // Functions to interact with the service
+  // Entry commands
   trackEmotion: (
     emotionId: string,
     emotionName: string,
-    categoryId: string,
     intensity: number,
+    date: string,
     notes?: string,
     triggers?: string[],
-    copingMechanisms?: string[]
-  ) => Promise<void>;
+    copingMechanisms?: string[],
+    categoryId?: string
+  ) => Promise<EmotionEntry>;
+  updateEmotionEntry: (id: string, updates: Partial<EmotionEntry>) => Promise<EmotionEntry>;
+  deleteEmotionEntry: (id: string) => Promise<boolean>;
   
-  updateEntry: (
-    id: string,
-    updates: {
-      intensity?: number;
-      notes?: string;
-      triggers?: string[];
-      copingMechanisms?: string[];
-    }
-  ) => Promise<void>;
-  
-  deleteEntry: (id: string) => Promise<void>;
-  
-  // Filter by category
-  getEmotionsByCategory: (category: EmotionCategory) => Emotion[];
-  
-  // Refresh data
-  refreshEntries: () => Promise<void>;
-  refreshSummary: () => Promise<void>;
-  refreshTrends: () => Promise<void>;
-  refreshStatistics: () => Promise<void>;
+  // Analytics
+  getEmotionSummary: (date: string) => Promise<EmotionSummary>;
+  getEmotionTrends: (fromDate: string, toDate: string) => Promise<EmotionTrend[]>;
+  getMostFrequentEmotions: (fromDate: string, toDate: string, limit?: number) => Promise<{emotion: string, count: number}[]>;
+  getHighestIntensityEmotions: (fromDate: string, toDate: string, limit?: number) => Promise<{emotion: string, intensity: number}[]>;
 }
 
+// Create the context
 const EmotionsContext = createContext<EmotionsContextProps | undefined>(undefined);
 
-export const useEmotions = () => {
-  const context = useContext(EmotionsContext);
-  if (!context) {
-    throw new Error('useEmotions must be used within an EmotionsProvider');
-  }
-  return context;
-};
-
-interface EmotionsProviderProps {
-  children: ReactNode;
-}
-
-export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
+// Provider component
+export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
-  // Initialize repositories and service
-  const emotionsRepository = new ApiEmotionsRepository();
-  const entriesRepository = new ApiEmotionsRepository();
-  const emotionsService = new EmotionsService(emotionsRepository, entriesRepository);
-  
-  // State variables
-  const [emotions, setEmotions] = useState<Emotion[]>([]);
-  const [loadingEmotions, setLoadingEmotions] = useState(true);
-  
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  
-  const [entries, setEntries] = useState<EmotionEntry[]>([]);
-  const [loadingEntries, setLoadingEntries] = useState(true);
-  
-  const [summary, setSummary] = useState<EmotionSummary | null>(null);
-  const [loadingSummary, setLoadingSummary] = useState(true);
-  
-  const [trends, setTrends] = useState<EmotionTrend[]>([]);
-  const [loadingTrends, setLoadingTrends] = useState(true);
-  
-  const [frequentEmotions, setFrequentEmotions] = useState<{emotion: string, count: number}[]>([]);
-  const [highIntensityEmotions, setHighIntensityEmotions] = useState<{emotion: string, intensity: number}[]>([]);
-  const [loadingStatistics, setLoadingStatistics] = useState(true);
-  
-  // Default date range for analytics: last 7 days
-  const [dateRange, setDateRange] = useState<{from: Date, to: Date}>(() => {
-    const to = new Date();
-    const from = new Date();
-    from.setDate(from.getDate() - 7);
-    return { from, to };
-  });
-  
-  // Fetch all emotions on mount
-  useEffect(() => {
-    const fetchEmotions = async () => {
-      try {
-        setLoadingEmotions(true);
-        const allEmotions = await emotionsService.getAllEmotions();
-        setEmotions(allEmotions);
-      } catch (error) {
-        console.error('Error fetching emotions:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load emotions data',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoadingEmotions(false);
-      }
-    };
-    
-    fetchEmotions();
+  // Emotion queries
+  const getAllEmotions = useCallback(async (): Promise<Emotion[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const emotions = await emotionsService.getAllEmotions();
+      return emotions;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
   
-  // Fetch entries for the selected date
-  useEffect(() => {
-    if (user) {
-      refreshEntries();
-      refreshSummary();
+  const getEmotionById = useCallback(async (id: string): Promise<Emotion | null> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const emotion = await emotionsService.getEmotionById(id);
+      return emotion;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return null;
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, selectedDate]);
+  }, []);
   
-  // Fetch trends and statistics when date range changes
-  useEffect(() => {
-    if (user) {
-      refreshTrends();
-      refreshStatistics();
+  const getEmotionsByCategory = useCallback(async (category: EmotionCategory): Promise<Emotion[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const emotions = await emotionsService.getEmotionsByCategory(category);
+      return emotions;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return [];
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, dateRange]);
+  }, []);
   
-  // Function to track a new emotion
-  const trackEmotion = async (
+  // Entry queries
+  const getEmotionsByDate = useCallback(async (date: string): Promise<EmotionEntry[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const entries = await emotionsService.getEntriesByDate(1, date); // TODO: get real user ID
+      return entries;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  const getEmotionsByDateRange = useCallback(async (fromDate: string, toDate: string): Promise<EmotionEntry[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const entries = await emotionsService.getEntriesByDateRange(1, fromDate, toDate); // TODO: get real user ID
+      return entries;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  const getEntryById = useCallback(async (id: string): Promise<EmotionEntry | null> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const entry = await emotionsService.getEntryById(id);
+      return entry;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  // Entry commands
+  const trackEmotion = useCallback(async (
     emotionId: string,
     emotionName: string,
-    categoryId: string,
     intensity: number,
+    date: string,
     notes?: string,
     triggers?: string[],
-    copingMechanisms?: string[]
-  ) => {
-    if (!user) return;
-    
+    copingMechanisms?: string[],
+    categoryId?: string
+  ): Promise<EmotionEntry> => {
+    setIsLoading(true);
+    setError(null);
     try {
-      await emotionsService.trackEmotion(
-        user.id,
+      const entry = await emotionsService.trackEmotion(
+        1, // TODO: get real user ID
         emotionId,
         emotionName,
         intensity,
-        selectedDate,
+        new Date(date),
         notes,
         triggers,
         copingMechanisms,
         categoryId
       );
-      
-      // Refresh data
-      await refreshEntries();
-      await refreshSummary();
-      
-      toast({
-        title: 'Emotion tracked',
-        description: 'Your emotion has been successfully recorded',
-      });
-    } catch (error) {
-      console.error('Error tracking emotion:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to track emotion',
-        variant: 'destructive',
-      });
-    }
-  };
-  
-  // Function to update an existing entry
-  const updateEntry = async (
-    id: string,
-    updates: {
-      intensity?: number;
-      notes?: string;
-      triggers?: string[];
-      copingMechanisms?: string[];
-    }
-  ) => {
-    if (!user) return;
-    
-    try {
-      await emotionsService.updateEmotionEntry(id, user.id, updates);
-      
-      // Refresh data
-      await refreshEntries();
-      await refreshSummary();
-      
-      toast({
-        title: 'Entry updated',
-        description: 'Your emotion entry has been updated',
-      });
-    } catch (error) {
-      console.error('Error updating entry:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update entry',
-        variant: 'destructive',
-      });
-    }
-  };
-  
-  // Function to delete an entry
-  const deleteEntry = async (id: string) => {
-    if (!user) return;
-    
-    try {
-      await emotionsService.deleteEmotionEntry(id, user.id);
-      
-      // Refresh data
-      await refreshEntries();
-      await refreshSummary();
-      
-      toast({
-        title: 'Entry deleted',
-        description: 'Your emotion entry has been deleted',
-      });
-    } catch (error) {
-      console.error('Error deleting entry:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete entry',
-        variant: 'destructive',
-      });
-    }
-  };
-  
-  // Function to get emotions by category
-  const getEmotionsByCategory = (category: EmotionCategory): Emotion[] => {
-    return emotions.filter(emotion => emotion.category === category);
-  };
-  
-  // Refresh functions
-  const refreshEntries = async () => {
-    if (!user) return;
-    
-    try {
-      setLoadingEntries(true);
-      const userEntries = await emotionsService.getEntriesByDate(user.id, selectedDate);
-      setEntries(userEntries);
-    } catch (error) {
-      console.error('Error fetching entries:', error);
+      return entry;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      throw err; // Re-throw to allow caller to handle error
     } finally {
-      setLoadingEntries(false);
+      setIsLoading(false);
     }
-  };
+  }, []);
   
-  const refreshSummary = async () => {
-    if (!user) return;
-    
+  const updateEmotionEntry = useCallback(async (id: string, updates: Partial<EmotionEntry>): Promise<EmotionEntry> => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setLoadingSummary(true);
-      const dateSummary = await emotionsService.getSummaryForDate(user.id, selectedDate);
-      setSummary(dateSummary);
-    } catch (error) {
-      console.error('Error fetching summary:', error);
+      const entry = await emotionsService.updateEmotionEntry(id, 1, updates); // TODO: get real user ID
+      return entry;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      throw err; // Re-throw to allow caller to handle error
     } finally {
-      setLoadingSummary(false);
+      setIsLoading(false);
     }
-  };
+  }, []);
   
-  const refreshTrends = async () => {
-    if (!user) return;
-    
+  const deleteEmotionEntry = useCallback(async (id: string): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setLoadingTrends(true);
-      const emotionTrends = await emotionsService.getTrends(user.id, dateRange.from, dateRange.to);
-      setTrends(emotionTrends);
-    } catch (error) {
-      console.error('Error fetching trends:', error);
+      const success = await emotionsService.deleteEmotionEntry(id, 1); // TODO: get real user ID
+      return success;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return false;
     } finally {
-      setLoadingTrends(false);
+      setIsLoading(false);
     }
-  };
+  }, []);
   
-  const refreshStatistics = async () => {
-    if (!user) return;
-    
+  // Analytics
+  const getEmotionSummary = useCallback(async (date: string): Promise<EmotionSummary> => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setLoadingStatistics(true);
-      const frequent = await emotionsService.getMostFrequentEmotions(
-        user.id, 
-        dateRange.from, 
-        dateRange.to, 
-        5
-      );
-      const highIntensity = await emotionsService.getHighestIntensityEmotions(
-        user.id, 
-        dateRange.from, 
-        dateRange.to, 
-        5
-      );
-      
-      setFrequentEmotions(frequent);
-      setHighIntensityEmotions(highIntensity);
-    } catch (error) {
-      console.error('Error fetching statistics:', error);
+      const summary = await emotionsService.getSummaryForDate(1, date); // TODO: get real user ID
+      return summary;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return {
+        date,
+        dominantEmotion: null,
+        highestIntensity: null,
+        averageIntensity: null,
+        emotionCount: 0,
+        entryIds: []
+      };
     } finally {
-      setLoadingStatistics(false);
+      setIsLoading(false);
     }
-  };
+  }, []);
   
-  const contextValue: EmotionsContextProps = {
-    emotions,
-    loadingEmotions,
-    selectedDate,
-    setSelectedDate,
-    entries,
-    loadingEntries,
-    summary,
-    loadingSummary,
-    trends,
-    loadingTrends,
-    frequentEmotions,
-    highIntensityEmotions,
-    loadingStatistics,
-    dateRange,
-    setDateRange,
-    trackEmotion,
-    updateEntry,
-    deleteEntry,
+  const getEmotionTrends = useCallback(async (fromDate: string, toDate: string): Promise<EmotionTrend[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const trends = await emotionsService.getTrends(1, fromDate, toDate); // TODO: get real user ID
+      return trends;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  const getMostFrequentEmotions = useCallback(async (
+    fromDate: string,
+    toDate: string,
+    limit?: number
+  ): Promise<{emotion: string, count: number}[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const emotions = await emotionsService.getMostFrequentEmotions(1, fromDate, toDate, limit); // TODO: get real user ID
+      return emotions;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  const getHighestIntensityEmotions = useCallback(async (
+    fromDate: string,
+    toDate: string,
+    limit?: number
+  ): Promise<{emotion: string, intensity: number}[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const emotions = await emotionsService.getHighestIntensityEmotions(1, fromDate, toDate, limit); // TODO: get real user ID
+      return emotions;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  // Context value
+  const value: EmotionsContextProps = {
+    isLoading,
+    error,
+    getAllEmotions,
+    getEmotionById,
     getEmotionsByCategory,
-    refreshEntries,
-    refreshSummary,
-    refreshTrends,
-    refreshStatistics,
+    getEmotionsByDate,
+    getEmotionsByDateRange,
+    getEntryById,
+    trackEmotion,
+    updateEmotionEntry,
+    deleteEmotionEntry,
+    getEmotionSummary,
+    getEmotionTrends,
+    getMostFrequentEmotions,
+    getHighestIntensityEmotions,
   };
   
   return (
-    <EmotionsContext.Provider value={contextValue}>
+    <EmotionsContext.Provider value={value}>
       {children}
     </EmotionsContext.Provider>
   );
+};
+
+// Custom hook for consuming the context
+export const useEmotions = (): EmotionsContextProps => {
+  const context = useContext(EmotionsContext);
+  if (context === undefined) {
+    throw new Error('useEmotions must be used within an EmotionsProvider');
+  }
+  return context;
 };

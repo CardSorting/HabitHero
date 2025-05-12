@@ -1,207 +1,197 @@
-// EmotionHistoryTab - UI component for displaying history of tracked emotions
-// This component shows a list of emotions tracked over time
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEmotions } from '../../context/EmotionsContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { format, parseISO } from 'date-fns';
+import { Separator } from '@/components/ui/separator';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { EmotionEntry } from '../../../domain/models';
+import { Trash2, Calendar as CalendarIcon, Info } from 'lucide-react';
 
-const EmotionHistoryTab: React.FC = () => {
-  const { 
-    trackedEmotions,
-    deleteEmotionEntry,
-    isLoading
-  } = useEmotions();
-  
-  const [selectedEmotion, setSelectedEmotion] = useState<any | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  
-  // Sort emotions by date, most recent first
-  const sortedEmotions = [...trackedEmotions].sort((a, b) => {
-    return new Date(b.date).getTime() - new Date(a.date).getTime();
-  });
-  
-  // Group emotions by date
-  const groupedEmotions = sortedEmotions.reduce((groups: Record<string, any[]>, emotion) => {
-    const date = format(new Date(emotion.date), 'yyyy-MM-dd');
-    if (!groups[date]) {
-      groups[date] = [];
+const EmotionHistoryTab = () => {
+  const { getEmotionsByDate, deleteEmotionEntry } = useEmotions();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [entries, setEntries] = useState<EmotionEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [selectedDate]);
+
+  const fetchEntries = async () => {
+    setIsLoading(true);
+    try {
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      const fetchedEntries = await getEmotionsByDate(dateString);
+      setEntries(fetchedEntries);
+    } catch (error) {
+      console.error('Error fetching emotion entries:', error);
+    } finally {
+      setIsLoading(false);
     }
-    groups[date].push(emotion);
-    return groups;
-  }, {});
-  
-  // Handle view details
-  const handleViewDetails = (emotion: any) => {
-    setSelectedEmotion(emotion);
-    setIsDialogOpen(true);
   };
-  
-  // Handle delete emotion
-  const handleDeleteEmotion = async () => {
-    if (!selectedEmotion || !selectedEmotion.id) return;
+
+  const handleDeleteEntry = async () => {
+    if (!entryToDelete) return;
     
     try {
-      await deleteEmotionEntry(selectedEmotion.id);
-      setIsDialogOpen(false);
-      setSelectedEmotion(null);
+      await deleteEmotionEntry(entryToDelete);
+      setEntries(entries.filter(entry => entry.id !== entryToDelete));
+      setDeleteDialogOpen(false);
+      setEntryToDelete(null);
     } catch (error) {
-      console.error('Error deleting emotion:', error);
+      console.error('Error deleting emotion entry:', error);
     }
   };
-  
-  // Get color based on category
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'positive':
-        return '#4ade80';
-      case 'negative':
-        return '#ef4444';
-      case 'neutral':
-        return '#f59e0b';
-      default:
-        return '#888888';
-    }
+
+  const confirmDelete = (entryId: string) => {
+    setEntryToDelete(entryId);
+    setDeleteDialogOpen(true);
   };
-  
+
   return (
-    <div className="space-y-6">
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold mb-1">Emotion History</h2>
-        <p className="text-muted-foreground">
-          View and manage your tracked emotions
-        </p>
+    <div className="space-y-4">
+      <div className="p-4 rounded-lg bg-background">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(date) => date && setSelectedDate(date)}
+          className="rounded-md border shadow mx-auto"
+        />
       </div>
-      
-      {Object.keys(groupedEmotions).length === 0 ? (
+
+      <div className="py-2">
+        <h3 className="text-lg font-medium">
+          Emotions for {format(selectedDate, 'MMMM d, yyyy')}
+        </h3>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : entries.length === 0 ? (
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-6">
-              <p className="text-muted-foreground mb-4">
-                You haven't tracked any emotions yet.
-              </p>
-              <Button>Track Your First Emotion</Button>
-            </div>
+          <CardContent className="p-6 text-center">
+            <Info className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
+            <p className="text-muted-foreground">No emotions tracked for this date</p>
+            <Button 
+              className="mt-4" 
+              variant="outline"
+              onClick={() => window.history.pushState(null, '', '/emotions')}
+            >
+              Track a new emotion
+            </Button>
           </CardContent>
         </Card>
       ) : (
-        <ScrollArea className="h-[calc(100vh-260px)]">
-          {Object.entries(groupedEmotions).map(([date, emotions]) => (
-            <Card key={date} className="mb-4">
+        <div className="space-y-4">
+          {entries.map(entry => (
+            <Card key={entry.id}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">
-                  {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
-                </CardTitle>
-                <CardDescription>
-                  {emotions.length} emotion{emotions.length !== 1 ? 's' : ''} tracked
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div 
+                      className="w-4 h-4 rounded-full mr-2" 
+                      style={{ backgroundColor: entry.color || '#888' }}
+                    />
+                    <CardTitle className="text-lg">{entry.emotionName}</CardTitle>
+                  </div>
+                  <Badge variant={
+                    entry.categoryId === 'positive' ? 'default' : 
+                    entry.categoryId === 'negative' ? 'destructive' : 
+                    'secondary'
+                  }>
+                    {entry.categoryId}
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {emotions.map(emotion => (
-                    <div 
-                      key={emotion.id}
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
-                      onClick={() => handleViewDetails(emotion)}
-                    >
-                      <div className="flex items-center">
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white mr-3"
-                          style={{ backgroundColor: getCategoryColor(emotion.categoryId) }}
-                        >
-                          <span className="text-xs font-bold">{emotion.intensity}</span>
-                        </div>
-                        <div>
-                          <div className="font-medium">{emotion.emotionName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {format(new Date(emotion.date), 'h:mm a')}
-                          </div>
-                        </div>
-                      </div>
-                      <Badge 
-                        variant="outline" 
-                        style={{ 
-                          color: getCategoryColor(emotion.categoryId),
-                          borderColor: getCategoryColor(emotion.categoryId)
-                        }}
-                      >
-                        {emotion.categoryId.charAt(0).toUpperCase() + emotion.categoryId.slice(1)}
-                      </Badge>
+                <div className="mb-2">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm">Intensity</span>
+                    <span className="text-sm font-medium">{entry.intensity}/10</span>
+                  </div>
+                  <Progress value={entry.intensity * 10} className="h-2" />
+                </div>
+                
+                {entry.notes && (
+                  <div className="mt-3">
+                    <p className="text-sm font-medium mb-1">Notes</p>
+                    <p className="text-sm text-muted-foreground">{entry.notes}</p>
+                  </div>
+                )}
+                
+                {entry.triggers && entry.triggers.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-sm font-medium mb-1">Triggers</p>
+                    <div className="flex flex-wrap gap-1">
+                      {entry.triggers.map((trigger, idx) => (
+                        <Badge variant="outline" key={idx}>{trigger}</Badge>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+                
+                {entry.copingMechanisms && entry.copingMechanisms.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-sm font-medium mb-1">Coping Strategies</p>
+                    <div className="flex flex-wrap gap-1">
+                      {entry.copingMechanisms.map((strategy, idx) => (
+                        <Badge variant="outline" key={idx}>{strategy}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex justify-between items-center mt-4 pt-2 border-t">
+                  <div className="text-xs text-muted-foreground">
+                    <CalendarIcon size={12} className="inline mr-1" /> 
+                    {format(new Date(entry.date), 'h:mm a')}
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => confirmDelete(entry.id)}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
-        </ScrollArea>
+        </div>
       )}
-      
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {selectedEmotion?.emotionName}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedEmotion && format(new Date(selectedEmotion.date), 'EEEE, MMMM d, yyyy h:mm a')}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedEmotion && (
-            <div className="py-4">
-              <div className="flex items-center mb-4">
-                <div 
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white mr-3"
-                  style={{ backgroundColor: getCategoryColor(selectedEmotion.categoryId) }}
-                >
-                  <span className="font-bold">{selectedEmotion.intensity}</span>
-                </div>
-                <div>
-                  <div className="text-lg font-medium">{selectedEmotion.emotionName}</div>
-                  <Badge 
-                    variant="outline" 
-                    style={{ 
-                      color: getCategoryColor(selectedEmotion.categoryId),
-                      borderColor: getCategoryColor(selectedEmotion.categoryId)
-                    }}
-                  >
-                    {selectedEmotion.categoryId.charAt(0).toUpperCase() + selectedEmotion.categoryId.slice(1)}
-                  </Badge>
-                </div>
-              </div>
-              
-              {selectedEmotion.notes && (
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium mb-1">Notes:</h4>
-                  <div className="bg-muted/50 p-3 rounded-md text-sm">
-                    {selectedEmotion.notes}
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-between">
-                <Button 
-                  variant="destructive" 
-                  onClick={handleDeleteEmotion}
-                  disabled={isLoading}
-                >
-                  Delete
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this emotion entry. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEntry}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

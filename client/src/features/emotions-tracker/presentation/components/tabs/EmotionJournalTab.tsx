@@ -1,131 +1,229 @@
-// EmotionJournalTab - UI component for journaling about emotions
-// This component allows users to write detailed entries about their emotions
-
 import React, { useState, useEffect } from 'react';
 import { useEmotions } from '../../context/EmotionsContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { EmotionEntry } from '../../../domain/models';
+import { Save, Calendar as CalendarIcon, BookOpen } from 'lucide-react';
 
-interface EmotionJournalTabProps {
-  selectedDate: Date;
-}
-
-const EmotionJournalTab: React.FC<EmotionJournalTabProps> = ({ selectedDate }) => {
-  const { 
-    trackedEmotions, 
-    selectedDate: contextDate, 
-    setSelectedDate,
-    getEmotionsForDate
-  } = useEmotions();
+const EmotionJournalTab = () => {
+  const { getEmotionsByDate, updateEmotionEntry } = useEmotions();
+  const [date, setDate] = useState(new Date());
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const [entries, setEntries] = useState<EmotionEntry[]>([]);
+  const [journalText, setJournalText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
-  const { toast } = useToast();
-  const [journalEntry, setJournalEntry] = useState<string>('');
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  
-  // Update context date when prop changes
   useEffect(() => {
-    setSelectedDate(selectedDate);
-  }, [selectedDate, setSelectedDate]);
+    fetchEntries();
+  }, [date]);
   
-  // Get emotions for the current date
-  const todaysEmotions = getEmotionsForDate(contextDate);
+  const fetchEntries = async () => {
+    setIsLoading(true);
+    try {
+      const dateString = format(date, 'yyyy-MM-dd');
+      const fetchedEntries = await getEmotionsByDate(dateString);
+      setEntries(fetchedEntries);
+      
+      // Reset entry selection and journal text
+      setSelectedEntryId(null);
+      setJournalText('');
+    } catch (error) {
+      console.error('Error fetching emotion entries:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
-  // Handle saving the journal entry
+  const handleEntryChange = (entryId: string) => {
+    setSelectedEntryId(entryId);
+    const entry = entries.find(e => e.id === entryId);
+    setJournalText(entry?.notes || '');
+  };
+  
   const handleSaveJournal = async () => {
-    setIsSaving(true);
+    if (!selectedEntryId) return;
     
-    // For now, just simulate saving with a toast message
-    // In a real implementation, this would save to the API
-    setTimeout(() => {
-      toast({
-        title: "Journal Entry Saved",
-        description: "Your reflection has been saved successfully."
-      });
+    setIsSaving(true);
+    try {
+      await updateEmotionEntry(selectedEntryId, { notes: journalText });
+      
+      // Update the local entries array with the new note
+      setEntries(entries.map(entry => 
+        entry.id === selectedEntryId
+          ? { ...entry, notes: journalText }
+          : entry
+      ));
+    } catch (error) {
+      console.error('Error saving journal:', error);
+    } finally {
       setIsSaving(false);
-    }, 1000);
+    }
   };
   
   return (
-    <div className="space-y-6">
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold mb-1">Emotion Journal</h2>
-        <p className="text-muted-foreground">
-          Reflect on your emotions and experiences
-        </p>
-      </div>
-      
+    <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Reflection for {format(contextDate, 'MMMM d, yyyy')}</CardTitle>
-          <CardDescription>
-            Write about how you felt today and what triggered your emotions
-          </CardDescription>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center">
+            <BookOpen className="mr-2 h-5 w-5" />
+            Emotion Journal
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {todaysEmotions.length > 0 ? (
-            <div className="mb-4">
-              <h3 className="text-sm font-medium mb-2">Tracked emotions today:</h3>
-              <div className="flex flex-wrap gap-2">
-                {todaysEmotions.map(emotion => (
-                  <div 
-                    key={emotion.id}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                    style={{ 
-                      backgroundColor: `${emotion.categoryId === 'positive' ? '#4ade80' : 
-                                        emotion.categoryId === 'negative' ? '#ef4444' : 
-                                        '#f59e0b'}20`, 
-                      color: emotion.categoryId === 'positive' ? '#22c55e' : 
-                             emotion.categoryId === 'negative' ? '#dc2626' : 
-                             '#d97706'
-                    }}
-                  >
-                    {emotion.emotionName} ({emotion.intensity})
-                  </div>
-                ))}
-              </div>
+          <div className="mb-4">
+            <p className="text-sm text-muted-foreground mb-2">
+              Select a date and emotion to add journal notes
+            </p>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 justify-start"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {format(date, 'MMMM d, yyyy')}
+              </Button>
+              
+              <Select
+                value={selectedEntryId || ''}
+                onValueChange={handleEntryChange}
+                disabled={isLoading || entries.length === 0}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select an emotion" />
+                </SelectTrigger>
+                <SelectContent>
+                  {entries.map(entry => (
+                    <SelectItem key={entry.id} value={entry.id}>
+                      <div className="flex items-center">
+                        <div 
+                          className="w-3 h-3 rounded-full mr-2"
+                          style={{ backgroundColor: entry.color || '#888' }}  
+                        />
+                        {entry.emotionName} ({entry.intensity}/10)
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : entries.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-muted-foreground">No emotions tracked for this date</p>
             </div>
           ) : (
-            <div className="mb-4 text-sm text-muted-foreground">
-              No emotions tracked for today yet. Track some emotions to reflect on them here.
-            </div>
+            <>
+              <Textarea
+                placeholder="Write your thoughts, reflections, and insights about this emotion..."
+                className="min-h-[200px]"
+                value={journalText}
+                onChange={e => setJournalText(e.target.value)}
+                disabled={!selectedEntryId || isSaving}
+              />
+              
+              <div className="flex justify-end mt-4">
+                <Button
+                  onClick={handleSaveJournal}
+                  disabled={!selectedEntryId || isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-background rounded-full"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Journal
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
           )}
-          
-          <Textarea
-            placeholder="Write your reflections here... How did your emotions affect your day? What patterns do you notice?"
-            className="min-h-[200px]"
-            value={journalEntry}
-            onChange={(e) => setJournalEntry(e.target.value)}
-          />
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline">Discard</Button>
-          <Button onClick={handleSaveJournal} disabled={isSaving || journalEntry.trim() === ''}>
-            {isSaving ? 'Saving...' : 'Save Reflection'}
-          </Button>
-        </CardFooter>
       </Card>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Journaling Prompts</CardTitle>
-          <CardDescription>
-            Use these prompts to help with your reflection
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="list-disc pl-5 space-y-2">
-            <li>What was the strongest emotion you felt today?</li>
-            <li>Was there a pattern to when certain emotions appeared?</li>
-            <li>How did your emotions influence your decisions today?</li>
-            <li>Did any emotions surprise you or feel out of proportion?</li>
-            <li>How did you respond to challenging emotions?</li>
-            <li>What are you grateful for today?</li>
-          </ul>
-        </CardContent>
-      </Card>
+      {selectedEntryId && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Emotion Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const entry = entries.find(e => e.id === selectedEntryId);
+              if (!entry) return null;
+              
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div 
+                        className="w-4 h-4 rounded-full mr-2"
+                        style={{ backgroundColor: entry.color || '#888' }}  
+                      />
+                      <span className="font-medium">{entry.emotionName}</span>
+                    </div>
+                    
+                    <Badge variant={
+                      entry.categoryId === 'positive' ? 'default' : 
+                      entry.categoryId === 'negative' ? 'destructive' : 
+                      'secondary'
+                    }>
+                      {entry.categoryId}
+                    </Badge>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-muted-foreground">Intensity</p>
+                    <p className="text-sm">{entry.intensity}/10</p>
+                  </div>
+                  
+                  {entry.triggers && entry.triggers.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Triggers</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {entry.triggers.map((trigger, idx) => (
+                          <Badge variant="outline" key={idx}>{trigger}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {entry.copingMechanisms && entry.copingMechanisms.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Coping Strategies</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {entry.copingMechanisms.map((strategy, idx) => (
+                          <Badge variant="outline" key={idx}>{strategy}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

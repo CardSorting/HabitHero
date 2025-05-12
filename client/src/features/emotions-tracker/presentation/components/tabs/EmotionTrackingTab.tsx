@@ -1,350 +1,285 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Slider } from '@/components/ui/slider';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger 
-} from '@/components/ui/popover';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from '@/components/ui/tabs';
-import { CalendarIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useEmotions } from '../../context/EmotionsContext';
-import { EmotionCategory } from '../../../domain/models';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { Emotion, EmotionCategory } from '../../../domain/models';
+import { SendHorizontal, Plus, X } from 'lucide-react';
 
-export const EmotionTrackingTab: React.FC = () => {
-  const {
-    emotions,
-    loadingEmotions,
-    selectedDate,
-    setSelectedDate,
+const EmotionTrackingTab = () => {
+  const { 
+    getAllEmotions, 
+    getEmotionsByCategory,
     trackEmotion
   } = useEmotions();
-
-  // Selected emotion state
-  const [selectedEmotion, setSelectedEmotion] = useState<{
-    id: string;
-    name: string;
-    category: EmotionCategory;
-  } | null>(null);
   
-  // Intensity state
+  const { toast } = useToast();
+  const [emotions, setEmotions] = useState<Emotion[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<EmotionCategory>(EmotionCategory.POSITIVE);
+  const [selectedEmotion, setSelectedEmotion] = useState<Emotion | null>(null);
   const [intensity, setIntensity] = useState<number>(5);
-  
-  // Notes state
   const [notes, setNotes] = useState<string>('');
-  
-  // Triggers state
   const [triggers, setTriggers] = useState<string[]>([]);
   const [triggerInput, setTriggerInput] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Coping mechanisms state
-  const [copingMechanisms, setCopingMechanisms] = useState<string[]>([]);
-  const [copingInput, setCopingInput] = useState<string>('');
-
-  // Function to handle emotion selection
-  const handleEmotionSelect = (emotion: {
-    id: string;
-    name: string;
-    category: EmotionCategory;
-  }) => {
+  useEffect(() => {
+    loadEmotions();
+  }, [selectedCategory]);
+  
+  const loadEmotions = async () => {
+    setIsLoading(true);
+    try {
+      const emotionsByCategory = await getEmotionsByCategory(selectedCategory);
+      setEmotions(emotionsByCategory || []);
+    } catch (error) {
+      console.error('Error loading emotions:', error);
+      toast({
+        title: 'Error loading emotions',
+        description: 'Please try again later',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleCategoryChange = (category: EmotionCategory) => {
+    setSelectedCategory(category);
+    setSelectedEmotion(null);
+  };
+  
+  const handleEmotionSelect = (emotion: Emotion) => {
     setSelectedEmotion(emotion);
   };
-
-  // Function to handle intensity change
+  
   const handleIntensityChange = (value: number[]) => {
     setIntensity(value[0]);
   };
-
-  // Function to add a trigger
+  
   const handleAddTrigger = () => {
-    if (triggerInput.trim()) {
+    if (triggerInput.trim() && !triggers.includes(triggerInput.trim())) {
       setTriggers([...triggers, triggerInput.trim()]);
       setTriggerInput('');
     }
   };
-
-  // Function to remove a trigger
-  const handleRemoveTrigger = (index: number) => {
-    setTriggers(triggers.filter((_, i) => i !== index));
+  
+  const handleRemoveTrigger = (trigger: string) => {
+    setTriggers(triggers.filter(t => t !== trigger));
   };
-
-  // Function to add a coping mechanism
-  const handleAddCoping = () => {
-    if (copingInput.trim()) {
-      setCopingMechanisms([...copingMechanisms, copingInput.trim()]);
-      setCopingInput('');
-    }
-  };
-
-  // Function to remove a coping mechanism
-  const handleRemoveCoping = (index: number) => {
-    setCopingMechanisms(copingMechanisms.filter((_, i) => i !== index));
-  };
-
-  // Function to handle form submission
+  
   const handleSubmit = async () => {
     if (!selectedEmotion) {
+      toast({
+        title: 'Please select an emotion',
+        variant: 'destructive'
+      });
       return;
     }
-
-    await trackEmotion(
-      selectedEmotion.id,
-      selectedEmotion.name,
-      selectedEmotion.category,
-      intensity,
-      notes,
-      triggers,
-      copingMechanisms
-    );
-
-    // Reset form
-    setSelectedEmotion(null);
-    setIntensity(5);
-    setNotes('');
-    setTriggers([]);
-    setCopingMechanisms([]);
+    
+    setIsSubmitting(true);
+    try {
+      const date = format(new Date(), 'yyyy-MM-dd');
+      await trackEmotion(
+        selectedEmotion.id,
+        selectedEmotion.name,
+        intensity,
+        date,
+        notes,
+        triggers,
+        [], // empty coping mechanisms to be suggested by AI
+        selectedEmotion.category
+      );
+      
+      // Reset form
+      setSelectedEmotion(null);
+      setIntensity(5);
+      setNotes('');
+      setTriggers([]);
+      
+      toast({
+        title: 'Emotion tracked successfully',
+        description: 'Your emotion has been recorded',
+      });
+    } catch (error) {
+      console.error('Error tracking emotion:', error);
+      toast({
+        title: 'Error tracking emotion',
+        description: 'Please try again later',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  // Group emotions by category
-  const positiveEmotions = emotions.filter(
-    (emotion) => emotion.category === EmotionCategory.POSITIVE
-  );
-  const negativeEmotions = emotions.filter(
-    (emotion) => emotion.category === EmotionCategory.NEGATIVE
-  );
-  const neutralEmotions = emotions.filter(
-    (emotion) => emotion.category === EmotionCategory.NEUTRAL
-  );
-
+  
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Track Emotion</h2>
-        
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              {format(selectedDate, 'PPP')}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      
-      {/* Emotion selection */}
+    <div className="space-y-4">
       <Card>
-        <CardContent className="pt-6">
-          <h3 className="text-lg font-medium mb-4">1. What are you feeling?</h3>
-          
-          <Tabs defaultValue="positive">
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="positive">Positive</TabsTrigger>
-              <TabsTrigger value="negative">Negative</TabsTrigger>
-              <TabsTrigger value="neutral">Neutral</TabsTrigger>
+        <CardHeader className="pb-3">
+          <CardTitle>Track Your Emotion</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs 
+            defaultValue={EmotionCategory.POSITIVE}
+            value={selectedCategory}
+            onValueChange={(value) => handleCategoryChange(value as EmotionCategory)}
+            className="mb-4"
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value={EmotionCategory.POSITIVE}>Positive</TabsTrigger>
+              <TabsTrigger value={EmotionCategory.NEGATIVE}>Negative</TabsTrigger>
+              <TabsTrigger value={EmotionCategory.NEUTRAL}>Neutral</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="positive" className="mt-0">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {positiveEmotions.map((emotion) => (
-                  <Button
-                    key={emotion.id}
-                    variant={selectedEmotion?.id === emotion.id ? "default" : "outline"}
-                    onClick={() => handleEmotionSelect(emotion)}
-                    className="h-auto py-2"
-                    style={{ 
-                      borderColor: selectedEmotion?.id === emotion.id ? undefined : emotion.color,
-                      background: selectedEmotion?.id === emotion.id ? emotion.color : undefined
-                    }}
-                  >
-                    {emotion.name}
-                  </Button>
-                ))}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="negative" className="mt-0">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {negativeEmotions.map((emotion) => (
-                  <Button
-                    key={emotion.id}
-                    variant={selectedEmotion?.id === emotion.id ? "default" : "outline"}
-                    onClick={() => handleEmotionSelect(emotion)}
-                    className="h-auto py-2"
-                    style={{ 
-                      borderColor: selectedEmotion?.id === emotion.id ? undefined : emotion.color,
-                      background: selectedEmotion?.id === emotion.id ? emotion.color : undefined
-                    }}
-                  >
-                    {emotion.name}
-                  </Button>
-                ))}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="neutral" className="mt-0">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {neutralEmotions.map((emotion) => (
-                  <Button
-                    key={emotion.id}
-                    variant={selectedEmotion?.id === emotion.id ? "default" : "outline"}
-                    onClick={() => handleEmotionSelect(emotion)}
-                    className="h-auto py-2"
-                    style={{ 
-                      borderColor: selectedEmotion?.id === emotion.id ? undefined : emotion.color,
-                      background: selectedEmotion?.id === emotion.id ? emotion.color : undefined
-                    }}
-                  >
-                    {emotion.name}
-                  </Button>
-                ))}
-              </div>
-            </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
-      
-      {/* Intensity selection */}
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="text-lg font-medium mb-4">2. How intense is this feeling?</h3>
           
-          <div className="space-y-6">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Mild</span>
-              <span>Moderate</span>
-              <span>Strong</span>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-            
-            <Slider
-              defaultValue={[5]}
-              min={1}
-              max={10}
-              step={1}
-              value={[intensity]}
-              onValueChange={handleIntensityChange}
-            />
-            
-            <div className="text-center">
-              <span className="font-medium text-lg">{intensity}/10</span>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
+              {emotions.map(emotion => (
+                <Button
+                  key={emotion.id}
+                  type="button"
+                  variant={selectedEmotion?.id === emotion.id ? "default" : "outline"}
+                  className="h-auto py-3 px-4 justify-start"
+                  onClick={() => handleEmotionSelect(emotion)}
+                >
+                  <div 
+                    className="w-3 h-3 rounded-full mr-2"
+                    style={{ backgroundColor: emotion.color }}
+                  ></div>
+                  <span className="text-left">{emotion.name}</span>
+                </Button>
+              ))}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Notes */}
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="text-lg font-medium mb-4">3. Notes (optional)</h3>
+          )}
           
-          <Textarea
-            placeholder="Add any additional thoughts or reflections about this emotion..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="min-h-[100px]"
-          />
-        </CardContent>
-      </Card>
-      
-      {/* Triggers */}
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="text-lg font-medium mb-4">4. What triggered this emotion? (optional)</h3>
-          
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add a trigger..."
-                value={triggerInput}
-                onChange={(e) => setTriggerInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddTrigger()}
-              />
-              <Button onClick={handleAddTrigger} type="button">Add</Button>
-            </div>
-            
-            {triggers.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {triggers.map((trigger, index) => (
-                  <Badge key={index} variant="secondary" className="px-3 py-1">
-                    {trigger}
-                    <button
-                      className="ml-2 text-xs hover:text-destructive"
-                      onClick={() => handleRemoveTrigger(index)}
+          {selectedEmotion && (
+            <>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="intensity" className="mb-2 block">
+                    Intensity: <span className="font-bold">{intensity}/10</span>
+                  </Label>
+                  <Slider
+                    id="intensity"
+                    min={1}
+                    max={10}
+                    step={1}
+                    value={[intensity]}
+                    onValueChange={handleIntensityChange}
+                    className="mb-6"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="triggers" className="mb-2 block">Triggers</Label>
+                  <div className="flex mb-2">
+                    <Input
+                      id="triggers"
+                      placeholder="What triggered this emotion?"
+                      value={triggerInput}
+                      onChange={(e) => setTriggerInput(e.target.value)}
+                      className="flex-1 mr-2"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddTrigger();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleAddTrigger}
+                      size="icon"
+                      variant="outline"
                     >
-                      ×
-                    </button>
-                  </Badge>
-                ))}
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {triggers.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {triggers.map(trigger => (
+                        <div
+                          key={trigger}
+                          className="flex items-center bg-muted text-muted-foreground px-3 py-1 rounded-full text-sm"
+                        >
+                          {trigger}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 ml-1 hover:bg-transparent"
+                            onClick={() => handleRemoveTrigger(trigger)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <Label htmlFor="notes" className="mb-2 block">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Add any additional notes about this emotion..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
               </div>
-            )}
-          </div>
+              
+              <Button
+                className="w-full mt-6"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-background rounded-full"></div>
+                    Tracking...
+                  </>
+                ) : (
+                  <>
+                    <SendHorizontal className="mr-2 h-4 w-4" />
+                    Track {selectedEmotion.name}
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
       
-      {/* Coping Mechanisms */}
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="text-lg font-medium mb-4">5. Coping strategies (optional)</h3>
-          
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add a coping strategy..."
-                value={copingInput}
-                onChange={(e) => setCopingInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddCoping()}
-              />
-              <Button onClick={handleAddCoping} type="button">Add</Button>
-            </div>
-            
-            {copingMechanisms.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {copingMechanisms.map((mechanism, index) => (
-                  <Badge key={index} variant="outline" className="px-3 py-1">
-                    {mechanism}
-                    <button
-                      className="ml-2 text-xs hover:text-destructive"
-                      onClick={() => handleRemoveCoping(index)}
-                    >
-                      ×
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Submit button */}
-      <div className="flex justify-end">
-        <Button
-          size="lg"
-          onClick={handleSubmit}
-          disabled={!selectedEmotion}
-        >
-          Record Emotion
-        </Button>
-      </div>
+      {selectedEmotion && intensity >= 7 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">High Intensity Alert</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              You're tracking {selectedEmotion.name} with high intensity. 
+              After submitting, we'll suggest some coping strategies that might help.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
+
+export default EmotionTrackingTab;

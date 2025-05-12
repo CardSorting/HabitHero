@@ -2,9 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Habit } from "@/lib/types";
 import { startOfDay, format, addDays } from "date-fns";
+import { useAuth } from "@/hooks/use-auth";
 
 export function useHabits() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   // Fetch all habits
   const { data: habits = [], isLoading, error } = useQuery<Habit[]>({
@@ -35,7 +37,14 @@ export function useHabits() {
   const addHabit = async (habitData: any) => {
     console.log("Adding habit with data:", habitData);
     try {
-      const response = await apiRequest("POST", "/api/habits", habitData);
+      // Ensure userId is included in the habit data
+      const dataWithUserId = {
+        ...habitData,
+        userId: user?.id
+      };
+      console.log("Adding habit with user ID:", dataWithUserId);
+      
+      const response = await apiRequest("POST", "/api/habits", dataWithUserId);
       console.log("Habit creation response:", response);
       return response.json();
     } catch (error) {

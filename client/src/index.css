@@ -62,6 +62,15 @@
 }
 
 @layer components {
+  /* Hide scrollbar but allow scrolling */
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
   .habit-card {
     @apply transition-all duration-200 ease-in-out active:scale-[0.98] active:shadow-inner;
   }

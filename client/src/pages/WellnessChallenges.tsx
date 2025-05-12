@@ -184,31 +184,38 @@ const WellnessChallenges: React.FC = () => {
               <h2 className="text-lg font-bold">Your Active Challenges</h2>
               
               {activeChallenges.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 flex items-center">
-                      <Filter className="h-4 w-4 mr-1" />
-                      Filter
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setCategoryFilter('all')}>
-                      All Categories
-                    </DropdownMenuItem>
+                <div className="flex items-center">
+                  <Button 
+                    variant={categoryFilter === 'all' ? 'default' : 'outline'} 
+                    size="sm" 
+                    className={`h-8 rounded-full px-3 mr-2 text-xs font-medium transition-all ${
+                      categoryFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-accent'
+                    }`}
+                    onClick={() => setCategoryFilter('all')}
+                  >
+                    All
+                  </Button>
+                  
+                  {/* Horizontal scrollable category filters */}
+                  <div className="flex -mx-1 overflow-x-auto px-1 py-1 hide-scrollbar">
                     {challengeTypes.map(type => (
-                      <DropdownMenuItem 
+                      <Button 
                         key={type.name}
+                        variant={categoryFilter === type.name ? 'default' : 'outline'} 
+                        size="sm" 
+                        className={`h-8 rounded-full mr-2 px-3 text-xs font-medium whitespace-nowrap transition-all flex items-center ${
+                          categoryFilter === type.name 
+                            ? 'bg-primary text-primary-foreground shadow-sm' 
+                            : 'hover:bg-accent'
+                        }`}
                         onClick={() => setCategoryFilter(type.name)}
-                        className="flex items-center"
                       >
-                        <div className={`p-1 rounded-full ${type.color} mr-2`}>
-                          {React.cloneElement(type.icon, { className: 'h-3 w-3' })}
-                        </div>
+                        <span className={`w-2 h-2 rounded-full mr-1.5 ${type.color.replace('bg-', 'bg-')}`}></span>
                         {type.displayName}
-                      </DropdownMenuItem>
+                      </Button>
                     ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </div>
+                </div>
               )}
             </div>
             
@@ -264,10 +271,17 @@ const WellnessChallenges: React.FC = () => {
                   </CardContent>
                 </Card>
               ) : activeChallenges.length === 0 ? (
-                <Card>
-                  <CardContent className="p-6 text-center">
-                    <p className="text-muted-foreground mb-3">You don't have any active challenges</p>
+                <Card className="overflow-hidden rounded-2xl border-0 shadow-sm">
+                  <CardContent className="pt-6 pb-8 px-5 text-center flex flex-col items-center">
+                    <div className="p-4 rounded-full bg-primary/10 mb-4">
+                      <Target className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-1">No Active Challenges</h3>
+                    <p className="text-muted-foreground text-sm mb-5 max-w-xs">
+                      Get started by exploring our wellness challenges to improve your mental health and wellbeing
+                    </p>
                     <Button 
+                      className="rounded-full px-6 shadow-sm h-10"
                       onClick={() => navigate('/wellness-challenges/categories/emotions')}
                     >
                       Browse Challenges
@@ -282,44 +296,75 @@ const WellnessChallenges: React.FC = () => {
                     const currentValue = Math.round((challenge.targetValue || 1) * (progressValue / 100));
                     
                     return (
-                      <Card key={challenge.id} className={`overflow-hidden border-l-4 ${style.border}`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center">
-                              <div className={`${style.color} p-2 rounded-full mr-3`}>
-                                {style.icon}
+                      <Card 
+                        key={challenge.id} 
+                        className="overflow-hidden rounded-2xl border-0 shadow-sm hover:shadow-md transition-all duration-200"
+                      >
+                        <CardContent className="p-0">
+                          {/* Card Top Section - Health App Style Header with Icon */}
+                          <div className={`p-4 ${style.color} bg-opacity-20 border-b border-neutral-100`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <div className={`${style.color} p-2 rounded-full mr-3 shadow-sm`}>
+                                  {style.icon}
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold text-sm">{challenge.title}</h3>
+                                  <p className="text-xs text-muted-foreground flex items-center mt-0.5">
+                                    <span className={`w-2 h-2 rounded-full mr-1.5 inline-block ${style.color}`}></span>
+                                    {challenge.type.charAt(0).toUpperCase() + challenge.type.slice(1)}
+                                    <span className="mx-1">•</span>
+                                    {challenge.frequency || 'Daily'}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <h3 className="font-semibold">{challenge.title}</h3>
-                                <p className="text-xs text-muted-foreground">
-                                  {challenge.type.charAt(0).toUpperCase() + challenge.type.slice(1)} • {challenge.frequency || 'Daily'}
-                                </p>
+                              <div className="bg-green-100 text-green-700 text-xs py-1 px-2.5 rounded-full font-medium">
+                                Active
                               </div>
-                            </div>
-                            <div className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-full">
-                              Active
                             </div>
                           </div>
                           
-                          <div className="mb-3">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Progress Today</span>
-                              <span className="font-medium">{currentValue}/{challenge.targetValue || 1}</span>
+                          {/* Card Body - Progress Section */}
+                          <div className="p-4">
+                            <div className="mb-3">
+                              <div className="flex justify-between text-xs mb-2">
+                                <span className="font-medium text-gray-500">Today's Progress</span>
+                                <span className="font-semibold">{currentValue}/{challenge.targetValue || 1}</span>
+                              </div>
+                              
+                              {/* Apple Health Style Progress Bar */}
+                              <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full transition-all duration-500 ease-out`} 
+                                  style={{ 
+                                    width: `${progressValue}%`,
+                                    background: `linear-gradient(to right, ${style.color.includes('red') ? '#f87171' : 
+                                                             style.color.includes('blue') ? '#60a5fa' : 
+                                                             style.color.includes('green') ? '#4ade80' : 
+                                                             style.color.includes('orange') ? '#fb923c' :
+                                                             style.color.includes('teal') ? '#2dd4bf' :
+                                                             style.color.includes('purple') ? '#c084fc' : '#c084fc'}, 
+                                                ${style.color.includes('red') ? '#ef4444' : 
+                                                  style.color.includes('blue') ? '#3b82f6' : 
+                                                  style.color.includes('green') ? '#22c55e' : 
+                                                  style.color.includes('orange') ? '#f97316' :
+                                                  style.color.includes('teal') ? '#14b8a6' :
+                                                  style.color.includes('purple') ? '#a855f7' : '#a855f7'})`
+                                  }}
+                                ></div>
+                              </div>
                             </div>
-                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div className={`h-full ${style.progress} rounded-full`} style={{ width: `${progressValue}%` }}></div>
-                            </div>
+                            
+                            <Button 
+                              variant="ghost"
+                              size="sm" 
+                              className="w-full text-primary font-medium hover:bg-primary/5 rounded-full h-9"
+                              onClick={() => navigate(`/wellness-challenges/${challenge.id}`)}
+                            >
+                              View Details
+                              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                            </Button>
                           </div>
-                          
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full"
-                            onClick={() => navigate(`/wellness-challenges/${challenge.id}`)}
-                          >
-                            View Challenge
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
                         </CardContent>
                       </Card>
                     );
@@ -327,12 +372,23 @@ const WellnessChallenges: React.FC = () => {
                   
                   {/* Show More/Less button at the bottom if there are more challenges */}
                   {filteredChallenges.length > 3 && (
-                    <div className="text-center pt-2">
+                    <div className="text-center pt-4 pb-2">
                       <Button 
-                        variant="outline" 
+                        variant="ghost" 
+                        className="text-primary font-medium h-10 px-6 rounded-full border border-gray-200 shadow-sm hover:shadow"
                         onClick={() => setShowingMore(!showingMore)}
                       >
-                        {showingMore ? 'Show Less' : `Show ${filteredChallenges.length - 3} More`}
+                        {showingMore ? (
+                          <span className="flex items-center">
+                            <ChevronUp className="h-4 w-4 mr-2 text-primary" />
+                            Show Less
+                          </span>
+                        ) : (
+                          <span className="flex items-center">
+                            <ChevronDown className="h-4 w-4 mr-2 text-primary" />
+                            Show {filteredChallenges.length - 3} More Challenges
+                          </span>
+                        )}
                       </Button>
                     </div>
                   )}
@@ -343,19 +399,22 @@ const WellnessChallenges: React.FC = () => {
           
           {/* Challenge categories */}
           <div className="mb-6">
-            <h2 className="text-lg font-medium mb-3">Browse Challenge Categories</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <h2 className="text-lg font-medium mb-4">Browse Challenge Categories</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {challengeTypes.map((type) => (
                 <Card 
                   key={type.name} 
-                  className="cursor-pointer hover:bg-accent transition-colors"
+                  className="cursor-pointer overflow-hidden rounded-2xl border-0 shadow-sm hover:shadow-md transition-all duration-200"
                   onClick={() => navigate(`/wellness-challenges/categories/${type.name}`)}
                 >
-                  <CardContent className="p-4 flex flex-col items-center text-center">
-                    <div className={`p-3 rounded-full ${type.color} mb-2`}>
-                      {type.icon}
+                  <CardContent className="p-0">
+                    <div className={`h-3 ${type.color.replace('bg-', 'bg-')} bg-opacity-70`}></div>
+                    <div className="p-4 flex flex-col items-center text-center">
+                      <div className={`p-3 rounded-full ${type.color} mb-3 shadow-sm`}>
+                        {type.icon}
+                      </div>
+                      <span className="font-medium text-sm">{type.displayName}</span>
                     </div>
-                    <span className="font-medium">{type.displayName}</span>
                   </CardContent>
                 </Card>
               ))}

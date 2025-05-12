@@ -15,8 +15,26 @@ import {
   CheckCircle,
   PlusCircle,
   Target,
-  Trophy
+  Trophy,
+  Settings
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Page to view and manage a specific wellness challenge
@@ -26,6 +44,11 @@ const WellnessChallengeDetails: React.FC = () => {
   const [, navigate] = useLocation();
   const [, params] = useRoute('/wellness-challenges/:id');
   const challengeId = params?.id;
+  const { toast } = useToast();
+  
+  // State for dialogs
+  const [showRecordProgress, setShowRecordProgress] = useState(false);
+  const [abandonDialogOpen, setAbandonDialogOpen] = useState(false);
   
   // Mock data for the challenge based on the ID
   const getChallengeData = (id: string) => {
@@ -46,8 +69,7 @@ const WellnessChallengeDetails: React.FC = () => {
   const challenge = getChallengeData(challengeId || '1');
   const progressPercent = (challenge.progress / challenge.target) * 100;
   
-  // State to track if recording progress
-  const [showRecordProgress, setShowRecordProgress] = useState(false);
+  // State to track progress value
   const [progressValue, setProgressValue] = useState(challenge.progress);
   
   // Mock goals for the challenge
@@ -77,6 +99,26 @@ const WellnessChallengeDetails: React.FC = () => {
   const handleSaveProgress = () => {
     setShowRecordProgress(false);
     // Here we would normally save to the API
+    toast({
+      title: "Progress saved",
+      description: `You've recorded ${progressValue}/${challenge.target} progress for today.`,
+    });
+  };
+  
+  // Handle abandon challenge
+  const handleAbandonChallenge = () => {
+    // Here we would make an API call to abandon the challenge
+    setAbandonDialogOpen(false);
+    
+    toast({
+      title: "Challenge abandoned",
+      description: "You can always start this challenge again from the challenges page.",
+    });
+    
+    // Redirect back to the challenges page
+    setTimeout(() => {
+      navigate('/wellness-challenges');
+    }, 1500);
   };
   
   return (
@@ -84,14 +126,31 @@ const WellnessChallengeDetails: React.FC = () => {
       <div className="pb-16">
         {/* Header with gradient background */}
         <div className={`${challenge.color} pt-6 pb-16 px-4 relative`}>
-          <Button 
-            variant="ghost" 
-            className="flex items-center gap-1 mb-1 text-foreground" 
-            onClick={() => navigate('/wellness-challenges')}
-          >
-            <ArrowLeft size={16} />
-            Back
-          </Button>
+          <div className="flex justify-between items-start">
+            <Button 
+              variant="ghost" 
+              className="flex items-center gap-1 mb-1 text-foreground" 
+              onClick={() => navigate('/wellness-challenges')}
+            >
+              <ArrowLeft size={16} />
+              Back
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Challenge Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setAbandonDialogOpen(true)}>
+                  Abandon Challenge
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           
           <div className="flex items-center mt-2">
             <div className="bg-white/80 p-3 rounded-full mr-3">
@@ -241,6 +300,33 @@ const WellnessChallengeDetails: React.FC = () => {
             </div>
           </div>
         </div>
+        
+        {/* Abandon challenge dialog */}
+        <Dialog open={abandonDialogOpen} onOpenChange={setAbandonDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Abandon Challenge</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to abandon this challenge? Your progress will be saved, but the challenge will no longer be active.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <h3 className="font-medium">{challenge.title}</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Current progress: {challenge.progress}/{challenge.target} ({Math.round(progressPercent)}%)
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Current streak: {streak} days
+              </p>
+            </div>
+            
+            <DialogFooter className="flex space-x-2 sm:space-x-0">
+              <Button variant="outline" onClick={() => setAbandonDialogOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleAbandonChallenge}>Abandon Challenge</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </PageTransition>
   );

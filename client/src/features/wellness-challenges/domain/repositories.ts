@@ -1,70 +1,65 @@
 /**
- * Repository interfaces for the Wellness Challenge system
- * Following the Dependency Inversion principle from SOLID
+ * Repository interfaces for the wellness challenges feature
+ * Following the Clean Architecture pattern with repository interfaces in the domain layer
  */
 
-import {
-  WellnessChallenge,
-  ChallengeGoal,
-  ChallengeProgress,
-  EmotionCategory,
-  Emotion,
-  UserEmotion,
-  DateString,
-  WellnessChallengeWithDetails,
-  ChallengeSummary,
-  ChallengeStreak,
-  ChallengeType,
-  ChallengeFrequency,
-  ChallengeStatus
+import { 
+  ChallengeCategory, 
+  ChallengeId, 
+  ChallengeStatus, 
+  ChallengeSummary, 
+  ChallengeStreak, 
+  UserId, 
+  UserChallengeProgress, 
+  WellnessChallenge 
 } from './models';
 
-// Base repository interface to enforce common CRUD operations
-export interface IRepository<T, ID> {
-  findById(id: ID): Promise<T | null>;
-  findAll(): Promise<T[]>;
-  create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>;
-  update(id: ID, entity: Partial<T>): Promise<T>;
-  delete(id: ID): Promise<boolean>;
+/**
+ * Repository interface for wellness challenges
+ */
+export interface WellnessChallengeRepository {
+  // Queries
+  getById(id: ChallengeId): Promise<WellnessChallenge | null>;
+  getAllByCategory(category: ChallengeCategory): Promise<WellnessChallenge[]>;
+  getAllByStatus(status: ChallengeStatus): Promise<WellnessChallenge[]>;
+  getActiveChallenges(userId: UserId): Promise<WellnessChallenge[]>;
+  searchChallenges(query: string): Promise<WellnessChallenge[]>;
+  
+  // Commands
+  save(challenge: WellnessChallenge): Promise<WellnessChallenge>;
+  activateChallenge(id: ChallengeId, userId: UserId): Promise<WellnessChallenge>;
+  abandonChallenge(id: ChallengeId, userId: UserId): Promise<WellnessChallenge>;
+  delete(id: ChallengeId): Promise<boolean>;
 }
 
-// Specific repository interfaces
-export interface IWellnessChallengeRepository extends IRepository<WellnessChallenge, number> {
-  findByUserId(userId: number): Promise<WellnessChallenge[]>;
-  findByDateRange(startDate: DateString, endDate: DateString, userId: number): Promise<WellnessChallenge[]>;
-  findByType(type: ChallengeType, userId: number): Promise<WellnessChallenge[]>;
-  findByStatus(status: ChallengeStatus, userId: number): Promise<WellnessChallenge[]>;
-  findByFrequency(frequency: ChallengeFrequency, userId: number): Promise<WellnessChallenge[]>;
-  getChallengeWithDetails(id: number): Promise<WellnessChallengeWithDetails | null>;
-  getChallengeSummary(userId: number): Promise<ChallengeSummary>;
-  getChallengeStreak(challengeId: number): Promise<ChallengeStreak>;
-  updateStatus(id: number, status: ChallengeStatus): Promise<WellnessChallenge>;
+/**
+ * Repository interface for user challenge progress
+ */
+export interface UserChallengeProgressRepository {
+  // Queries
+  getProgressForChallenge(challengeId: ChallengeId, userId: UserId): Promise<UserChallengeProgress[]>;
+  getProgressForDate(date: Date, userId: UserId): Promise<UserChallengeProgress[]>;
+  
+  // Commands
+  saveProgress(progress: UserChallengeProgress): Promise<UserChallengeProgress>;
+  deleteProgress(challengeId: ChallengeId, userId: UserId, date: Date): Promise<boolean>;
 }
 
-export interface IChallengeGoalRepository extends IRepository<ChallengeGoal, number> {
-  findByChallengeId(challengeId: number): Promise<ChallengeGoal[]>;
-  bulkCreate(goals: Omit<ChallengeGoal, 'id' | 'createdAt'>[]): Promise<ChallengeGoal[]>;
+/**
+ * Repository interface for challenge analytics
+ */
+export interface ChallengeAnalyticsRepository {
+  // Queries
+  getChallengeStreak(challengeId: ChallengeId, userId: UserId): Promise<ChallengeStreak>;
+  getChallengeSummary(userId: UserId): Promise<ChallengeSummary>;
+  getCompletionRateByCategory(category: ChallengeCategory, userId: UserId): Promise<number>;
 }
 
-export interface IChallengeProgressRepository extends IRepository<ChallengeProgress, number> {
-  findByChallengeId(challengeId: number): Promise<ChallengeProgress[]>;
-  findByDate(date: DateString, challengeId: number): Promise<ChallengeProgress | null>;
-  findByDateRange(startDate: DateString, endDate: DateString, challengeId: number): Promise<ChallengeProgress[]>;
-  upsertProgress(challengeId: number, date: DateString, value: number, notes?: string): Promise<ChallengeProgress>;
-}
-
-export interface IEmotionCategoryRepository extends IRepository<EmotionCategory, number> {
-  findByName(name: string): Promise<EmotionCategory | null>;
-}
-
-export interface IEmotionRepository extends IRepository<Emotion, number> {
-  findByCategoryId(categoryId: number): Promise<Emotion[]>;
-  findByName(name: string): Promise<Emotion | null>;
-  getEmotionsWithCategories(): Promise<Emotion[]>;
-}
-
-export interface IUserEmotionRepository extends IRepository<UserEmotion, number> {
-  findByUserId(userId: number): Promise<UserEmotion[]>;
-  findByUserIdAndCategoryId(userId: number, categoryId: number): Promise<UserEmotion[]>;
-  getUserEmotionsWithCategories(userId: number): Promise<UserEmotion[]>;
+/**
+ * Data Source interface for pre-defined wellness challenges
+ * This makes adding challenges maintainable by providing a clear interface
+ */
+export interface WellnessChallengeDataSource {
+  getChallengesByCategory(category: ChallengeCategory): Promise<WellnessChallenge[]>;
+  getAllChallenges(): Promise<WellnessChallenge[]>;
 }

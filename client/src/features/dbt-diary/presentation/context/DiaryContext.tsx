@@ -2,32 +2,24 @@
 // Presentation layer - this is what the UI components will interact with
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { format } from 'date-fns';
 import { 
   DiaryCardData, 
   DateString, 
   defaultDiaryCardData, 
-  SleepData 
+  SleepData
 } from '../../domain/models';
-import { DiaryService } from '../../application/DiaryService';
-import { ApiDiaryRepository } from '../../infrastructure/ApiDiaryRepository';
 
+// Storage key for sessionStorage data
 const STORAGE_PREFIX = 'dbt-diary-data';
 
-interface LoadStatus {
-  [key: string]: boolean;
-}
-
+// Define the context interface
 interface DiaryContextType {
   diaryData: DiaryCardData;
-  isLoading: boolean;
+  isLoading: boolean; 
   hasPendingChanges: boolean;
+  serverData: { [date: string]: boolean }; // Track which dates have been fetched from server
   
-  // Manual data loading
-  loadInitialData: () => void;
-  loadDay: (date: DateString) => Promise<void>;
-  
-  // Local state operations
+  // Data update operations (local state only, no API calls)
   handleSleepChange: (date: DateString, field: keyof SleepData, value: string) => void;
   handleEmotionChange: (date: DateString, emotion: string, value: string) => void;
   handleUrgeChange: (date: DateString, urge: string, field: 'level' | 'action', value: string) => void;
@@ -35,7 +27,7 @@ interface DiaryContextType {
   handleSkillChange: (category: string, skill: string, date: DateString, checked: boolean) => void;
   handleMedicationChange: (date: DateString, value: string) => void;
   
-  // Values retrieval
+  // Data retrieval helpers
   getSleepValue: (date: DateString, field: keyof SleepData) => string;
   getEmotionValue: (date: DateString, emotion: string) => string;
   getUrgeValue: (date: DateString, urge: string, field: 'level' | 'action') => string;
@@ -43,40 +35,53 @@ interface DiaryContextType {
   getMedicationValue: (date: DateString) => string;
   getSkillChecked: (category: string, skill: string, date: DateString) => boolean;
   
-  // Save to server
-  saveChanges: () => Promise<void>;
+  // Loading and saving helpers
+  setLoading: (isLoading: boolean) => void;
+  updateDiaryData: (newData: DiaryCardData) => void;
+  markDateLoaded: (date: DateString) => void;
+  markAsSaved: () => void;
+  clearCache: () => void;
+  loadInitialData: () => void;
+  saveToLocalStorage: () => void;
 }
 
+// Create the context with undefined default
 const DiaryContext = createContext<DiaryContextType | undefined>(undefined);
 
+// Provider props interface
 interface DiaryProviderProps {
   children: ReactNode;
-  userId: number;
 }
 
-export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }) => {
+// DiaryProvider component
+export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children }) => {
   // State
   const [diaryData, setDiaryData] = useState<DiaryCardData>(defaultDiaryCardData);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasPendingChanges, setHasPendingChanges] = useState<boolean>(false);
-  const [loadedDates, setLoadedDates] = useState<LoadStatus>({});
+  const [serverData, setServerData] = useState<{ [date: string]: boolean }>({});
   
-  // Initialize the diary service with the repository
-  const diaryService = new DiaryService(new ApiDiaryRepository(userId), userId);
+  // Helper to update loading state
+  const updateLoading = useCallback((loading: boolean) => {
+    setIsLoading(loading);
+  }, []);
   
   // Load initial data from session storage
   const loadInitialData = useCallback(() => {
     try {
+      // Load diary data
       const storedData = sessionStorage.getItem(STORAGE_PREFIX);
       if (storedData) {
         setDiaryData(JSON.parse(storedData));
       }
       
-      const storedLoadStatus = sessionStorage.getItem(`${STORAGE_PREFIX}-loaded`);
-      if (storedLoadStatus) {
-        setLoadedDates(JSON.parse(storedLoadStatus));
+      // Load server data status
+      const storedServerData = sessionStorage.getItem(`${STORAGE_PREFIX}-server`);
+      if (storedServerData) {
+        setServerData(JSON.parse(storedServerData));
       }
       
+      // Load pending changes status
       const pendingChanges = sessionStorage.getItem(`${STORAGE_PREFIX}-pending`);
       if (pendingChanges === 'true') {
         setHasPendingChanges(true);
@@ -86,262 +91,93 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     }
   }, []);
   
-  // Save all data to session storage
-  const saveToSessionStorage = useCallback((data: DiaryCardData, isPending: boolean = hasPendingChanges) => {
+  // Save data to session storage
+  const saveToLocalStorage = useCallback(() => {
     try {
-      sessionStorage.setItem(STORAGE_PREFIX, JSON.stringify(data));
-      sessionStorage.setItem(`${STORAGE_PREFIX}-pending`, isPending ? 'true' : 'false');
-      sessionStorage.setItem(`${STORAGE_PREFIX}-loaded`, JSON.stringify(loadedDates));
+      sessionStorage.setItem(STORAGE_PREFIX, JSON.stringify(diaryData));
+      sessionStorage.setItem(`${STORAGE_PREFIX}-pending`, hasPendingChanges ? 'true' : 'false');
+      sessionStorage.setItem(`${STORAGE_PREFIX}-server`, JSON.stringify(serverData));
     } catch (error) {
       console.error('Error saving to session storage:', error);
     }
-  }, [hasPendingChanges, loadedDates]);
+  }, [diaryData, hasPendingChanges, serverData]);
   
-  // Load data for a specific day from the server
-  const loadDay = useCallback(async (date: DateString) => {
-    // Skip if already loaded
-    if (loadedDates[date]) {
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      // Get sleep data
-      const sleepData = await diaryService.getSleepData(date);
-      let updatedData = { ...diaryData };
+  // Update diary data (used when loading from server)
+  const updateDiaryData = useCallback((newData: DiaryCardData) => {
+    setDiaryData(prevData => {
+      // Merge the new data with existing data
+      const mergedData = { ...prevData };
       
-      if (sleepData) {
-        updatedData = {
-          ...updatedData,
-          sleep: {
-            ...updatedData.sleep,
-            [date]: sleepData
-          }
-        };
-      }
+      // Merge sleep data
+      mergedData.sleep = { ...mergedData.sleep, ...newData.sleep };
       
-      // Get emotions data
-      const emotionsData = await diaryService.getEmotions(date);
-      if (emotionsData.length > 0) {
-        const emotionsMap: { [emotion: string]: string } = {};
-        emotionsData.forEach(e => {
-          emotionsMap[e.emotion] = e.intensity;
-        });
+      // Merge emotions data
+      mergedData.emotions = { ...mergedData.emotions, ...newData.emotions };
+      
+      // Merge urges data
+      mergedData.urges = { ...mergedData.urges, ...newData.urges };
+      
+      // Merge events data
+      mergedData.events = { ...mergedData.events, ...newData.events };
+      
+      // Merge skills data (more complex due to nested structure)
+      Object.entries(newData.skills).forEach(([category, categoryData]) => {
+        if (!mergedData.skills[category]) {
+          mergedData.skills[category] = {};
+        }
         
-        updatedData = {
-          ...updatedData,
-          emotions: {
-            ...updatedData.emotions,
-            [date]: emotionsMap
-          }
-        };
-      }
-      
-      // Get urges data
-      const urgesData = await diaryService.getUrges(date);
-      if (urgesData.length > 0) {
-        const urgesMap: { [urge: string]: { level: string, action: string } } = {};
-        urgesData.forEach(u => {
-          urgesMap[u.urgeType] = {
-            level: u.level,
-            action: u.action
-          };
-        });
-        
-        updatedData = {
-          ...updatedData,
-          urges: {
-            ...updatedData.urges,
-            [date]: urgesMap
-          }
-        };
-      }
-      
-      // Get skills data
-      const skillsData = await diaryService.getSkills(date);
-      if (skillsData.length > 0) {
-        let updatedSkills = { ...updatedData.skills };
-        
-        skillsData.forEach(s => {
-          if (!updatedSkills[s.category]) {
-            updatedSkills[s.category] = {};
+        Object.entries(categoryData).forEach(([skill, skillData]) => {
+          if (!mergedData.skills[category][skill]) {
+            mergedData.skills[category][skill] = {};
           }
           
-          if (!updatedSkills[s.category][s.skill]) {
-            updatedSkills[s.category][s.skill] = {};
-          }
-          
-          updatedSkills[s.category][s.skill] = {
-            ...updatedSkills[s.category][s.skill],
-            [date]: s.used
+          mergedData.skills[category][skill] = {
+            ...mergedData.skills[category][skill],
+            ...skillData
           };
         });
-        
-        updatedData = {
-          ...updatedData,
-          skills: updatedSkills
-        };
-      }
+      });
       
-      // Get event data
-      const eventData = await diaryService.getEvent(date);
-      if (eventData) {
-        updatedData = {
-          ...updatedData,
-          events: {
-            ...updatedData.events,
-            [date]: eventData.eventDescription
-          }
-        };
-      }
+      // Merge medication data
+      mergedData.medication = { ...mergedData.medication, ...newData.medication };
       
-      // Update state
-      setDiaryData(updatedData);
-      
-      // Mark as loaded
-      const newLoadedDates = { ...loadedDates, [date]: true };
-      setLoadedDates(newLoadedDates);
-      
-      // Save to session storage
-      saveToSessionStorage(updatedData);
-      
-    } catch (error) {
-      console.error(`Error loading data for date ${date}:`, error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [diaryData, diaryService, loadedDates, saveToSessionStorage]);
-  
-  // Save all changes to the server
-  const saveChanges = useCallback(async () => {
-    if (!hasPendingChanges) return;
+      return mergedData;
+    });
     
-    setIsLoading(true);
-    
-    try {
-      // Get all dates that have data
-      const dates = new Set<string>();
-      
-      // Collect dates from all data types
-      Object.keys(diaryData.sleep).forEach(date => dates.add(date));
-      Object.keys(diaryData.emotions).forEach(date => dates.add(date));
-      Object.keys(diaryData.urges).forEach(date => dates.add(date));
-      Object.keys(diaryData.events).forEach(date => dates.add(date));
-      
-      // Add dates from skills
-      Object.values(diaryData.skills).forEach(categorySkills => {
-        Object.values(categorySkills).forEach(skillDates => {
-          Object.keys(skillDates).forEach(date => dates.add(date));
-        });
-      });
-      
-      // Create a flat array of all API calls to make
-      const apiCalls: Promise<any>[] = [];
-      
-      // Process each date
-      dates.forEach(date => {
-        // Only process loaded dates (that we got from the server initially)
-        if (!loadedDates[date]) return;
-        
-        // Sleep data
-        const sleepData = diaryData.sleep[date];
-        if (sleepData) {
-          Object.entries(sleepData).forEach(([field, value]) => {
-            if (value) {
-              apiCalls.push(
-                diaryService.saveSleepData(
-                  date as DateString, 
-                  field as keyof SleepData, 
-                  value.toString(), 
-                  sleepData
-                )
-              );
-            }
-          });
-        }
-        
-        // Emotions data
-        const emotionsData = diaryData.emotions[date];
-        if (emotionsData) {
-          Object.entries(emotionsData).forEach(([emotion, intensity]) => {
-            if (intensity) {
-              apiCalls.push(diaryService.saveEmotion(date as DateString, emotion, intensity));
-            }
-          });
-        }
-        
-        // Urges data
-        const urgesData = diaryData.urges[date];
-        if (urgesData) {
-          Object.entries(urgesData).forEach(([urge, data]) => {
-            if (data.level) {
-              apiCalls.push(
-                diaryService.saveUrge(
-                  date as DateString, 
-                  urge, 
-                  'level', 
-                  data.level,
-                  data.level,
-                  data.action
-                )
-              );
-            }
-            
-            if (data.action) {
-              apiCalls.push(
-                diaryService.saveUrge(
-                  date as DateString, 
-                  urge, 
-                  'action', 
-                  data.action,
-                  data.level,
-                  data.action
-                )
-              );
-            }
-          });
-        }
-        
-        // Events data
-        const eventData = diaryData.events[date];
-        if (eventData) {
-          apiCalls.push(diaryService.saveEvent(date as DateString, eventData));
-        }
-      });
-      
-      // Skills data (needs special handling due to its structure)
-      Object.entries(diaryData.skills).forEach(([category, skills]) => {
-        Object.entries(skills).forEach(([skill, dates]) => {
-          Object.entries(dates).forEach(([date, used]) => {
-            // Only process loaded dates
-            if (!loadedDates[date]) return;
-            
-            apiCalls.push(
-              diaryService.saveSkill(date as DateString, category, skill, used)
-            );
-          });
-        });
-      });
-      
-      // Execute all API calls in parallel
-      await Promise.all(apiCalls);
-      
-      // Clear pending changes flag
-      setHasPendingChanges(false);
-      
-      // Update session storage
-      saveToSessionStorage(diaryData, false);
-      
-    } catch (error) {
-      console.error('Error saving diary data:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [diaryData, diaryService, hasPendingChanges, loadedDates, saveToSessionStorage]);
+    // Save updated data to session storage
+    setTimeout(() => saveToLocalStorage(), 0);
+  }, [saveToLocalStorage]);
   
-  // Local state handlers
+  // Mark a date as loaded from server
+  const markDateLoaded = useCallback((date: DateString) => {
+    setServerData(prev => {
+      const updated = { ...prev, [date]: true };
+      
+      // Update sessionStorage with the new server data status
+      sessionStorage.setItem(`${STORAGE_PREFIX}-server`, JSON.stringify(updated));
+      
+      return updated;
+    });
+  }, []);
+  
+  // Mark all pending changes as saved
+  const markAsSaved = useCallback(() => {
+    setHasPendingChanges(false);
+    
+    // Update session storage
+    sessionStorage.setItem(`${STORAGE_PREFIX}-pending`, 'false');
+  }, []);
+  
+  // Clear cache
+  const clearCache = useCallback(() => {
+    sessionStorage.removeItem(STORAGE_PREFIX);
+    sessionStorage.removeItem(`${STORAGE_PREFIX}-pending`);
+    sessionStorage.removeItem(`${STORAGE_PREFIX}-server`);
+    
+    setDiaryData(defaultDiaryCardData);
+    setHasPendingChanges(false);
+    setServerData({});
+  }, []);
   
   // Sleep data handler
   const handleSleepChange = useCallback((date: DateString, field: keyof SleepData, value: string) => {
@@ -351,21 +187,27 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     }
     
     // Update local state immediately
-    const updatedData = {
-      ...diaryData,
-      sleep: {
-        ...diaryData.sleep,
-        [date]: {
-          ...diaryData.sleep[date],
-          [field]: value
+    setDiaryData(prev => {
+      const updated = {
+        ...prev,
+        sleep: {
+          ...prev.sleep,
+          [date]: {
+            ...prev.sleep[date],
+            [field]: value
+          }
         }
-      }
-    };
+      };
+      
+      return updated;
+    });
     
-    setDiaryData(updatedData);
+    // Mark as having pending changes
     setHasPendingChanges(true);
-    saveToSessionStorage(updatedData, true);
-  }, [diaryData, saveToSessionStorage]);
+    
+    // Schedule saving to session storage
+    setTimeout(() => saveToLocalStorage(), 0);
+  }, [diaryData.sleep, saveToLocalStorage]);
   
   // Emotion data handler
   const handleEmotionChange = useCallback((date: DateString, emotion: string, value: string) => {
@@ -375,21 +217,27 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     }
     
     // Update local state immediately
-    const updatedData = {
-      ...diaryData,
-      emotions: {
-        ...diaryData.emotions,
-        [date]: {
-          ...diaryData.emotions[date],
-          [emotion]: value
+    setDiaryData(prev => {
+      const updated = {
+        ...prev,
+        emotions: {
+          ...prev.emotions,
+          [date]: {
+            ...prev.emotions[date],
+            [emotion]: value
+          }
         }
-      }
-    };
+      };
+      
+      return updated;
+    });
     
-    setDiaryData(updatedData);
+    // Mark as having pending changes
     setHasPendingChanges(true);
-    saveToSessionStorage(updatedData, true);
-  }, [diaryData, saveToSessionStorage]);
+    
+    // Schedule saving to session storage
+    setTimeout(() => saveToLocalStorage(), 0);
+  }, [diaryData.emotions, saveToLocalStorage]);
   
   // Urge data handler
   const handleUrgeChange = useCallback((date: DateString, urge: string, field: 'level' | 'action', value: string) => {
@@ -398,24 +246,30 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       return;
     }
     
-    const updatedData = {
-      ...diaryData,
-      urges: {
-        ...diaryData.urges,
-        [date]: {
-          ...diaryData.urges[date],
-          [urge]: {
-            ...diaryData.urges[date]?.[urge],
-            [field]: value
+    setDiaryData(prev => {
+      const updated = {
+        ...prev,
+        urges: {
+          ...prev.urges,
+          [date]: {
+            ...prev.urges[date],
+            [urge]: {
+              ...prev.urges[date]?.[urge],
+              [field]: value
+            }
           }
         }
-      }
-    };
+      };
+      
+      return updated;
+    });
     
-    setDiaryData(updatedData);
+    // Mark as having pending changes
     setHasPendingChanges(true);
-    saveToSessionStorage(updatedData, true);
-  }, [diaryData, saveToSessionStorage]);
+    
+    // Schedule saving to session storage
+    setTimeout(() => saveToLocalStorage(), 0);
+  }, [diaryData.urges, saveToLocalStorage]);
   
   // Event data handler
   const handleEventChange = useCallback((date: DateString, value: string) => {
@@ -424,18 +278,24 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       return;
     }
     
-    const updatedData = {
-      ...diaryData,
-      events: {
-        ...diaryData.events,
-        [date]: value
-      }
-    };
+    setDiaryData(prev => {
+      const updated = {
+        ...prev,
+        events: {
+          ...prev.events,
+          [date]: value
+        }
+      };
+      
+      return updated;
+    });
     
-    setDiaryData(updatedData);
+    // Mark as having pending changes
     setHasPendingChanges(true);
-    saveToSessionStorage(updatedData, true);
-  }, [diaryData, saveToSessionStorage]);
+    
+    // Schedule saving to session storage
+    setTimeout(() => saveToLocalStorage(), 0);
+  }, [diaryData.events, saveToLocalStorage]);
   
   // Skill data handler
   const handleSkillChange = useCallback((category: string, skill: string, date: DateString, checked: boolean) => {
@@ -444,31 +304,39 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       return;
     }
     
-    // Create nested skill structure if not exists
-    let updatedSkills = { ...diaryData.skills };
+    setDiaryData(prev => {
+      // Create a deep copy of the skills structure
+      const updatedSkills = { ...prev.skills };
+      
+      // Create category if it doesn't exist
+      if (!updatedSkills[category]) {
+        updatedSkills[category] = {};
+      }
+      
+      // Create skill if it doesn't exist
+      if (!updatedSkills[category][skill]) {
+        updatedSkills[category][skill] = {};
+      }
+      
+      // Update the checked status for this date
+      updatedSkills[category][skill] = {
+        ...updatedSkills[category][skill],
+        [date]: checked
+      };
+      
+      // Return the updated diary data
+      return {
+        ...prev,
+        skills: updatedSkills
+      };
+    });
     
-    if (!updatedSkills[category]) {
-      updatedSkills[category] = {};
-    }
-    
-    if (!updatedSkills[category][skill]) {
-      updatedSkills[category][skill] = {};
-    }
-    
-    updatedSkills[category][skill] = {
-      ...updatedSkills[category][skill],
-      [date]: checked
-    };
-    
-    const updatedData = {
-      ...diaryData,
-      skills: updatedSkills
-    };
-    
-    setDiaryData(updatedData);
+    // Mark as having pending changes
     setHasPendingChanges(true);
-    saveToSessionStorage(updatedData, true);
-  }, [diaryData, saveToSessionStorage]);
+    
+    // Schedule saving to session storage
+    setTimeout(() => saveToLocalStorage(), 0);
+  }, [diaryData.skills, saveToLocalStorage]);
   
   // Medication data handler (local only)
   const handleMedicationChange = useCallback((date: DateString, value: string) => {
@@ -477,19 +345,20 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
       return;
     }
     
-    const updatedData = {
-      ...diaryData,
+    setDiaryData(prev => ({
+      ...prev,
       medication: {
-        ...diaryData.medication,
+        ...prev.medication,
         [date]: value
       }
-    };
+    }));
     
-    setDiaryData(updatedData);
-    saveToSessionStorage(updatedData, hasPendingChanges);
-  }, [diaryData, hasPendingChanges, saveToSessionStorage]);
+    // Schedule saving to session storage
+    setTimeout(() => saveToLocalStorage(), 0);
+  }, [diaryData.medication, saveToLocalStorage]);
   
-  // Getters
+  // Getters for diary data values
+  
   const getSleepValue = useCallback((date: DateString, field: keyof SleepData): string => {
     return diaryData.sleep[date]?.[field] || '';
   }, [diaryData.sleep]);
@@ -514,12 +383,19 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     return diaryData.skills[category]?.[skill]?.[date] || false;
   }, [diaryData.skills]);
 
+  // Create the context value object
   const value = {
     diaryData,
     isLoading,
     hasPendingChanges,
+    serverData,
+    setLoading: updateLoading,
+    updateDiaryData,
+    markDateLoaded,
+    markAsSaved,
+    clearCache,
     loadInitialData,
-    loadDay,
+    saveToLocalStorage,
     handleSleepChange,
     handleEmotionChange,
     handleUrgeChange,
@@ -531,8 +407,7 @@ export const DiaryProvider: React.FC<DiaryProviderProps> = ({ children, userId }
     getUrgeValue,
     getEventValue,
     getMedicationValue,
-    getSkillChecked,
-    saveChanges
+    getSkillChecked
   };
   
   return <DiaryContext.Provider value={value}>{children}</DiaryContext.Provider>;

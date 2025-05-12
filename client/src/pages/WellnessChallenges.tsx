@@ -233,45 +233,71 @@ const WellnessChallenges: React.FC = () => {
               )}
             </div>
 
-            {/* Filter row - separate from title row */}
+            {/* Filter row with enhanced user guidance */}
             {activeChallenges.length > 0 && (
-              <div className="mb-4">
-                {/* All button and scrollable filters */}
-                <div className="flex overflow-hidden items-center">
-                  <Button
-                    variant={categoryFilter === "all" ? "default" : "outline"}
-                    size="sm"
-                    className={`h-8 rounded-full px-3 mr-2 text-xs font-medium transition-all shrink-0 ${
-                      categoryFilter === "all"
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "hover:bg-accent"
-                    }`}
-                    onClick={() => setCategoryFilter("all")}
-                  >
-                    All
-                  </Button>
-
-                  <div className="overflow-x-auto hide-scrollbar pb-1 flex">
+              <div className="mb-6">
+                {/* Filter header with instructions */}
+                <div className="flex items-center mb-3">
+                  <Filter className="h-4 w-4 text-primary mr-2" />
+                  <span className="text-sm font-medium">Filter by category</span>
+                  <span className="text-xs text-muted-foreground ml-2 italic">Swipe to see all →</span>
+                </div>
+                
+                {/* Enhanced filter UI with visual indicators */}
+                <div className="relative">
+                  {/* Shadow indicators for scrollable content */}
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" 
+                       aria-hidden="true"></div>
+                  
+                  {/* Filter buttons container */}
+                  <div className="flex overflow-x-auto pb-2 hide-scrollbar items-center">
+                    <Button 
+                      variant={categoryFilter === "all" ? "default" : "outline"} 
+                      size="sm" 
+                      className={`h-10 rounded-full px-4 mr-2 text-sm font-medium transition-all shrink-0 ${
+                        categoryFilter === "all" ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent border-2 border-gray-200"
+                      }`}
+                      onClick={() => setCategoryFilter("all")}
+                    >
+                      All Categories
+                    </Button>
+                    
                     {challengeTypes.map((type) => (
-                      <Button
+                      <Button 
                         key={type.name}
-                        variant={
-                          categoryFilter === type.name ? "default" : "outline"
-                        }
-                        size="sm"
-                        className={`h-8 rounded-full mr-2 px-3 text-xs font-medium shrink-0 whitespace-nowrap transition-all flex items-center ${
-                          categoryFilter === type.name
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "hover:bg-accent"
+                        variant={categoryFilter === type.name ? "default" : "outline"} 
+                        size="sm" 
+                        className={`h-10 rounded-full mr-2 px-4 text-sm font-medium shrink-0 whitespace-nowrap transition-all flex items-center ${
+                          categoryFilter === type.name 
+                            ? "bg-primary text-primary-foreground shadow-sm" 
+                            : "hover:bg-accent border-2 border-gray-200"
                         }`}
                         onClick={() => setCategoryFilter(type.name)}
                       >
                         <span
-                          className={`w-2 h-2 rounded-full mr-1.5 ${type.color.replace("bg-", "bg-")}`}
+                          className={`w-3 h-3 rounded-full mr-2 ${type.color.replace("bg-", "bg-")}`}
                         ></span>
                         {type.displayName}
                       </Button>
                     ))}
+                  </div>
+                </div>
+                
+                {/* Active filter indicator */}
+                <div className="mt-2 flex items-center">
+                  <div className="bg-primary/10 text-primary text-xs py-1 px-3 rounded-full flex items-center">
+                    <span className="font-medium mr-1">Active filter:</span> 
+                    {categoryFilter === "all" ? "All Categories" : challengeTypes.find(t => t.name === categoryFilter)?.displayName}
+                    {categoryFilter !== "all" && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-5 w-5 p-0 ml-1 rounded-full"
+                        onClick={() => setCategoryFilter("all")} 
+                      >
+                        ✕
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -5,7 +5,7 @@ import {
   DateString, 
   SleepData, 
   EmotionEntry, 
-  UrgeEntry, 
+  // UrgeEntry removed
   SkillEntry, 
   EventEntry,
   SleepEntry
@@ -21,9 +21,7 @@ export interface IDiaryRepository {
   getEmotions(date: DateString): Promise<EmotionEntry[]>;
   saveEmotion(entry: EmotionEntry): Promise<EmotionEntry>;
   
-  // Urges
-  getUrges(date: DateString): Promise<UrgeEntry[]>;
-  saveUrge(entry: UrgeEntry): Promise<UrgeEntry>;
+  // Urges methods removed
   
   // Skills
   getSkills(date: DateString): Promise<SkillEntry[]>;

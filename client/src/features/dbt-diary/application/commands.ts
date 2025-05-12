@@ -5,7 +5,7 @@ import {
   DateString, 
   SleepData, 
   EmotionEntry, 
-  UrgeEntry, 
+  // UrgeEntry removed
   SkillEntry, 
   EventEntry,
   SleepEntry
@@ -30,15 +30,7 @@ export class SaveEmotionCommand {
   ) {}
 }
 
-export class SaveUrgeCommand {
-  constructor(
-    public readonly date: DateString,
-    public readonly userId: number,
-    public readonly urgeType: string,
-    public readonly level: string,
-    public readonly action: string
-  ) {}
-}
+// SaveUrgeCommand removed
 
 export class SaveSkillCommand {
   constructor(
@@ -83,17 +75,7 @@ export class DiaryCommandHandlers {
     return await this.repository.saveEmotion(entry);
   }
   
-  async handleSaveUrge(command: SaveUrgeCommand): Promise<UrgeEntry> {
-    const entry: UrgeEntry = {
-      date: command.date,
-      userId: command.userId,
-      urgeType: command.urgeType,
-      level: command.level,
-      action: command.action
-    };
-    
-    return await this.repository.saveUrge(entry);
-  }
+  // handleSaveUrge method removed
   
   async handleSaveSkill(command: SaveSkillCommand): Promise<SkillEntry> {
     const entry: SkillEntry = {

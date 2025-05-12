@@ -16,11 +16,7 @@ export interface EmotionIntensity {
   intensity: string;
 }
 
-export interface UrgeData {
-  urgeType: string;
-  level: string;
-  action: string;
-}
+// UrgeData interface removed
 
 export interface SkillUsage {
   category: string;
@@ -47,11 +43,7 @@ export interface EmotionEntry extends DiaryCardEntry {
   intensity: string;
 }
 
-export interface UrgeEntry extends DiaryCardEntry {
-  urgeType: string;
-  level: string;
-  action: string;
-}
+// UrgeEntry interface removed
 
 export interface SkillEntry extends DiaryCardEntry {
   category: string;

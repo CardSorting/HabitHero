@@ -157,7 +157,7 @@ const BottomNav: React.FC = () => {
         </div>
       </motion.nav>
       
-      {/* More menu overlay */}
+      {/* Slide-out menu */}
       <AnimatePresence>
         {isMoreMenuOpen && (
           <motion.div 
@@ -168,24 +168,29 @@ const BottomNav: React.FC = () => {
             onClick={() => setIsMoreMenuOpen(false)}
           >
             <motion.div 
-              className="absolute bottom-16 inset-x-0 bg-white rounded-t-xl shadow-lg py-4 px-4"
-              initial={{ y: 100 }}
+              className="fixed bottom-0 inset-x-0 bg-white rounded-t-xl shadow-lg py-6 px-4 z-30"
+              initial={{ y: '100%' }}
               animate={{ y: 0 }}
-              exit={{ y: 100 }}
+              exit={{ y: '100%' }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium">More Options</h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-medium text-lg">Menu</h3>
                 <button 
                   onClick={() => setIsMoreMenuOpen(false)}
-                  className="p-1 rounded-full bg-gray-100 hover:bg-gray-200"
+                  className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
               </div>
               
-              <div className="grid grid-cols-4 gap-4">
-                {overflowItems.map((item) => {
+              {/* Draggable handle */}
+              <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-300 rounded-full"></div>
+              
+              {/* All navigation items */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                {allNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location === item.path;
                   
@@ -195,17 +200,22 @@ const BottomNav: React.FC = () => {
                       href={item.path}
                       onClick={() => setIsMoreMenuOpen(false)}
                     >
-                      <div className={`flex flex-col items-center py-3 px-2 ${
-                        isActive ? "text-primary bg-primary/10" : "text-gray-700 bg-gray-50"
-                      } cursor-pointer rounded-lg`}>
-                        <Icon className="mb-1" size={20} />
-                        <span className={`text-xs ${isActive ? "font-medium" : ""}`}>
+                      <div className={`flex flex-col items-center justify-center py-4 px-2 ${
+                        isActive ? "text-primary bg-primary/10 border-primary" : "text-gray-700 bg-gray-50 border-transparent"
+                      } cursor-pointer rounded-xl border shadow-sm`}>
+                        <Icon size={22} strokeWidth={2} className={`mb-2 ${isActive ? "text-primary" : ""}`} />
+                        <span className={`text-sm ${isActive ? "font-medium" : ""}`}>
                           {item.label}
                         </span>
                       </div>
                     </Link>
                   );
                 })}
+              </div>
+              
+              {/* Additional items could be added here */}
+              <div className="w-full h-16 mt-6">
+                {/* Spacer to ensure content doesn't get hidden behind bottom nav */}
               </div>
             </motion.div>
           </motion.div>

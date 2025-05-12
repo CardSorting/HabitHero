@@ -372,13 +372,12 @@ export async function registerRoutes(app: Express): Promise<any> {
         return res.status(400).json({ message: "All reflection fields are required" });
       }
       
-      const analysis = await analyzeDailyReflection(
+      const analysis = await analyzeDailyReflection({
         todayGoal,
         todayHighlight,
-        tomorrowGoal,
         gratitude,
-        dbtSkillUsed || ""
-      );
+        dbtSkillUsed: dbtSkillUsed || ""
+      });
       
       res.json({ analysis });
     } catch (error: any) {

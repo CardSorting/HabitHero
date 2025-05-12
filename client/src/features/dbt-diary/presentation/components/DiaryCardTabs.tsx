@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 // Import from the barrel file
-import { SleepTab, EmotionsTab, UrgesTab, SkillsTab, EventsTab } from './tabs';
+import { SleepTab, EmotionsTab, SkillsTab, EventsTab } from './tabs';
 import { DateString } from '../../domain/models';
 
 interface DiaryCardTabsProps {
@@ -35,10 +35,9 @@ const DiaryCardTabs: React.FC<DiaryCardTabsProps> = ({
       className="mb-6"
       onValueChange={handleTabChange}
     >
-      <TabsList className="grid grid-cols-5 mb-4 rounded-xl">
+      <TabsList className="grid grid-cols-4 mb-4 rounded-xl">
         <TabsTrigger value="sleep" className="rounded-l-xl">Sleep</TabsTrigger>
         <TabsTrigger value="emotions">Emotions</TabsTrigger>
-        <TabsTrigger value="urges">Urges</TabsTrigger>
         <TabsTrigger value="skills">Skills</TabsTrigger>
         <TabsTrigger value="events" className="rounded-r-xl">Events</TabsTrigger>
       </TabsList>
@@ -61,14 +60,7 @@ const DiaryCardTabs: React.FC<DiaryCardTabsProps> = ({
         />
       </TabsContent>
       
-      {/* Urges Tab */}
-      <TabsContent value="urges">
-        <UrgesTab 
-          dayHeaders={dayHeaders}
-          selectedDate={selectedDate}
-          viewMode={viewMode}
-        />
-      </TabsContent>
+{/* Urges tab removed */}
       
       {/* Skills Tab */}
       <TabsContent value="skills">

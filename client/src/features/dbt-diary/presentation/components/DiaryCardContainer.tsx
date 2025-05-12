@@ -22,9 +22,8 @@ interface DiaryCardProps {
 
 // Inner component that uses the diary context
 const DiaryCardContent: React.FC = () => {
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 6 }));
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  // Fixed to today's date - no date selection
+  const [selectedDate] = useState<Date>(new Date());
   const { toast } = useToast();
   
   // Use the diary context
@@ -54,25 +53,15 @@ const DiaryCardContent: React.FC = () => {
     }
   }, [loadInitialData, loadDay]);
   
-  // Generate dates for the week (Saturday to Friday)
-  const weekDates = Array.from({ length: 7 }, (_, i) => {
-    return addDays(currentWeekStart, i);
-  });
+  // Generate day headers - only for today
+  const dayHeaders = [{ 
+    full: format(selectedDate, "EEEE"),
+    abbr: format(selectedDate, "EEE"),
+    date: format(selectedDate, "yyyy-MM-dd") as DateString
+  }];
   
-  // Generate day headers
-  const dayHeaders = viewMode === 'week' 
-    ? weekDates.map(date => ({
-        full: format(date, "EEEE"),
-        abbr: format(date, "EEE"),
-        date: format(date, "yyyy-MM-dd") as DateString
-      }))
-    : [{ // Single day mode shows only selected date
-        full: format(selectedDate, "EEEE"),
-        abbr: format(selectedDate, "EEE"),
-        date: format(selectedDate, "yyyy-MM-dd") as DateString
-      }];
-  
-  const weekRangeText = `${format(weekDates[0], "MMM d")} - ${format(weekDates[6], "MMM d, yyyy")}`;
+  // Today's date text
+  const todayDateText = format(selectedDate, "MMMM d, yyyy");
   
   // Only load data for the selected date if it's not a future date
   useEffect(() => {
@@ -282,33 +271,6 @@ const DiaryCardContent: React.FC = () => {
         </div>
         
         <div className="flex items-center mt-4 md:mt-0 gap-2 flex-wrap justify-end">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 gap-1">
-                <CalendarIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">Select Date</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleSelectDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 gap-1"
-            onClick={toggleViewMode}
-          >
-            <CalendarDays className="h-4 w-4" />
-            <span className="hidden sm:inline">{viewMode === 'day' ? 'Week View' : 'Day View'}</span>
-          </Button>
-          
           <Button
             variant="outline"
             size="sm"

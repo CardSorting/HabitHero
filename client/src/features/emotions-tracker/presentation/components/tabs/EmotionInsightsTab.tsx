@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useEmotions } from '../../context/EmotionsContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { format, subDays } from 'date-fns';
+import { format, subDays, addDays, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 import { 
   Select,
   SelectContent,
@@ -13,16 +13,21 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart, PieChart, LineChart } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  BarChart, PieChart, LineChart, 
+  Activity, TrendingUp, Calendar, Info, ChevronRight 
+} from 'lucide-react';
 
 const EmotionInsightsTab = () => {
   const { getEmotionTrends, getEmotionSummary, getMostFrequentEmotions, getHighestIntensityEmotions } = useEmotions();
   const [timeframe, setTimeframe] = useState('7days');
   const [isLoading, setIsLoading] = useState(false);
-  const [summaryData, setSummaryData] = useState(null);
-  const [trendData, setTrendData] = useState([]);
-  const [frequentEmotions, setFrequentEmotions] = useState([]);
-  const [highIntensityEmotions, setHighIntensityEmotions] = useState([]);
+  const [summaryData, setSummaryData] = useState<any>(null);
+  const [trendData, setTrendData] = useState<any[]>([]);
+  const [frequentEmotions, setFrequentEmotions] = useState<{emotion: string; count: number}[]>([]);
+  const [highIntensityEmotions, setHighIntensityEmotions] = useState<{emotion: string; intensity: number}[]>([]);
   
   useEffect(() => {
     fetchData();
@@ -160,120 +165,310 @@ const EmotionInsightsTab = () => {
     );
   };
   
+  // Helper to get emotion color
+  const getEmotionColor = (category: string): string => {
+    switch(category) {
+      case 'positive': return 'bg-blue-500';
+      case 'negative': return 'bg-red-500';
+      case 'neutral': return 'bg-purple-500';
+      default: return 'bg-gray-400';
+    }
+  };
+
+  // Helper to get intensity level label
+  const getIntensityLabel = (intensity: number): string => {
+    if (intensity >= 8) return 'Very High';
+    if (intensity >= 6) return 'High';
+    if (intensity >= 4) return 'Moderate';
+    if (intensity >= 2) return 'Low';
+    return 'Very Low';
+  };
+
+  // New calendar emotion representation
+  const renderCalendarView = () => {
+    const today = new Date();
+    const days = [];
+    
+    // Generate last 7 days
+    for (let i = 6; i >= 0; i--) {
+      const date = subDays(today, i);
+      
+      // Find matching trend data
+      const matchingDay = trendData.find(day => 
+        day.date && isSameDay(new Date(day.date), date)
+      );
+      
+      days.push({
+        date,
+        matchingDay
+      });
+    }
+    
+    return (
+      <div className="grid grid-cols-7 gap-1 mt-3">
+        {days.map((item, idx) => (
+          <div key={idx} className="flex flex-col items-center">
+            <div className="text-xs text-muted-foreground mb-1">
+              {format(item.date, 'EEE')}
+            </div>
+            
+            <div 
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium mb-1 
+                ${isSameDay(item.date, today) ? 'border-2 border-primary' : ''}`}
+            >
+              {format(item.date, 'd')}
+            </div>
+            
+            {item.matchingDay ? (
+              <div 
+                className={`w-4 h-4 rounded-full ${getEmotionColor(item.matchingDay.dominantCategory)}`}
+                title={`Average intensity: ${item.matchingDay.averageIntensity.toFixed(1)}/10`}
+              />
+            ) : (
+              <div className="w-4 h-4 rounded-full bg-gray-200" title="No data" />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Emotion Insights</h3>
+    <div className="max-w-2xl mx-auto">
+      {/* Header with timeframe selector */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900">Emotions</h2>
+          
+          <Select value={timeframe} onValueChange={setTimeframe}>
+            <SelectTrigger className="w-[150px] border-0 bg-gray-100 text-sm">
+              <SelectValue placeholder="Select timeframe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7days">Last 7 days</SelectItem>
+              <SelectItem value="30days">Last 30 days</SelectItem>
+              <SelectItem value="90days">Last 90 days</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         
-        <Select value={timeframe} onValueChange={setTimeframe}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Select timeframe" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7days">Last 7 days</SelectItem>
-            <SelectItem value="30days">Last 30 days</SelectItem>
-            <SelectItem value="90days">Last 90 days</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="text-sm text-muted-foreground mt-1">
+          {timeframe === '7days' ? 'Past Week' : 
+           timeframe === '30days' ? 'Past Month' : 'Past 3 Months'}
+        </div>
       </div>
       
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <>
-          {/* Today's Summary Card */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Today's Emotion Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!summaryData || !summaryData.dominantEmotion ? (
-                <p className="text-muted-foreground text-center py-2">No emotions tracked today</p>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Dominant Emotion</p>
-                    <p className="text-lg font-medium">{summaryData.dominantEmotion}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Average Intensity</p>
-                    <p className="text-lg font-medium">{summaryData.averageIntensity.toFixed(1)}/10</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Highest Intensity</p>
-                    <p className="text-lg font-medium">{summaryData.highestIntensity.emotion} ({summaryData.highestIntensity.value}/10)</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Emotions Tracked</p>
-                    <p className="text-lg font-medium">{summaryData.emotionCount}</p>
-                  </div>
+        <div className="space-y-8">
+          {/* Summary Header - Apple Health Style */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="p-5">
+              <div className="flex items-center mb-4">
+                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                  <Activity className="h-5 w-5 text-blue-500" />
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <h3 className="text-lg font-semibold">Emotion Summary</h3>
+              </div>
+
+              {/* Calendar week view */}
+              <div className="mb-6">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  This Week
+                </div>
+                {renderCalendarView()}
+              </div>
+
+              {/* Key metrics */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Today's summary */}
+                <div>
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    Today
+                  </div>
+                  
+                  {!summaryData || !summaryData.dominantEmotion ? (
+                    <div className="text-muted-foreground text-sm py-1">No emotions tracked yet</div>
+                  ) : (
+                    <div className="flex items-center">
+                      <div className="text-3xl font-semibold mr-2">
+                        {summaryData.dominantEmotion}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        dominant
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Average intensity */}
+                <div>
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    Average Intensity
+                  </div>
+                  
+                  {!summaryData ? (
+                    <div className="text-muted-foreground text-sm py-1">No data</div>
+                  ) : (
+                    <div className="flex items-center">
+                      <div className="text-3xl font-semibold mr-2">
+                        {summaryData.averageIntensity?.toFixed(1) || "0"}/10
+                      </div>
+                      <div className="text-sm px-2 py-1 rounded-full bg-gray-100">
+                        {getIntensityLabel(summaryData.averageIntensity || 0)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* View details button */}
+              <div className="mt-5 pt-4 border-t border-gray-100">
+                <button 
+                  className="flex items-center justify-between w-full text-sm text-blue-500 font-medium"
+                  onClick={() => window.location.href = '/emotions/history'}
+                >
+                  <span>View Detailed History</span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
           
-          {/* Charts Tabs */}
-          <Card>
-            <CardHeader className="pb-0">
-              <Tabs defaultValue="intensity">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="intensity" className="flex items-center">
-                    <BarChart className="h-4 w-4 mr-2" />
-                    <span>Intensity</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="distribution" className="flex items-center">
-                    <PieChart className="h-4 w-4 mr-2" />
-                    <span>Distribution</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="ranking" className="flex items-center">
-                    <LineChart className="h-4 w-4 mr-2" />
-                    <span>Ranking</span>
-                  </TabsTrigger>
-                </TabsList>
+          {/* Trends Section - Apple Health Style */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="p-5">
+              <div className="flex items-center mb-4">
+                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                </div>
+                <h3 className="text-lg font-semibold">Emotion Trends</h3>
+              </div>
+              
+              {/* Trends visualization */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="text-sm font-medium text-gray-700 mb-4">
+                  Emotion Intensity Over Time
+                </div>
                 
-                <TabsContent value="intensity" className="pt-4">
-                  <h4 className="text-sm font-medium mb-2">Emotion Intensity Over Time</h4>
-                  {renderEmotionIntensityChart()}
-                </TabsContent>
+                {trendData.length === 0 ? (
+                  <div className="h-32 flex items-center justify-center text-muted-foreground">
+                    Not enough data to show trends
+                  </div>
+                ) : (
+                  <div className="h-32 flex items-end space-x-1">
+                    {trendData.map((day, index) => (
+                      <div key={index} className="flex flex-col items-center flex-1">
+                        <div 
+                          className={`w-full rounded-t transition-all ${
+                            day.dominantCategory === 'positive' ? 'bg-blue-500' :
+                            day.dominantCategory === 'negative' ? 'bg-red-500' : 'bg-purple-500'
+                          }`}
+                          style={{
+                            height: `${Math.max(5, day.averageIntensity * 10)}%`,
+                            opacity: 0.7 + (index / (trendData.length * 2))
+                          }}
+                        />
+                        <div className="text-xs mt-1 text-muted-foreground">
+                          {format(new Date(day.date), 'MM/dd')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Distribution section */}
+              <div className="mb-6">
+                <div className="text-sm font-medium text-gray-700 mb-3">
+                  Most Frequent Emotions
+                </div>
                 
-                <TabsContent value="distribution" className="pt-4">
-                  <h4 className="text-sm font-medium mb-2">Most Frequent Emotions</h4>
-                  {renderEmotionDistributionChart()}
-                </TabsContent>
-                
-                <TabsContent value="ranking" className="pt-4">
-                  <h4 className="text-sm font-medium mb-2">Highest Intensity Emotions</h4>
-                  {renderIntensityRankingChart()}
-                </TabsContent>
-              </Tabs>
-            </CardHeader>
-          </Card>
+                <ScrollArea className="h-[160px] pr-4">
+                  {frequentEmotions.length === 0 ? (
+                    <div className="text-muted-foreground text-sm py-2">No data available</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {frequentEmotions.map((item, index) => (
+                        <div key={index} className="flex items-center">
+                          <div className="w-24 text-sm">{item.emotion}</div>
+                          <div className="flex-1 mx-2">
+                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-blue-500 rounded-full"
+                                style={{ 
+                                  width: `${Math.min(100, (item.count / (frequentEmotions[0]?.count || 1)) * 100)}%`,
+                                  opacity: 1 - (index * 0.15)
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-sm text-right w-12">{item.count}x</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+              
+              {/* View more button */}
+              <div className="pt-4 border-t border-gray-100">
+                <button 
+                  className="flex items-center justify-between w-full text-sm text-blue-500 font-medium"
+                  onClick={() => window.location.href = '/emotions/insights'}
+                >
+                  <span>View Advanced Analytics</span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
           
-          {/* Key Insights */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Key Insights</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!trendData || trendData.length === 0 ? (
-                <p className="text-muted-foreground text-center py-2">No data available for analysis</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {highIntensityEmotions && highIntensityEmotions.length > 0 && (
-                    <li>
-                      <span className="font-medium">{highIntensityEmotions[0].emotion}</span> is your most intense emotion, averaging {highIntensityEmotions[0].intensity.toFixed(1)}/10.
-                    </li>
+          {/* Insights Section - Apple Health Style */}
+          {(highIntensityEmotions.length > 0 || frequentEmotions.length > 0 || trendData.length > 1) && (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="p-5">
+                <div className="flex items-center mb-4">
+                  <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                    <Info className="h-5 w-5 text-purple-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Key Insights</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  {highIntensityEmotions.length > 0 && (
+                    <div className="flex">
+                      <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center mr-3 shrink-0">
+                        <Activity className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Highest Intensity</div>
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">{highIntensityEmotions[0]?.emotion}</span> is your most intense emotion 
+                          ({highIntensityEmotions[0]?.intensity.toFixed(1)}/10)
+                        </div>
+                      </div>
+                    </div>
                   )}
                   
-                  {frequentEmotions && frequentEmotions.length > 0 && (
-                    <li>
-                      <span className="font-medium">{frequentEmotions[0].emotion}</span> is your most frequent emotion, tracked {frequentEmotions[0].count} times.
-                    </li>
+                  {frequentEmotions.length > 0 && (
+                    <div className="flex">
+                      <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center mr-3 shrink-0">
+                        <Calendar className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Most Frequent</div>
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">{frequentEmotions[0]?.emotion}</span> appears {frequentEmotions[0]?.count} times 
+                          in your emotion logs
+                        </div>
+                      </div>
+                    </div>
                   )}
                   
-                  {/* Determine the overall trend (improving, worsening, stable) */}
                   {trendData.length > 1 && (() => {
                     const firstHalf = trendData.slice(0, Math.floor(trendData.length / 2));
                     const secondHalf = trendData.slice(Math.floor(trendData.length / 2));
@@ -283,49 +478,48 @@ const EmotionInsightsTab = () => {
                     
                     const positiveChange = secondHalfPositive / secondHalf.length - firstHalfPositive / firstHalf.length;
                     
-                    let trendMessage;
+                    let trendIcon = <TrendingUp className="h-5 w-5 text-gray-600" />;
+                    let trendTitle = 'Stable Emotions';
+                    let trendMessage = 'Your emotions have been relatively stable';
+                    
                     if (positiveChange > 0.2) {
-                      trendMessage = <li>Your emotions are <span className="font-medium text-green-600">improving</span> over time.</li>;
+                      trendTitle = 'Improving Trend';
+                      trendMessage = 'Your emotional wellbeing is improving';
+                      trendIcon = <TrendingUp className="h-5 w-5 text-green-600" />;
                     } else if (positiveChange < -0.2) {
-                      trendMessage = <li>Your emotions are <span className="font-medium text-red-600">declining</span> over time.</li>;
-                    } else {
-                      trendMessage = <li>Your emotions are <span className="font-medium">relatively stable</span> over time.</li>;
+                      trendTitle = 'Declining Trend';
+                      trendMessage = 'Your emotional wellbeing needs attention';
+                      trendIcon = <TrendingUp className="h-5 w-5 text-red-600" />;
                     }
                     
-                    return trendMessage;
+                    return (
+                      <div className="flex">
+                        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center mr-3 shrink-0">
+                          {trendIcon}
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium">{trendTitle}</div>
+                          <div className="text-sm text-gray-600">{trendMessage}</div>
+                        </div>
+                      </div>
+                    );
                   })()}
-                  
-                  {/* Check for patterns in emotions */}
-                  {trendData.length > 3 && (() => {
-                    const positives = trendData.filter(d => d.dominantCategory === 'positive').length;
-                    const negatives = trendData.filter(d => d.dominantCategory === 'negative').length;
-                    const neutrals = trendData.filter(d => d.dominantCategory === 'neutral').length;
-                    
-                    let patternMessage;
-                    if (positives > negatives && positives > neutrals) {
-                      patternMessage = <li>Your emotions have been <span className="font-medium text-green-600">predominantly positive</span> during this period.</li>;
-                    } else if (negatives > positives && negatives > neutrals) {
-                      patternMessage = <li>Your emotions have been <span className="font-medium text-red-600">predominantly negative</span> during this period.</li>;
-                    } else {
-                      patternMessage = <li>Your emotions have been <span className="font-medium">mixed or neutral</span> during this period.</li>;
-                    }
-                    
-                    return patternMessage;
-                  })()}
-                </ul>
-              )}
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full mt-4"
-                onClick={() => window.location.href = '/emotions/journal'}
-              >
-                View Detailed Analysis
-              </Button>
-            </CardContent>
-          </Card>
-        </>
+                </div>
+                
+                {/* View more button */}
+                <div className="mt-5 pt-4 border-t border-gray-100">
+                  <button 
+                    className="flex items-center justify-between w-full text-sm text-blue-500 font-medium"
+                    onClick={() => window.location.href = '/emotions/journal'}
+                  >
+                    <span>View Emotional Journal</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

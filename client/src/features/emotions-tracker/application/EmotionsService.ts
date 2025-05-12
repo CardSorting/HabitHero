@@ -81,8 +81,7 @@ export class EmotionsService {
    * Get all predefined emotions
    */
   async getAllEmotions(): Promise<Emotion[]> {
-    const query = new GetAllEmotionsQuery();
-    return this.getAllEmotionsQueryHandler.execute(query);
+    return this.getAllEmotionsQueryHandler.execute();
   }
   
   /**

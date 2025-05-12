@@ -299,11 +299,14 @@ export const EmotionsProvider: React.FC<{children: React.ReactNode}> = ({ childr
 };
 
 // Custom hook for consuming the context
-// Using constant for consistent exports that don't trigger HMR issues
-export const useEmotions = () => {
+// Need to export this specific way to avoid HMR issues
+// See: https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+function useEmotionsHook() {
   const context = useContext(EmotionsContext);
   if (context === undefined) {
     throw new Error('useEmotions must be used within an EmotionsProvider');
   }
   return context;
 }
+
+export { useEmotionsHook as useEmotions };

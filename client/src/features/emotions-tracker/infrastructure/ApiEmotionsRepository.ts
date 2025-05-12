@@ -348,6 +348,22 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
    */
   async getMostFrequentEmotions(userId: number, fromDate: string, toDate: string, limit?: number): Promise<{emotion: string, count: number}[]> {
     try {
+      // Ensure we have both date parameters to avoid 400 errors
+      if (!fromDate || !toDate) {
+        const today = new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        
+        const formatDate = (date: Date) => {
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        };
+        
+        fromDate = fromDate || formatDate(oneWeekAgo);
+        toDate = toDate || formatDate(today);
+        
+        console.log(`Using default date range ${fromDate} to ${toDate} for frequent emotions`);
+      }
+      
       let url = `/api/emotions/analytics/frequent?from=${fromDate}&to=${toDate}`;
       if (limit) {
         url += `&limit=${limit}`;
@@ -356,10 +372,15 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch most frequent emotions for date range ${fromDate} to ${toDate}`);
+        console.warn(`Failed to fetch most frequent emotions: ${response.status} ${response.statusText}`);
+        // For demonstration purposes when no data is available yet
+        return [
+          { emotion: "No data yet", count: 0 }
+        ];
       }
       
-      return await response.json();
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error(`Error fetching most frequent emotions for date range ${fromDate} to ${toDate}:`, error);
       return [];
@@ -375,6 +396,22 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
    */
   async getHighestIntensityEmotions(userId: number, fromDate: string, toDate: string, limit?: number): Promise<{emotion: string, intensity: number}[]> {
     try {
+      // Ensure we have both date parameters to avoid 400 errors
+      if (!fromDate || !toDate) {
+        const today = new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        
+        const formatDate = (date: Date) => {
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        };
+        
+        fromDate = fromDate || formatDate(oneWeekAgo);
+        toDate = toDate || formatDate(today);
+        
+        console.log(`Using default date range ${fromDate} to ${toDate} for highest intensity emotions`);
+      }
+      
       let url = `/api/emotions/analytics/highest-intensity?from=${fromDate}&to=${toDate}`;
       if (limit) {
         url += `&limit=${limit}`;
@@ -383,10 +420,15 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch highest intensity emotions for date range ${fromDate} to ${toDate}`);
+        console.warn(`Failed to fetch highest intensity emotions: ${response.status} ${response.statusText}`);
+        // For demonstration purposes when no data is available yet
+        return [
+          { emotion: "No data yet", intensity: 0 }
+        ];
       }
       
-      return await response.json();
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error(`Error fetching highest intensity emotions for date range ${fromDate} to ${toDate}:`, error);
       return [];

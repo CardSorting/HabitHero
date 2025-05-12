@@ -30,8 +30,8 @@ const BottomNav: React.FC = () => {
   const allNavItems: NavItem[] = [
     { icon: Home, label: "Today", path: "/today", priority: 100 },
     { icon: SmilePlus, label: "Emotions", path: "/emotions", priority: 90 },
-    { icon: HeartHandshake, label: "Therapy", path: "/therapy", priority: 85 },
-    { icon: Calendar, label: "Calendar", path: "/calendar", priority: 80 },
+    { icon: Calendar, label: "Calendar", path: "/calendar", priority: 85 },
+    { icon: HeartHandshake, label: "Therapy", path: "/therapy", priority: 80 },
     { icon: BarChart2, label: "Progress", path: "/progress", priority: 60 },
     { icon: PieChart, label: "Analytics", path: "/analytics", priority: 50 },
     { icon: Settings, label: "Settings", path: "/settings", priority: 40 },
@@ -42,12 +42,14 @@ const BottomNav: React.FC = () => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
       
-      if (window.innerWidth < 360) {
+      if (window.innerWidth < 340) {
         setVisibleItemCount(3); // Very small screens
-      } else if (window.innerWidth < 480) {
+      } else if (window.innerWidth < 420) {
         setVisibleItemCount(4); // Small mobile screens
+      } else if (window.innerWidth < 600) {
+        setVisibleItemCount(5); // Medium screens
       } else {
-        setVisibleItemCount(5); // Larger screens
+        setVisibleItemCount(6); // Larger screens
       }
     };
 
@@ -126,7 +128,7 @@ const BottomNav: React.FC = () => {
                   <button
                     key="more-button"
                     onClick={() => setIsMoreMenuOpen(true)}
-                    className={`flex flex-col items-center py-1 px-1 sm:px-3 ${
+                    className={`flex flex-col items-center py-1 px-0.5 sm:px-2 ${
                       overflowItems.some(item => item.path === location) ? "text-primary" : "text-muted-foreground"
                     } cursor-pointer focus:outline-none`}
                   >
@@ -140,7 +142,7 @@ const BottomNav: React.FC = () => {
               
               return (
                 <Link key={item.path} href={item.path}>
-                  <div className={`flex flex-col items-center py-1 px-1 sm:px-3 ${
+                  <div className={`flex flex-col items-center py-1 px-0.5 sm:px-2 ${
                     isActive ? "text-primary" : "text-muted-foreground"
                   } cursor-pointer`}>
                     <Icon className="text-xl" size={20} />

@@ -49,6 +49,7 @@ const Today: React.FC = () => {
 
   const handleAddHabit = async (data: any) => {
     try {
+      console.log("Attempting to create habit with data:", data);
       await addHabit(data);
       toast({
         title: "Habit created",
@@ -57,9 +58,10 @@ const Today: React.FC = () => {
         className: "bg-success text-white",
       });
     } catch (error) {
+      console.error("Error creating habit:", error);
       toast({
         title: "Error",
-        description: "Failed to create habit",
+        description: `Failed to create habit: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }

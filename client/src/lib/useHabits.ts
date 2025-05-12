@@ -33,14 +33,25 @@ export function useHabits() {
 
   // Add a new habit
   const addHabit = async (habitData: any) => {
-    const response = await apiRequest("POST", "/api/habits", habitData);
-    return response.json();
+    console.log("Adding habit with data:", habitData);
+    try {
+      const response = await apiRequest("POST", "/api/habits", habitData);
+      console.log("Habit creation response:", response);
+      return response.json();
+    } catch (error) {
+      console.error("Error in addHabit function:", error);
+      throw error;
+    }
   };
 
   const addHabitMutation = useMutation({
     mutationFn: (habitData: any) => addHabit(habitData),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Habit created successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/habits"] });
+    },
+    onError: (error) => {
+      console.error("Mutation error:", error);
     },
   });
 

@@ -238,16 +238,13 @@ const AddHabitModal: React.FC<AddHabitModalProps> = ({
                       onClick={() => {
                         console.log("Create Habit button clicked");
                         
-                        // Manual form submission
+                        // Manual form submission - only submit once!
                         const data = form.getValues();
                         console.log("Form values on button click:", data);
                         onSubmit(data);
-                        
-                        // Also try the regular submit
-                        form.handleSubmit(onSubmit)();
                       }}
                     >
-                      Create Habit (Fixed)
+                      Create Habit
                     </Button>
                   </div>
                 </form>

@@ -184,15 +184,32 @@ export class DrizzleHabitRepository implements HabitRepository {
    * Generate a new habit ID
    */
   async nextId(): Promise<HabitId> {
-    // Simple implementation: get max ID and increment
-    // In a production system, you might use a sequence or UUID
-    const [result] = await db
-      .select({ maxId: habits.id })
-      .from(habits)
-      .orderBy(desc(habits.id))
-      .limit(1);
-    
-    const nextId = result ? result.maxId + 1 : 1;
-    return new HabitId(nextId);
+    try {
+      // Get the maximum ID and add a random offset to avoid collisions
+      // in cases where two habits are created near-simultaneously
+      const [result] = await db
+        .select({ maxId: habits.id })
+        .from(habits)
+        .orderBy(desc(habits.id))
+        .limit(1);
+      
+      const maxId = result ? result.maxId : 0;
+      
+      // Add a random offset to avoid collisions on concurrent requests
+      const randomOffset = Math.floor(Math.random() * 100) + 1;
+      const nextId = maxId + randomOffset;
+      
+      console.log(`Generated new habit ID: ${nextId} (max ID was ${maxId})`);
+      
+      return new HabitId(nextId);
+    } catch (error) {
+      console.error("Error generating next habit ID:", error);
+      // Fallback to using timestamp-based ID if there's an error
+      const timestamp = new Date().getTime();
+      const fallbackId = parseInt(`${timestamp % 10000000}`);
+      
+      console.log(`Using fallback habit ID generation: ${fallbackId}`);
+      return new HabitId(fallbackId);
+    }
   }
 }

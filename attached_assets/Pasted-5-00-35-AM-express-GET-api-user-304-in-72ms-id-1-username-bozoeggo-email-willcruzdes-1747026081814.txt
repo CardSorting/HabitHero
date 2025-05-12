@@ -1,0 +1,66 @@
+5:00:35 AM [express] GET /api/user 304 in 72ms :: {"id":1,"username":"bozoeggo","email":"willcruzdes…
+POST /api/habits received with body: {
+  name: 'Morning Exercise',
+  description: '30 Minutes a Day',
+  frequency: 'daily',
+  reminder: '08:00'
+}
+Creating habit for authenticated user: 1
+Validated habit data: CreateHabitCommand {
+  type: 'CreateHabit',
+  userId: 1,
+  name: 'Morning Exercise',
+  description: '30 Minutes a Day',
+  frequency: 'daily',
+  reminder: '08:00'
+}
+POST /api/habits received with body: {
+  name: 'Morning Exercise',
+  description: '30 Minutes a Day',
+  frequency: 'daily',
+  reminder: '08:00'
+}
+Creating habit for authenticated user: 1
+Validated habit data: CreateHabitCommand {
+  type: 'CreateHabit',
+  userId: 1,
+  name: 'Morning Exercise',
+  description: '30 Minutes a Day',
+  frequency: 'daily',
+  reminder: '08:00'
+}
+Habit created successfully: {
+  id: 1,
+  userId: 1,
+  name: 'Morning Exercise',
+  description: '30 Minutes a Day',
+  frequency: 'daily',
+  reminder: '08:00',
+  streak: 0,
+  completionRecords: [],
+  createdAt: 2025-05-12T05:01:02.769Z
+}
+Error creating habit: error: duplicate key value violates unique constraint "habits_pkey"
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async DrizzleHabitRepository.save (/home/runner/workspace/server/infrastructure/repositories/DrizzleHabitRepository.ts:113:7)
+    at async CreateHabitCommandHandler.execute (/home/runner/workspace/shared/application/habit/commands/CreateHabitCommandHandler.ts:47:5)
+    at async HabitController.createHabit (/home/runner/workspace/server/interfaces/controllers/HabitController.ts:140:26) {
+  length: 183,
+  severity: 'ERROR',
+  code: '23505',
+  detail: 'Key (id)=(1) already exists.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'habits',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'habits_pkey',
+  file: 'nbtinsert.c',
+  line: '666',
+  routine: '_bt_check_unique'
+}

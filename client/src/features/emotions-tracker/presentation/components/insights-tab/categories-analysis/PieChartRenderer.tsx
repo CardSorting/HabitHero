@@ -1,6 +1,11 @@
 import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, Sector, ResponsiveContainer } from 'recharts';
-import { CategoryDistribution, CategoryColorConfig, DEFAULT_CATEGORY_COLORS } from '../../../../domain/emotion-categories-analysis';
+import { 
+  DEFAULT_CATEGORY_COLORS, 
+  EmotionCategory,
+  CategoryDistribution,
+  CategoryColorConfig
+} from '../../../../domain/emotion-categories-analysis';
 
 interface PieChartRendererProps {
   data: CategoryDistribution[];
@@ -33,11 +38,22 @@ export const PieChartRenderer: React.FC<PieChartRendererProps> = ({
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     
+    // Get the correct color for the category
+    const getLabelColor = (categoryName: string): string => {
+      // Map specific capitalized name categories to our lowercase defined colors
+      switch (categoryName) {
+        case 'Positive': return DEFAULT_CATEGORY_COLORS.positive;
+        case 'Negative': return DEFAULT_CATEGORY_COLORS.negative;
+        case 'Neutral': return DEFAULT_CATEGORY_COLORS.neutral;
+        default: return '#666';
+      }
+    };
+    
     return percent > 0.05 ? (
       <text 
         x={x} 
         y={y} 
-        fill={colors[name] || '#666'}
+        fill={getLabelColor(name)}
         textAnchor={x > cx ? 'start' : 'end'} 
         dominantBaseline="central"
         fontSize={12}
@@ -81,6 +97,20 @@ export const PieChartRenderer: React.FC<PieChartRendererProps> = ({
     );
   }
 
+  // Map category names to their correct color values
+  const getCategoryColor = (categoryName: string): string => {
+    // Convert the first letter to lowercase for matching with our constants
+    const normalizedCategory = categoryName.charAt(0).toLowerCase() + categoryName.slice(1);
+    
+    // Map specific capitalized name categories to our lowercase defined colors
+    switch (categoryName) {
+      case 'Positive': return DEFAULT_CATEGORY_COLORS.positive;
+      case 'Negative': return DEFAULT_CATEGORY_COLORS.negative;
+      case 'Neutral': return DEFAULT_CATEGORY_COLORS.neutral;
+      default: return '#ccc';
+    }
+  };
+  
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
@@ -101,7 +131,7 @@ export const PieChartRenderer: React.FC<PieChartRendererProps> = ({
           {data.map((entry, index) => (
             <Cell 
               key={`cell-${index}`} 
-              fill={colors[entry.name] || '#ccc'} 
+              fill={getCategoryColor(entry.name)} 
               stroke="#fff"
             />
           ))}

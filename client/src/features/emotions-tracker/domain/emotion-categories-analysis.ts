@@ -21,9 +21,9 @@ export const DEFAULT_CATEGORY_CLASSES = {
  * Default colors for each emotion category
  */
 export const DEFAULT_CATEGORY_COLORS = {
-  [EmotionCategory.POSITIVE]: '#10b981', // green-500
-  [EmotionCategory.NEGATIVE]: '#ef4444', // red-500
-  [EmotionCategory.NEUTRAL]: '#3b82f6'  // blue-500
+  positive: '#10b981', // green-500
+  negative: '#ef4444', // red-500
+  neutral: '#3b82f6'  // blue-500
 };
 
 /**
@@ -59,5 +59,31 @@ export function getCategoryEmoji(category: string): string {
  * @returns The corresponding color
  */
 export function getCategoryColor(category: string): string {
-  return DEFAULT_CATEGORY_COLORS[category as EmotionCategory] || '#6b7280'; // gray-500
+  const normalizedCategory = category.toLowerCase();
+  return DEFAULT_CATEGORY_COLORS[normalizedCategory as keyof typeof DEFAULT_CATEGORY_COLORS] || '#6b7280'; // gray-500
+}
+
+/**
+ * Interface for category distribution data
+ */
+export interface CategoryDistribution {
+  name: string;
+  value: number;
+  percentage?: number;
+}
+
+/**
+ * Interface for emotion categories analysis
+ */
+export interface EmotionCategoriesAnalysis {
+  categoriesDistribution: CategoryDistribution[];
+  dominantCategory: string | null;
+  totalCount: number;
+}
+
+/**
+ * Interface for category color configuration
+ */
+export interface CategoryColorConfig {
+  [key: string]: string;
 }

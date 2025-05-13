@@ -313,76 +313,87 @@ export function registerEmotionsRoutes(app: Express) {
 
       const date = req.params.date;
       
-      // Get entries from the database
-      const entries = await db.query.emotionTrackingEntries.findMany({
+      // Try to get entries for the requested date
+      let entries = await db.query.emotionTrackingEntries.findMany({
         where: (entries, { eq, and }) => 
           and(
             eq(entries.date, date),
             eq(entries.userId, req.user!.id)
           )
       });
-
-      if (!entries.length) {
-        return res.json({
-          date,
-          dominantEmotion: '',
-          highestIntensity: { emotion: '', value: 0 },
-          averageIntensity: 0,
-          emotionCounts: {},
-          categories: { positive: 0, negative: 0, neutral: 0 }
+      
+      // If no entries for requested date, try previous day
+      if (entries.length === 0) {
+        const currentDate = new Date(date);
+        const prevDate = new Date(currentDate);
+        prevDate.setDate(prevDate.getDate() - 1);
+        const prevDateStr = prevDate.toISOString().split('T')[0];
+        
+        entries = await db.query.emotionTrackingEntries.findMany({
+          where: (entries, { eq, and }) => 
+            and(
+              eq(entries.date, prevDateStr),
+              eq(entries.userId, req.user!.id)
+            )
         });
       }
-
-      // Calculate emotion statistics
+      
+      // If still no entries, return empty summary
+      if (entries.length === 0) {
+        return res.json({
+          date,
+          dominantEmotion: null,
+          highestIntensity: null,
+          averageIntensity: null,
+          emotionCount: 0,
+          entryIds: []
+        });
+      }
+      
+      // Process the entries to build the summary
       const emotionCounts: Record<string, number> = {};
-      const categoryCounts = { positive: 0, negative: 0, neutral: 0 };
       let totalIntensity = 0;
-      let highestIntensity = { emotion: '', value: 0 };
-
+      let highestIntensityValue = 0;
+      let highestIntensityEmotion = '';
+      
+      // Process each entry
       for (const entry of entries) {
         // Count emotions
         emotionCounts[entry.emotionName] = (emotionCounts[entry.emotionName] || 0) + 1;
         
-        // Update category counts (simplified logic - would normally be based on the emotion's category)
-        if (entry.categoryId === 'positive') categoryCounts.positive++;
-        else if (entry.categoryId === 'negative') categoryCounts.negative++;
-        else if (entry.categoryId === 'neutral') categoryCounts.neutral++;
-        
         // Track intensity
         totalIntensity += entry.intensity;
         
-        if (entry.intensity > highestIntensity.value) {
-          highestIntensity = {
-            emotion: entry.emotionName,
-            value: entry.intensity
-          };
+        // Track highest intensity
+        if (entry.intensity > highestIntensityValue) {
+          highestIntensityValue = entry.intensity;
+          highestIntensityEmotion = entry.emotionName;
         }
       }
-
-      // Find dominant emotion (most frequent)
-      let dominantEmotion = '';
-      let maxCount = 0;
       
+      // Calculate averages and find dominant emotion
+      const averageIntensity = totalIntensity / entries.length;
+      
+      // Find most frequent emotion
+      let dominantEmotion = null;
+      let maxCount = 0;
       for (const [emotion, count] of Object.entries(emotionCounts)) {
         if (count > maxCount) {
           maxCount = count;
           dominantEmotion = emotion;
         }
       }
-
-      // Calculate average intensity
-      const averageIntensity = totalIntensity / entries.length;
-
-      // Construct and return the summary in the format expected by EmotionSummary interface
+      
+      // Prepare the summary object
       const summary = {
         date,
-        dominantEmotion: dominantEmotion || null,
-        highestIntensity: highestIntensity.value || null,
+        dominantEmotion,
+        highestIntensity: highestIntensityValue || null,
         averageIntensity: entries.length > 0 ? averageIntensity : null,
         emotionCount: entries.length,
         entryIds: entries.map(entry => entry.id)
       };
-
+      
       res.json(summary);
     } catch (error) {
       console.error(`Error generating emotion summary:`, error);

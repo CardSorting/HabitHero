@@ -71,11 +71,11 @@ export const EmotionInsightsContainer: React.FC = () => {
       
       // Fetch in parallel for better performance
       const [trends, summary, frequent, highIntensity] = await Promise.all([
-        // Fetch emotion trends
+        // Fetch emotion trends for the selected period
         getEmotionTrends(fromDateStr, toDateStr),
         
-        // Fetch today's summary data
-        getEmotionSummary(format(today, 'yyyy-MM-dd')),
+        // Fetch summary data - First try for today, but API will check previous day
+        getEmotionSummary(fromDateStr),
         
         // Get most frequent emotions
         getMostFrequentEmotions(fromDateStr, toDateStr, 5),

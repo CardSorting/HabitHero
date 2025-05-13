@@ -14,15 +14,25 @@ const TIME_BLOCKS = [
   { label: 'Night', start: 22, end: 4, color: 'bg-violet-500' }
 ];
 
+// Define default distribution
+const DEFAULT_DISTRIBUTION = {
+  'Morning': 0,
+  'Afternoon': 0,
+  'Evening': 0,
+  'Night': 0
+};
+
 const EmotionHeatmapTracker: React.FC = () => {
   const { getEmotionsByDateRange } = useEmotions();
   const [entries, setEntries] = useState<EmotionEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [timeDistribution, setTimeDistribution] = useState<{[key: string]: number}>({});
+  const [timeDistribution, setTimeDistribution] = useState<{[key: string]: number}>(DEFAULT_DISTRIBUTION);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEntries = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         // Get entries from the last 30 days
         const today = new Date();
@@ -32,13 +42,15 @@ const EmotionHeatmapTracker: React.FC = () => {
         const endDate = format(today, 'yyyy-MM-dd');
         
         const fetchedEntries = await getEmotionsByDateRange(startDate, endDate);
-        setEntries(fetchedEntries);
+        setEntries(fetchedEntries || []);
         
         // Calculate time distribution
-        const distribution = calculateTimeDistribution(fetchedEntries);
+        const distribution = calculateTimeDistribution(fetchedEntries || []);
         setTimeDistribution(distribution);
       } catch (error) {
         console.error('Error fetching emotion entries:', error);
+        setError('Failed to load emotion data');
+        setTimeDistribution(DEFAULT_DISTRIBUTION);
       } finally {
         setIsLoading(false);
       }
@@ -49,33 +61,49 @@ const EmotionHeatmapTracker: React.FC = () => {
 
   // Function to calculate the distribution of emotions by time of day
   const calculateTimeDistribution = (entries: EmotionEntry[]): {[key: string]: number} => {
-    const distribution: {[key: string]: number} = {
-      'Morning': 0,
-      'Afternoon': 0,
-      'Evening': 0,
-      'Night': 0
-    };
+    const distribution = {...DEFAULT_DISTRIBUTION};
+    
+    if (!entries || entries.length === 0) {
+      return distribution;
+    }
     
     entries.forEach(entry => {
       if (entry.time) {
-        // Extract hour from time (format: HH:MM:SS)
-        const hour = parseInt(entry.time.split(':')[0], 10);
-        
-        // Find which time block this hour belongs to
-        for (const block of TIME_BLOCKS) {
-          if (block.start <= block.end) {
-            // Normal range (e.g., 9-17)
-            if (hour >= block.start && hour <= block.end) {
-              distribution[block.label]++;
-              break;
-            }
-          } else {
-            // Overnight range (e.g., 22-4)
-            if (hour >= block.start || hour <= block.end) {
-              distribution[block.label]++;
-              break;
+        try {
+          // Extract hour from time (format: HH:MM:SS or HH:MM)
+          const hourPart = entry.time.split(':')[0];
+          const hour = parseInt(hourPart, 10);
+          
+          if (isNaN(hour)) {
+            console.warn('Invalid hour format in time:', entry.time);
+            return;
+          }
+          
+          // Find which time block this hour belongs to
+          let found = false;
+          for (const block of TIME_BLOCKS) {
+            if (block.start <= block.end) {
+              // Normal range (e.g., 9-17)
+              if (hour >= block.start && hour <= block.end) {
+                distribution[block.label]++;
+                found = true;
+                break;
+              }
+            } else {
+              // Overnight range (e.g., 22-4)
+              if (hour >= block.start || hour <= block.end) {
+                distribution[block.label]++;
+                found = true;
+                break;
+              }
             }
           }
+          
+          if (!found) {
+            console.warn('Hour not matched to any time block:', hour);
+          }
+        } catch (err) {
+          console.error('Error parsing time:', entry.time, err);
         }
       }
     });
@@ -83,7 +111,7 @@ const EmotionHeatmapTracker: React.FC = () => {
     return distribution;
   };
 
-  // Calculate the total number of entries
+  // Calculate the total number of entries with time data
   const totalEntries = Object.values(timeDistribution).reduce((sum, count) => sum + count, 0);
 
   return (
@@ -102,10 +130,15 @@ const EmotionHeatmapTracker: React.FC = () => {
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
           </div>
+        ) : error ? (
+          <div className="text-center py-6 text-destructive">
+            <p>{error}</p>
+            <p className="text-sm mt-1">Please try again later</p>
+          </div>
         ) : totalEntries === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
-            <p>No emotion data available</p>
-            <p className="text-sm mt-1">Track emotions to see patterns</p>
+            <p>No emotion time data available</p>
+            <p className="text-sm mt-1">Record emotions to see when you track them</p>
           </div>
         ) : (
           <div className="space-y-3">

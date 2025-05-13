@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { 
   IEmotionEntriesRepository 
 } from '../domain/repositories';
-import { EmotionDate, EmotionEntry } from '../domain/models';
+import { EmotionEntry, EmotionDate } from '../domain/models';
 
 /**
  * Command to track an emotion
@@ -13,7 +13,7 @@ export class TrackEmotionCommand {
     public readonly emotionId: string,
     public readonly emotionName: string,
     public readonly intensity: number,
-    public readonly date: EmotionDate,
+    public readonly date: string,
     public readonly notes?: string,
     public readonly triggers?: string[],
     public readonly copingMechanisms?: string[],

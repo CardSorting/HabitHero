@@ -111,7 +111,7 @@ export class EmotionsService {
     emotionId: string,
     emotionName: string,
     intensity: number,
-    date: Date,
+    date: string,
     notes?: string,
     triggers?: string[],
     copingMechanisms?: string[],
@@ -200,7 +200,7 @@ export class EmotionsService {
    * @param fromDate Start date
    * @param toDate End date
    */
-  async getTrends(userId: number, fromDate: EmotionDate, toDate: EmotionDate): Promise<EmotionTrend[]> {
+  async getTrends(userId: number, fromDate: string, toDate: string): Promise<EmotionTrend[]> {
     const query = new GetEmotionTrendsQuery(userId, fromDate, toDate);
     return this.getEmotionTrendsQueryHandler.execute(query);
   }
@@ -214,8 +214,8 @@ export class EmotionsService {
    */
   async getMostFrequentEmotions(
     userId: number, 
-    fromDate: EmotionDate, 
-    toDate: EmotionDate, 
+    fromDate: string, 
+    toDate: string, 
     limit?: number
   ): Promise<{emotion: string, count: number}[]> {
     const query = new GetMostFrequentEmotionsQuery(userId, fromDate, toDate, limit);
@@ -231,8 +231,8 @@ export class EmotionsService {
    */
   async getHighestIntensityEmotions(
     userId: number, 
-    fromDate: EmotionDate, 
-    toDate: EmotionDate, 
+    fromDate: string, 
+    toDate: string, 
     limit?: number
   ): Promise<{emotion: string, intensity: number}[]> {
     const query = new GetHighestIntensityEmotionsQuery(userId, fromDate, toDate, limit);

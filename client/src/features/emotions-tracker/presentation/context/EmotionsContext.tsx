@@ -164,7 +164,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
         emotionId,
         emotionName,
         intensity,
-        new Date(date),
+        date,
         notes,
         triggers,
         copingMechanisms,

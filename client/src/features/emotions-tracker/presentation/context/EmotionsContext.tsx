@@ -30,7 +30,8 @@ export interface EmotionsContextProps {
     notes?: string,
     triggers?: string[],
     copingMechanisms?: string[],
-    categoryId?: string
+    categoryId?: string,
+    time?: string
   ) => Promise<EmotionEntry>;
   updateEmotionEntry: (id: string, updates: Partial<EmotionEntry>) => Promise<EmotionEntry>;
   deleteEmotionEntry: (id: string) => Promise<boolean>;

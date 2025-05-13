@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { Emotion, EmotionCategory } from '../../../domain/models';
+import { Emotion } from '../../../domain/models';
+import { EmotionCategory, getCategoryColor } from '../../../domain/emotion-categories-analysis';
 import { SendHorizontal, Plus, X } from 'lucide-react';
 
 const EmotionTrackingTab = () => {
@@ -90,7 +91,7 @@ const EmotionTrackingTab = () => {
       const date = format(now, 'yyyy-MM-dd');
       const time = format(now, 'HH:mm:ss');
       await trackEmotion(
-        selectedEmotion.id,
+        String(selectedEmotion.id), // Ensure it's a string
         selectedEmotion.name,
         intensity,
         date,
@@ -162,7 +163,7 @@ const EmotionTrackingTab = () => {
                 >
                   <div 
                     className="w-3 h-3 rounded-full mr-2"
-                    style={{ backgroundColor: emotion.color }}
+                    style={{ backgroundColor: getCategoryColor(emotion.category) }}
                   ></div>
                   <span className="text-left">{emotion.name}</span>
                 </Button>

@@ -5,11 +5,11 @@ import {
 } from '../domain/repositories';
 import { 
   Emotion, 
-  EmotionCategory, 
   EmotionEntry, 
   EmotionSummary, 
   EmotionTrend 
 } from '../domain/models';
+import { EmotionCategory } from '../domain/emotion-categories-analysis';
 
 /**
  * API-based implementation of the IEmotionsRepository and IEmotionEntriesRepository

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Emotion, EmotionCategory, EmotionEntry, EmotionSummary, EmotionTrend } from '../../domain/models';
+import { Emotion, EmotionEntry, EmotionSummary, EmotionTrend } from '../../domain/models';
+import { EmotionCategory } from '../../domain/emotion-categories-analysis';
 import { EmotionsService } from '../../application/EmotionsService';
 import { ApiEmotionsRepository } from '../../infrastructure/ApiEmotionsRepository';
 

@@ -5,12 +5,12 @@ import {
 } from '../domain/repositories';
 import { 
   Emotion, 
-  EmotionCategory, 
-  EmotionDate, 
   EmotionEntry, 
   EmotionSummary, 
-  EmotionTrend 
+  EmotionTrend,
+  EmotionDate
 } from '../domain/models';
+import { EmotionCategory } from '../domain/emotion-categories-analysis';
 import { 
   TrackEmotionCommand, 
   TrackEmotionCommandHandler,
@@ -168,7 +168,7 @@ export class EmotionsService {
    * @param userId User ID
    * @param date Date to get entries for
    */
-  async getEntriesByDate(userId: number, date: EmotionDate): Promise<EmotionEntry[]> {
+  async getEntriesByDate(userId: number, date: string): Promise<EmotionEntry[]> {
     const query = new GetEmotionEntriesByDateQuery(userId, date);
     return this.getEmotionEntriesByDateQueryHandler.execute(query);
   }
@@ -179,7 +179,7 @@ export class EmotionsService {
    * @param fromDate Start date
    * @param toDate End date
    */
-  async getEntriesByDateRange(userId: number, fromDate: EmotionDate, toDate: EmotionDate): Promise<EmotionEntry[]> {
+  async getEntriesByDateRange(userId: number, fromDate: string, toDate: string): Promise<EmotionEntry[]> {
     const query = new GetEmotionEntriesByDateRangeQuery(userId, fromDate, toDate);
     return this.getEmotionEntriesByDateRangeQueryHandler.execute(query);
   }
@@ -189,7 +189,7 @@ export class EmotionsService {
    * @param userId User ID
    * @param date Date to get summary for
    */
-  async getSummaryForDate(userId: number, date: EmotionDate): Promise<EmotionSummary> {
+  async getSummaryForDate(userId: number, date: string): Promise<EmotionSummary> {
     const query = new GetEmotionSummaryQuery(userId, date);
     return this.getEmotionSummaryQueryHandler.execute(query);
   }

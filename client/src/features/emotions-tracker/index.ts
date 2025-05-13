@@ -5,7 +5,7 @@
  */
 
 // Domain exports
-export { EmotionCategory } from './domain/models';
+export { EmotionCategory } from './domain/emotion-categories-analysis';
 export type { 
   Emotion, 
   EmotionEntry, 

@@ -42,6 +42,7 @@ export interface EmotionsContextProps {
   getEmotionTrends: (fromDate: string, toDate: string) => Promise<EmotionTrend[]>;
   getMostFrequentEmotions: (fromDate: string, toDate: string, limit?: number) => Promise<{emotion: string, count: number}[]>;
   getHighestIntensityEmotions: (fromDate: string, toDate: string, limit?: number) => Promise<{emotion: string, intensity: number}[]>;
+  getEmotionEntriesForDateRange: (fromDate: string, toDate: string) => Promise<EmotionEntry[]>;
 }
 
 // Create the context
@@ -244,6 +245,20 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     }
   }, [service]);
   
+  const getEmotionEntriesForDateRange = useCallback(async (fromDate: string, toDate: string): Promise<EmotionEntry[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // We already have a function for this exact purpose
+      return await getEmotionsByDateRange(fromDate, toDate);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getEmotionsByDateRange]);
+  
   const getMostFrequentEmotions = useCallback(async (
     fromDate: string,
     toDate: string,
@@ -297,6 +312,7 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     getEmotionTrends,
     getMostFrequentEmotions,
     getHighestIntensityEmotions,
+    getEmotionEntriesForDateRange,
   };
   
   return (

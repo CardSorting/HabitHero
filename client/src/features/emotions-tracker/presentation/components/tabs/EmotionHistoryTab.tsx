@@ -18,7 +18,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { EmotionEntry } from '../../../domain/models';
-import { Trash2, Calendar as CalendarIcon, Info } from 'lucide-react';
+import { Trash2, Calendar as CalendarIcon, Info, Clock } from 'lucide-react';
 
 const EmotionHistoryTab = () => {
   const { getEmotionsByDate, deleteEmotionEntry } = useEmotions();
@@ -164,9 +164,15 @@ const EmotionHistoryTab = () => {
                 )}
                 
                 <div className="flex justify-between items-center mt-4 pt-2 border-t">
-                  <div className="text-xs text-muted-foreground">
-                    <CalendarIcon size={12} className="inline mr-1" /> 
-                    {entry.time ? entry.time.substring(0, 5) : 'No time recorded'}
+                  <div className="flex items-center text-xs text-muted-foreground space-x-2">
+                    <div>
+                      <CalendarIcon size={12} className="inline mr-1" /> 
+                      {format(new Date(entry.date), 'MMM d, yyyy')}
+                    </div>
+                    <div>
+                      <Clock size={12} className="inline mr-1" /> 
+                      {entry.time ? entry.time.substring(0, 5) : 'No time'}
+                    </div>
                   </div>
                   <Button 
                     size="sm" 

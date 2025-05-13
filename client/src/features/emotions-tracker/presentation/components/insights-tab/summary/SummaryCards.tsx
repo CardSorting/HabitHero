@@ -9,7 +9,7 @@ import {
 } from '../../../../domain/emotion-categories-analysis';
 import { InsightCard } from '../ui/InsightCard';
 import { MetricsSummary, Metric } from '../ui/MetricsSummary';
-import EmotionHeatmapTracker from '../EmotionHeatmapTracker';
+import TimeDistributionChart from '../../../components/time-tracking/TimeDistributionChart';
 
 interface SummaryCardsProps {
   trendData: EmotionTrend[];
@@ -66,9 +66,9 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* Display the heatmap component */}
+      {/* Display the heatmap component with new architecture */}
       <div className="md:col-span-2">
-        <EmotionHeatmapTracker />
+        <TimeDistributionChart />
       </div>
       
       {/* Display emotion counts data */}

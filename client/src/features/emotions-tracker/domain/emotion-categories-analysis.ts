@@ -1,72 +1,45 @@
 /**
- * Domain models for emotion categories analysis
+ * Enum for emotion categories
+ * Following Domain-Driven Design principles - Using enums for value objects with predefined values
  */
-
-/**
- * Represents a single emotion category with its occurrence count
- */
-export interface CategoryDistribution {
-  name: string; // Category name (e.g., "Positive", "Negative", "Neutral")
-  value: number; // Occurrence count
-  percentage?: number; // Optional percentage of total
+export enum EmotionCategory {
+  POSITIVE = 'positive',
+  NEGATIVE = 'negative',
+  NEUTRAL = 'neutral'
 }
 
 /**
- * Emotion categories analysis result
+ * Default color classes for each emotion category
  */
-export interface EmotionCategoriesAnalysis {
-  categoriesDistribution: CategoryDistribution[];
-  dominantCategory: string | null;
-  totalCount: number;
-}
-
-/**
- * Categories colors configuration
- */
-export interface CategoryColorConfig {
-  [key: string]: string;
-}
-
-/**
- * Default category colors
- */
-export const DEFAULT_CATEGORY_COLORS: CategoryColorConfig = {
-  Positive: '#4CAF50',
-  Negative: '#F44336',
-  Neutral: '#9E9E9E',
-  Unknown: '#BDBDBD'
+export const DEFAULT_CATEGORY_CLASSES = {
+  [EmotionCategory.POSITIVE]: 'bg-green-500',
+  [EmotionCategory.NEGATIVE]: 'bg-red-500',
+  [EmotionCategory.NEUTRAL]: 'bg-blue-500'
 };
 
 /**
- * Emoji mapping for each category
+ * Default emoji icons for each emotion category
  */
-export interface CategoryEmojiConfig {
-  [key: string]: string;
-}
-
-/**
- * Default category emojis
- */
-export const DEFAULT_CATEGORY_EMOJIS: CategoryEmojiConfig = {
-  Positive: '😊',
-  Negative: '😔',
-  Neutral: '😐',
-  Unknown: '❓'
+export const DEFAULT_CATEGORY_EMOJIS = {
+  [EmotionCategory.POSITIVE]: '😊',
+  [EmotionCategory.NEGATIVE]: '😔',
+  [EmotionCategory.NEUTRAL]: '😐'
 };
 
 /**
- * CSS class mapping for each category
+ * Get the color class for an emotion category
+ * @param category The emotion category
+ * @returns The corresponding color class
  */
-export interface CategoryClassConfig {
-  [key: string]: string;
+export function getCategoryColorClass(category: string): string {
+  return DEFAULT_CATEGORY_CLASSES[category as EmotionCategory] || 'bg-gray-500';
 }
 
 /**
- * Default category CSS classes
+ * Get the emoji for an emotion category
+ * @param category The emotion category
+ * @returns The corresponding emoji
  */
-export const DEFAULT_CATEGORY_CLASSES: CategoryClassConfig = {
-  Positive: 'bg-blue-500',
-  Negative: 'bg-red-500',
-  Neutral: 'bg-purple-500',
-  Unknown: 'bg-gray-400'
-};
+export function getCategoryEmoji(category: string): string {
+  return DEFAULT_CATEGORY_EMOJIS[category as EmotionCategory] || '❓';
+}

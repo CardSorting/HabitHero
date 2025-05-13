@@ -1,9 +1,5 @@
 /**
- * Domain models for the emotions tracker feature
- */
-
-/**
- * Emotion categories
+ * Enum for emotion categories
  */
 export enum EmotionCategory {
   POSITIVE = 'positive',
@@ -12,77 +8,76 @@ export enum EmotionCategory {
 }
 
 /**
- * Emotion model representing a predefined emotion
+ * Type representing an emotion entry in the system
  */
-export interface Emotion {
+export interface EmotionEntry {
+  id: number;
+  userId: number;
+  date: string;
+  time?: string;
+  emotionId: number;
+  intensity: number;
+  note?: string;
+  categoryId?: string;
+  createdAt?: string;
+}
+
+/**
+ * Type representing an emotion category with related properties
+ */
+export interface EmotionCategory {
   id: string;
   name: string;
   description?: string;
-  category: EmotionCategory;
-  color: string;
+  color?: string;
   icon?: string;
 }
 
 /**
- * Emotion Entry model representing a tracked emotion
+ * Type representing an emotion with category information
  */
-export interface EmotionEntry {
-  id: string;
-  userId: number;
-  date: string;
-  time?: string; // Time in HH:MM:SS format
-  emotionId: string;
-  emotionName: string;
-  categoryId: string;
-  intensity: number;
-  notes?: string;
-  triggers?: string[];
-  copingMechanisms?: string[];
-  createdAt: string;
-  updatedAt: string;
+export interface Emotion {
+  id: number;
+  name: string;
+  category: string;
+  icon?: string;
 }
 
 /**
- * Emotion Summary model representing a summary of emotions for a specific date
+ * Type representing an emotion summary for a specific date range
  */
 export interface EmotionSummary {
-  date: string;
-  dominantEmotion: string | null;
-  highestIntensity: number | null;
-  averageIntensity: number | null;
-  emotionCount: number;
-  entryIds: string[];
+  totalEntries: number;
+  uniqueEmotions: number;
+  averageIntensity: number;
+  mostFrequentEmotion?: {
+    name: string;
+    count: number;
+  };
+  categoryDistribution: {
+    positive: number;
+    negative: number;
+    neutral: number;
+  };
 }
 
 /**
- * Emotion Trend model representing trends of emotions over time
+ * Type representing an emotion trend entry
  */
 export interface EmotionTrend {
   date: string;
-  emotions: {
-    [emotionName: string]: {
-      count: number;
-      averageIntensity: number;
-    }
-  };
-  dominantEmotion: string | null;
-  overallMood: 'positive' | 'negative' | 'neutral' | 'mixed';
+  count: number;
+  averageIntensity: number;
+  dominantCategory: string;
 }
 
 /**
- * Emotion Event model representing an event when an emotion is tracked
+ * Type representing a frequent emotion entry
  */
-export interface EmotionEvent {
-  type: 'emotion_tracked' | 'emotion_updated' | 'emotion_deleted';
-  emotionId: string;
+export interface FrequentEmotion {
+  emotionId: number;
   emotionName: string;
-  categoryId: string;
-  intensity: number;
-  userId: number;
-  timestamp: string;
+  count: number;
+  category: string;
+  averageIntensity: number;
 }
-
-/**
- * Valid dates for tracking emotions
- */
-export type EmotionDate = Date | string;

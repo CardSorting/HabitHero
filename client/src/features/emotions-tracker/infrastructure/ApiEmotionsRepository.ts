@@ -168,9 +168,14 @@ export class ApiEmotionsRepository implements IEmotionsRepository, IEmotionEntri
    */
   async getEntriesByDateRange(userId: number, fromDate: string, toDate: string): Promise<EmotionEntry[]> {
     try {
-      const response = await fetch(`/api/emotions/entries/range?fromDate=${fromDate}&toDate=${toDate}`);
+      // The API expects query parameters 'from' and 'to' (not 'fromDate' and 'toDate')
+      const response = await fetch(`/api/emotions/entries/range?from=${fromDate}&to=${toDate}`);
       
       if (!response.ok) {
+        console.error(`Failed to fetch emotion entries: ${response.status} ${response.statusText}`);
+        // Log more info for debugging
+        const errorData = await response.text();
+        console.log('Error response:', errorData);
         throw new Error(`Failed to fetch emotion entries for date range ${fromDate} to ${toDate}`);
       }
       

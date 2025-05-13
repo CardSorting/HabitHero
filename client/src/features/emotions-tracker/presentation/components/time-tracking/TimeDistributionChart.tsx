@@ -44,8 +44,18 @@ const TimeDistributionChart: React.FC<TimeDistributionChartProps> = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Ensure we have valid date parameters before making the API call
+        if (!fromDate || !toDate) {
+          console.error('Missing date parameters for emotion entries range');
+          return;
+        }
+        
+        // Log the parameters we're sending
+        console.log('Fetching emotion entries with date range:', { fromDate, toDate });
+        
         // Fetch emotions for the date range
         const entries = await getEmotionsByDateRange(fromDate, toDate);
+        console.log('Fetched entries:', entries);
         
         // Calculate time distribution
         const distribution = calculateTimeDistribution(entries);

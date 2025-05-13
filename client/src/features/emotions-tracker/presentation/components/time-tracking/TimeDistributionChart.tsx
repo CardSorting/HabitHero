@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Clock, ArrowRight } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, addDays } from 'date-fns';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocation } from 'wouter';
-
-import { GetTimeDistributionQuery, GetTimeDistributionQueryHandler } from '../../../application/queries/GetTimeDistributionQuery';
-import { ApiTimeTrackingRepository } from '../../../infrastructure/repositories/ApiTimeTrackingRepository';
-import { TimeDistributionData } from '../../../domain/repositories/ITimeTrackingRepository';
+import { useEmotions } from '../../context/EmotionsContext';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TimePeriod, TIME_PERIOD_CONFIG } from '../../../domain/entities/EmotionTrackingTime';
+import { EmotionEntry } from '../../../domain/models';
 
 /**
  * TimeDistributionChart props
@@ -28,130 +25,163 @@ interface TimeDistributionChartProps {
  */
 const TimeDistributionChart: React.FC<TimeDistributionChartProps> = ({
   dateRange,
-  userId = 1, // Default user ID
-  title = 'When You Record Emotions'
+  userId = 1,
+  title = "When You Record Emotions"
 }) => {
-  const [distribution, setDistribution] = useState<TimeDistributionData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [, setLocation] = useLocation();
-
+  const { isLoading, getEmotionsByDateRange } = useEmotions();
+  const [timeDistribution, setTimeDistribution] = useState<{ [key: string]: number }>({});
+  const [totalEntries, setTotalEntries] = useState<number>(0);
+  
+  // Set default date range to current month if not provided
+  const today = new Date();
+  const defaultFromDate = format(startOfMonth(today), 'yyyy-MM-dd');
+  const defaultToDate = format(endOfMonth(today), 'yyyy-MM-dd');
+  
+  const fromDate = dateRange?.fromDate || defaultFromDate;
+  const toDate = dateRange?.toDate || defaultToDate;
+  
   useEffect(() => {
-    const fetchTimeDistribution = async () => {
-      setIsLoading(true);
-      setError(null);
-      
+    const fetchData = async () => {
       try {
-        // Create date range if not provided
-        const today = new Date();
-        const thirtyDaysAgo = subDays(today, 30);
+        // Fetch emotions for the date range
+        const entries = await getEmotionsByDateRange(fromDate, toDate);
         
-        const fromDate = dateRange?.fromDate || format(thirtyDaysAgo, 'yyyy-MM-dd');
-        const toDate = dateRange?.toDate || format(today, 'yyyy-MM-dd');
-        
-        // Set up the query and handler with repository (Dependency Injection)
-        const repository = new ApiTimeTrackingRepository();
-        const queryHandler = new GetTimeDistributionQueryHandler(repository);
-        const query = new GetTimeDistributionQuery(userId, fromDate, toDate);
-        
-        // Execute the query to get time distribution data
-        const data = await queryHandler.execute(query);
-        setDistribution(data);
-      } catch (err) {
-        console.error('Error fetching time distribution:', err);
-        setError('Failed to load time distribution data');
-      } finally {
-        setIsLoading(false);
+        // Calculate time distribution
+        const distribution = calculateTimeDistribution(entries);
+        setTimeDistribution(distribution);
+        setTotalEntries(entries.length);
+      } catch (error) {
+        console.error('Error fetching time distribution data:', error);
       }
     };
     
-    fetchTimeDistribution();
-  }, [dateRange, userId]);
-
-  // Calculate the total number of entries
-  const totalEntries = distribution 
-    ? Object.values(distribution).reduce((sum, count) => sum + count, 0) 
-    : 0;
-
+    fetchData();
+  }, [fromDate, toDate, getEmotionsByDateRange]);
+  
+  /**
+   * Calculate time distribution from emotion entries
+   */
+  const calculateTimeDistribution = (entries: EmotionEntry[]): { [key: string]: number } => {
+    const distribution: { [key: string]: number } = {
+      [TimePeriod.MORNING]: 0,
+      [TimePeriod.AFTERNOON]: 0,
+      [TimePeriod.EVENING]: 0,
+      [TimePeriod.NIGHT]: 0
+    };
+    
+    entries.forEach(entry => {
+      if (!entry.time) return;
+      
+      // Parse hour from time string (HH:MM format)
+      const [hourStr] = entry.time.split(':');
+      const hour = parseInt(hourStr, 10);
+      
+      if (isNaN(hour)) return;
+      
+      // Categorize by time period
+      if (hour >= 5 && hour <= 11) {
+        distribution[TimePeriod.MORNING]++;
+      } else if (hour >= 12 && hour <= 16) {
+        distribution[TimePeriod.AFTERNOON]++;
+      } else if (hour >= 17 && hour <= 21) {
+        distribution[TimePeriod.EVENING]++;
+      } else {
+        distribution[TimePeriod.NIGHT]++;
+      }
+    });
+    
+    return distribution;
+  };
+  
+  const handleTimeCardClick = (period: string) => {
+    // Navigate to the time analysis page
+    setLocation(`/emotions/time-analysis/${period.toLowerCase()}`);
+  };
+  
+  // Sort time periods for display
+  const timePeriods = [
+    TimePeriod.MORNING,
+    TimePeriod.AFTERNOON,
+    TimePeriod.EVENING,
+    TimePeriod.NIGHT
+  ];
+  
+  // Get maximum count for percentage calculation
+  const maxCount = Math.max(
+    ...Object.values(timeDistribution),
+    1  // Ensure we don't divide by zero
+  );
+  
   return (
-    <Card className="w-full bg-white shadow-sm border-none">
+    <Card className="shadow-sm hover:shadow transition-shadow border-none bg-white">
       <CardHeader className="pb-2">
-        <CardTitle className="text-md flex items-center gap-2 text-gray-800">
-          <Clock className="h-5 w-5 text-blue-500" />
-          {title}
-        </CardTitle>
+        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+        <CardDescription>
+          View when you tend to record your emotions
+        </CardDescription>
       </CardHeader>
-      <CardContent className="px-6 pb-6">
+      
+      <CardContent className="pb-4">
         {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-          </div>
-        ) : error ? (
-          <div className="text-center py-6 text-destructive">
-            <p>{error}</p>
-            <p className="text-sm mt-1">Please try again later</p>
+          <div className="space-y-4">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
           </div>
         ) : totalEntries === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <p>No emotion time data available</p>
-            <p className="text-sm mt-1">Record emotions to see when you track them</p>
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No emotions recorded yet</p>
+            <p className="text-sm mt-2">Track your emotions to see patterns in when you record them</p>
           </div>
         ) : (
-          <div>
-            {/* Apple-style grid layout */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              {TIME_PERIOD_CONFIG.map((block, index) => {
-                const count = distribution?.[block.label] || 0;
-                const percentage = totalEntries > 0 ? (count / totalEntries) * 100 : 0;
-                
-                // Apple Health-style card for each time period
-                return (
-                  <div 
-                    key={index} 
-                    className="rounded-2xl overflow-hidden border border-gray-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative"
-                    onClick={() => setLocation(`/emotions/time-analysis/${block.label.toLowerCase()}`)}
-                  >
-                    <div className="flex flex-col h-full">
-                      {/* Header with icon and label */}
-                      <div className="flex items-center mb-3">
-                        <div 
-                          className={`h-9 w-9 rounded-full flex items-center justify-center mr-3 bg-opacity-10 ${block.color}`}
-                        >
-                          <span className="text-lg" role="img" aria-label={block.label}>
-                            {block.icon}
+          <div className="space-y-4 mt-3">
+            {timePeriods.map((period) => {
+              const config = TIME_PERIOD_CONFIG.find(cfg => cfg.label === period);
+              const count = timeDistribution[period] || 0;
+              const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
+              
+              return (
+                <div
+                  key={period}
+                  className="cursor-pointer group"
+                  onClick={() => handleTimeCardClick(period)}
+                >
+                  <div className="flex items-center mb-1">
+                    <div 
+                      className={`h-8 w-8 rounded-full flex items-center justify-center ${config?.color} mr-3`}
+                    >
+                      <span className="text-lg" role="img" aria-label={period}>
+                        {config?.icon}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <div className="font-medium group-hover:text-blue-600 transition-colors">
+                          {period}
+                          <span className="text-xs font-normal text-muted-foreground ml-2">
+                            ({config?.description})
                           </span>
                         </div>
-                        <div>
-                          <h3 className="font-medium text-base text-gray-800">{block.label}</h3>
-                          <p className="text-xs text-muted-foreground mt-0.5">{block.description}</p>
+                        <div className="text-sm font-medium text-muted-foreground">
+                          {count} entries
                         </div>
                       </div>
                       
-                      {/* Statistics */}
-                      <div className="mt-auto pt-2">
-                        <div className="text-3xl font-semibold mb-2 text-gray-800">{count}</div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">entries</span>
-                          <div className="flex items-center">
-                            <span className="text-xs font-medium px-3 py-1 rounded-full bg-gray-100 mr-1">
-                              {percentage.toFixed(0)}%
-                            </span>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </div>
+                      {/* Progress bar */}
+                      <div className="mt-2 bg-gray-100 rounded-full h-2.5 w-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-500 ${config?.color}`}
+                          style={{
+                            width: `${percentage}%`,
+                            opacity: 0.7
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-            
-            <div className="pt-2 text-xs text-muted-foreground text-center">
-              Based on your emotion tracking patterns
-            </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>

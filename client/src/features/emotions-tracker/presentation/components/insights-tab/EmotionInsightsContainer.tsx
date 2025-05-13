@@ -13,6 +13,7 @@ import { SummaryCards } from './summary/SummaryCards';
 import { CategoriesAnalysisCard } from './categories-analysis/CategoriesAnalysisCard';
 import { FrequentEmotionsCard } from './categories-analysis/FrequentEmotionsCard';
 import { HighIntensityEmotionsCard } from './categories-analysis/HighIntensityEmotionsCard';
+import TimeDistributionChart from '../../components/time-tracking/TimeDistributionChart';
 
 /**
  * Container component for emotion insights
@@ -160,6 +161,14 @@ export const EmotionInsightsContainer: React.FC = () => {
           {/* Highest Intensity Emotions Section */}
           <HighIntensityEmotionsCard 
             highIntensityEmotions={highIntensityEmotions} 
+          />
+          
+          {/* Time Distribution Chart */}
+          <TimeDistributionChart 
+            dateRange={{
+              fromDate: format(subDays(new Date(), timeframe === '7days' ? 7 : timeframe === '30days' ? 30 : 90), 'yyyy-MM-dd'),
+              toDate: format(new Date(), 'yyyy-MM-dd')
+            }}
           />
         </div>
       )}

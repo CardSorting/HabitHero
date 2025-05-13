@@ -125,6 +125,9 @@ const EmotionTrackingTab = () => {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Track Your Emotion</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {format(new Date(), 'MMMM d, yyyy')}
+          </p>
         </CardHeader>
         <CardContent>
           <Tabs 

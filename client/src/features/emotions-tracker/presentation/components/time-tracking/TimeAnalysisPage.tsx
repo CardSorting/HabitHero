@@ -48,8 +48,18 @@ const TimeAnalysisPage: React.FC = () => {
       const endDate = format(today, 'yyyy-MM-dd');
       
       try {
+        console.log(`Fetching entries from ${startDate} to ${endDate} for ${timePeriod} period`);
+        
+        // Make sure we have valid date parameters
+        if (!startDate || !endDate) {
+          console.error('Missing date parameters');
+          setIsLoading(false);
+          return;
+        }
+        
         // Fetch all entries for the date range
         const allEntries = await getEmotionEntriesForDateRange(startDate, endDate);
+        console.log('Fetched entries:', allEntries);
         
         // Filter entries by time period
         const timeFilteredEntries = allEntries.filter(entry => {
@@ -72,6 +82,7 @@ const TimeAnalysisPage: React.FC = () => {
           return false;
         });
         
+        console.log(`Found ${timeFilteredEntries.length} entries for ${timePeriod} period`);
         setEntries(timeFilteredEntries);
       } catch (error) {
         console.error('Error fetching entries for time period:', error);

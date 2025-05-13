@@ -11,7 +11,8 @@ import { EmotionsService } from '../features/emotions-tracker/application/Emotio
 const EmotionTimeAnalysis: React.FC = () => {
   // Initialize services for EmotionsProvider
   const repository = new ApiEmotionsRepository();
-  const emotionsService = new EmotionsService(repository);
+  // Repository implements both IEmotionsRepository and IEmotionEntriesRepository interfaces
+  const emotionsService = new EmotionsService(repository, repository);
 
   return (
     <EmotionsProvider service={emotionsService}>

@@ -151,7 +151,8 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
     notes?: string,
     triggers?: string[],
     copingMechanisms?: string[],
-    categoryId?: string
+    categoryId?: string,
+    time?: string
   ): Promise<EmotionEntry> => {
     setIsLoading(true);
     setError(null);
@@ -165,7 +166,8 @@ export const EmotionsProvider: React.FC<EmotionsProviderProps> = ({ children, se
         notes,
         triggers,
         copingMechanisms,
-        categoryId
+        categoryId,
+        time
       );
       return entry;
     } catch (err) {

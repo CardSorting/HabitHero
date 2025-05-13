@@ -104,6 +104,7 @@ export class EmotionsService {
    * @param triggers Optional triggers for the emotion
    * @param copingMechanisms Optional coping mechanisms used
    * @param categoryId Optional category ID
+   * @param time Optional time when emotion was recorded (HH:MM:SS format)
    */
   async trackEmotion(
     userId: number,
@@ -114,7 +115,8 @@ export class EmotionsService {
     notes?: string,
     triggers?: string[],
     copingMechanisms?: string[],
-    categoryId?: string
+    categoryId?: string,
+    time?: string
   ): Promise<EmotionEntry> {
     const command = new TrackEmotionCommand(
       userId, 
@@ -125,7 +127,8 @@ export class EmotionsService {
       notes, 
       triggers, 
       copingMechanisms, 
-      categoryId
+      categoryId,
+      time
     );
     return this.trackEmotionCommandHandler.execute(command);
   }

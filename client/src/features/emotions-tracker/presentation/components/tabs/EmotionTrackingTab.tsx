@@ -86,7 +86,9 @@ const EmotionTrackingTab = () => {
     
     setIsSubmitting(true);
     try {
-      const date = format(new Date(), 'yyyy-MM-dd');
+      const now = new Date();
+      const date = format(now, 'yyyy-MM-dd');
+      const time = format(now, 'HH:mm:ss');
       await trackEmotion(
         selectedEmotion.id,
         selectedEmotion.name,
@@ -95,7 +97,8 @@ const EmotionTrackingTab = () => {
         notes,
         triggers,
         [], // empty coping mechanisms to be suggested by AI
-        selectedEmotion.category
+        selectedEmotion.category,
+        time
       );
       
       // Reset form

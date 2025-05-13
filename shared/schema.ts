@@ -113,6 +113,7 @@ export const emotionTrackingEntries = pgTable("emotion_tracking_entries", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   date: date("date").notNull(),
+  time: varchar("time", { length: 8 }),  // Store time as HH:MM:SS
   emotionId: varchar("emotion_id", { length: 50 }).notNull(),
   emotionName: varchar("emotion_name", { length: 100 }).notNull(),
   categoryId: varchar("category_id", { length: 50 }).notNull(),

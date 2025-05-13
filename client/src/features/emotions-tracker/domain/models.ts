@@ -30,6 +30,7 @@ export interface EmotionEntry {
   id: string;
   userId: number;
   date: string;
+  time?: string; // Time in HH:MM:SS format
   emotionId: string;
   emotionName: string;
   categoryId: string;

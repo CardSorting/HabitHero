@@ -17,7 +17,8 @@ export class TrackEmotionCommand {
     public readonly notes?: string,
     public readonly triggers?: string[],
     public readonly copingMechanisms?: string[],
-    public readonly categoryId?: string
+    public readonly categoryId?: string,
+    public readonly time?: string
   ) {}
 }
 
@@ -46,7 +47,8 @@ export class TrackEmotionCommandHandler {
       notes: command.notes,
       triggers: command.triggers,
       copingMechanisms: command.copingMechanisms,
-      categoryId: command.categoryId || 'unknown'
+      categoryId: command.categoryId || 'unknown',
+      time: command.time
     });
   }
 }

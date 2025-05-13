@@ -162,6 +162,7 @@ export function registerEmotionsRoutes(app: Express) {
         emotionName: z.string(),
         intensity: z.number().min(1).max(10),
         date: z.string(),
+        time: z.string().optional(),
         notes: z.string().optional(),
         triggers: z.array(z.string()).optional(),
         copingMechanisms: z.array(z.string()).optional(),

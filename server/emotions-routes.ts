@@ -65,61 +65,7 @@ export function registerEmotionsRoutes(app: Express) {
     }
   });
 
-  // Get a specific emotion entry
-  app.get('/api/emotions/entries/:id', isAuthenticated, async (req: AuthRequest, res: Response) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const entryId = req.params.id;
-      
-      // Get entry from the database
-      const entry = await db.query.emotionTrackingEntries.findFirst({
-        where: (entries, { eq, and }) => 
-          and(
-            eq(entries.id, entryId),
-            eq(entries.userId, req.user!.id)
-          )
-      });
-
-      if (!entry) {
-        return res.status(404).json({ error: 'Entry not found' });
-      }
-
-      res.json(entry);
-    } catch (error) {
-      console.error(`Error fetching emotion entry with ID ${req.params.id}:`, error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
-  // Get entries for a specific date
-  app.get('/api/emotions/entries/date/:date', isAuthenticated, async (req: AuthRequest, res: Response) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const date = req.params.date;
-      
-      // Get entries from the database
-      const entries = await db.query.emotionTrackingEntries.findMany({
-        where: (entries, { eq, and }) => 
-          and(
-            eq(entries.date, date),
-            eq(entries.userId, req.user!.id)
-          )
-      });
-
-      res.json(entries);
-    } catch (error) {
-      console.error(`Error fetching emotion entries for date ${req.params.date}:`, error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
-  // Get entries for a date range
+  // Get entries for a date range - MUST come before the :id route to avoid conflicts
   app.get('/api/emotions/entries/range', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) {
@@ -146,6 +92,64 @@ export function registerEmotionsRoutes(app: Express) {
       res.json(entries);
     } catch (error) {
       console.error(`Error fetching emotion entries for date range:`, error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  // Get entries for a specific date - MUST come before the :id route
+  app.get('/api/emotions/entries/date/:date', isAuthenticated, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const date = req.params.date;
+      
+      // Get entries from the database
+      const entries = await db.query.emotionTrackingEntries.findMany({
+        where: (entries, { eq, and }) => 
+          and(
+            eq(entries.date, date),
+            eq(entries.userId, req.user!.id)
+          )
+      });
+
+      res.json(entries);
+    } catch (error) {
+      console.error(`Error fetching emotion entries for date ${req.params.date}:`, error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Get a specific emotion entry - MUST come after the more specific routes
+  app.get('/api/emotions/entries/:id([0-9]+)', isAuthenticated, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const entryId = parseInt(req.params.id, 10);
+      
+      if (isNaN(entryId)) {
+        return res.status(400).json({ error: 'Invalid entry ID format' });
+      }
+      
+      // Get entry from the database
+      const entry = await db.query.emotionTrackingEntries.findFirst({
+        where: (entries, { eq, and }) => 
+          and(
+            eq(entries.id, entryId),
+            eq(entries.userId, req.user!.id)
+          )
+      });
+
+      if (!entry) {
+        return res.status(404).json({ error: 'Entry not found' });
+      }
+
+      res.json(entry);
+    } catch (error) {
+      console.error(`Error fetching emotion entry with ID ${req.params.id}:`, error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });

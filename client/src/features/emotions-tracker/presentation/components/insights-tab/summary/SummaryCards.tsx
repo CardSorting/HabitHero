@@ -66,7 +66,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
   // Prepare metrics for modern Apple Health style
   const metrics = [
     {
-      value: trendData.length || 0,
+      value: summaryData?.emotionCount || 0,
       label: 'Total Emotions Tracked',
       color: 'bg-blue-100 text-blue-600'
     },

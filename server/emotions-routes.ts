@@ -373,14 +373,14 @@ export function registerEmotionsRoutes(app: Express) {
       // Calculate average intensity
       const averageIntensity = totalIntensity / entries.length;
 
-      // Construct and return the summary
+      // Construct and return the summary in the format expected by EmotionSummary interface
       const summary = {
         date,
-        dominantEmotion,
-        highestIntensity,
-        averageIntensity,
-        emotionCounts,
-        categories: categoryCounts
+        dominantEmotion: dominantEmotion || null,
+        highestIntensity: highestIntensity.value || null,
+        averageIntensity: entries.length > 0 ? averageIntensity : null,
+        emotionCount: entries.length,
+        entryIds: entries.map(entry => entry.id)
       };
 
       res.json(summary);

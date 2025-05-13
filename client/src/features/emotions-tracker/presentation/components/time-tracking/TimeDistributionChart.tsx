@@ -72,14 +72,14 @@ const TimeDistributionChart: React.FC<TimeDistributionChartProps> = ({
     : 0;
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-white shadow-sm border-none">
       <CardHeader className="pb-2">
-        <CardTitle className="text-md flex items-center gap-2">
-          <Clock className="h-5 w-5" />
+        <CardTitle className="text-md flex items-center gap-2 text-gray-800">
+          <Clock className="h-5 w-5 text-blue-500" />
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-6 pb-6">
         {isLoading ? (
           <div className="space-y-2">
             <Skeleton className="h-4 w-full" />
@@ -98,26 +98,50 @@ const TimeDistributionChart: React.FC<TimeDistributionChartProps> = ({
             <p className="text-sm mt-1">Record emotions to see when you track them</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {TIME_PERIOD_CONFIG.map((block, index) => {
-              const count = distribution?.[block.label] || 0;
-              const percentage = totalEntries > 0 ? (count / totalEntries) * 100 : 0;
-              
-              return (
-                <div key={index} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>{block.label}</span>
-                    <span className="text-muted-foreground">{count} entries ({percentage.toFixed(0)}%)</span>
+          <div>
+            {/* Apple-style grid layout */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {TIME_PERIOD_CONFIG.map((block, index) => {
+                const count = distribution?.[block.label] || 0;
+                const percentage = totalEntries > 0 ? (count / totalEntries) * 100 : 0;
+                
+                // Apple Health-style card for each time period
+                return (
+                  <div 
+                    key={index} 
+                    className="rounded-2xl overflow-hidden border border-gray-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex flex-col h-full">
+                      {/* Header with icon and label */}
+                      <div className="flex items-center mb-3">
+                        <div 
+                          className={`h-9 w-9 rounded-full flex items-center justify-center mr-3 bg-opacity-10 ${block.color}`}
+                        >
+                          <span className="text-lg" role="img" aria-label={block.label}>
+                            {block.icon}
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-base text-gray-800">{block.label}</h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">{block.description}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Statistics */}
+                      <div className="mt-auto pt-2">
+                        <div className="text-3xl font-semibold mb-2 text-gray-800">{count}</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">entries</span>
+                          <span className="text-xs font-medium px-3 py-1 rounded-full bg-gray-100">
+                            {percentage.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full ${block.color} rounded-full`} 
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
             
             <div className="pt-2 text-xs text-muted-foreground text-center">
               Based on your emotion tracking patterns

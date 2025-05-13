@@ -12,6 +12,7 @@ import Analytics from "@/pages/Analytics";
 import DiaryCard from "@/pages/DiaryCard";
 import TherapyCompanion from "@/pages/TherapyCompanion";
 import EmotionsTracker from "@/pages/EmotionsTracker";
+import EmotionTimeAnalysis from "@/pages/EmotionTimeAnalysis";
 import WellnessChallenges from "@/pages/WellnessChallenges";
 import WellnessChallengeDetails from "@/pages/WellnessChallengeDetails";
 import WellnessChallengeCategory from "@/pages/WellnessChallengeCategory";
@@ -37,6 +38,7 @@ function Router() {
           <ProtectedRoute path="/diary-card" component={DiaryCard} />
           <ProtectedRoute path="/therapy" component={TherapyCompanion} />
           <ProtectedRoute path="/emotions" component={EmotionsTracker} />
+          <ProtectedRoute path="/emotions/time-analysis/:timePeriod" component={EmotionTimeAnalysis} />
           <ProtectedRoute path="/wellness-challenges" component={WellnessChallenges} />
           <ProtectedRoute path="/wellness-challenges/categories/:category" component={WellnessChallengeCategory} />
           <ProtectedRoute path="/wellness-challenges/:id" component={WellnessChallengeDetails} />

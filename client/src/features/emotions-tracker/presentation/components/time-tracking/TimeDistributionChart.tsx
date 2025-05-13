@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Clock } from 'lucide-react';
+import { Clock, ArrowRight } from 'lucide-react';
 import { format, subDays } from 'date-fns';
+import { useLocation } from 'wouter';
 
 import { GetTimeDistributionQuery, GetTimeDistributionQueryHandler } from '../../../application/queries/GetTimeDistributionQuery';
 import { ApiTimeTrackingRepository } from '../../../infrastructure/repositories/ApiTimeTrackingRepository';
@@ -33,6 +34,7 @@ const TimeDistributionChart: React.FC<TimeDistributionChartProps> = ({
   const [distribution, setDistribution] = useState<TimeDistributionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const fetchTimeDistribution = async () => {
@@ -109,7 +111,8 @@ const TimeDistributionChart: React.FC<TimeDistributionChartProps> = ({
                 return (
                   <div 
                     key={index} 
-                    className="rounded-2xl overflow-hidden border border-gray-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+                    className="rounded-2xl overflow-hidden border border-gray-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative"
+                    onClick={() => setLocation(`/emotions/time-analysis/${block.label.toLowerCase()}`)}
                   >
                     <div className="flex flex-col h-full">
                       {/* Header with icon and label */}
@@ -132,9 +135,12 @@ const TimeDistributionChart: React.FC<TimeDistributionChartProps> = ({
                         <div className="text-3xl font-semibold mb-2 text-gray-800">{count}</div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">entries</span>
-                          <span className="text-xs font-medium px-3 py-1 rounded-full bg-gray-100">
-                            {percentage.toFixed(0)}%
-                          </span>
+                          <div className="flex items-center">
+                            <span className="text-xs font-medium px-3 py-1 rounded-full bg-gray-100 mr-1">
+                              {percentage.toFixed(0)}%
+                            </span>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
                         </div>
                       </div>
                     </div>

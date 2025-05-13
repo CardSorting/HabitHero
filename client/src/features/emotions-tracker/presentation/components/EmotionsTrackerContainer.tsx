@@ -3,10 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEmotions } from '../context/EmotionsContext';
 import EmotionTrackingTab from './tabs/EmotionTrackingTab';
 import EmotionInsightsTab from './tabs/EmotionInsightsTab';
-import EmotionJournalTab from './tabs/EmotionJournalTab';
 // Import as default
 import EmotionHistoryTabDefault from './tabs/EmotionHistoryTab';
-import { SmilePlus, BarChart2, Book, Clock } from 'lucide-react';
+import { SmilePlus, BarChart2, Clock } from 'lucide-react';
 
 // Rename for convenience
 const EmotionHistoryTab = EmotionHistoryTabDefault;
@@ -28,7 +27,7 @@ export const EmotionsTrackerContainer: React.FC = () => {
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="track" className="flex items-center justify-center">
             <SmilePlus className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Track</span>
@@ -36,10 +35,6 @@ export const EmotionsTrackerContainer: React.FC = () => {
           <TabsTrigger value="insights" className="flex items-center justify-center">
             <BarChart2 className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Insights</span>
-          </TabsTrigger>
-          <TabsTrigger value="journal" className="flex items-center justify-center">
-            <Book className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Journal</span>
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center justify-center">
             <Clock className="h-4 w-4 mr-2" />
@@ -54,10 +49,6 @@ export const EmotionsTrackerContainer: React.FC = () => {
           
           <TabsContent value="insights">
             <EmotionInsightsTab />
-          </TabsContent>
-          
-          <TabsContent value="journal">
-            <EmotionJournalTab />
           </TabsContent>
           
           <TabsContent value="history">

@@ -24,48 +24,89 @@ export class GetEmotionCategoriesAnalysisQueryHandler {
     
     // Initialize categories
     const categories: {[key: string]: number} = {
-      'positive': 0,
-      'negative': 0,
-      'neutral': 0,
-      'unknown': 0
+      'Positive': 0,
+      'Negative': 0,
+      'Neutral': 0,
+      'Unknown': 0
     };
     
-    // Count occurrences of each category
+    // Count occurrences of each category based on the overallMood property
     trendData.forEach(day => {
-      const category = day.dominantEmotion || 'unknown';
-      const categoryLower = category.toLowerCase();
-      categories[categoryLower] = (categories[categoryLower] || 0) + 1;
+      if (!day.overallMood) {
+        categories['Unknown'] += 1;
+        return;
+      }
+      
+      // Map overallMood to capitalized category names
+      switch (day.overallMood) {
+        case 'positive':
+          categories['Positive'] += 1;
+          break;
+        case 'negative':
+          categories['Negative'] += 1;
+          break;
+        case 'neutral':
+          categories['Neutral'] += 1;
+          break;
+        case 'mixed':
+          // For mixed emotions, determine primary category based on dominantEmotion
+          if (day.dominantEmotion) {
+            const lowerCaseDominant = day.dominantEmotion.toLowerCase();
+            if (lowerCaseDominant.includes('happy') || 
+                lowerCaseDominant.includes('joy') || 
+                lowerCaseDominant.includes('excited') || 
+                lowerCaseDominant.includes('grateful')) {
+              categories['Positive'] += 1;
+            } else if (lowerCaseDominant.includes('sad') || 
+                      lowerCaseDominant.includes('angry') || 
+                      lowerCaseDominant.includes('fear') || 
+                      lowerCaseDominant.includes('disgust')) {
+              categories['Negative'] += 1;
+            } else {
+              categories['Neutral'] += 1;
+            }
+          } else {
+            categories['Unknown'] += 1;
+          }
+          break;
+        default:
+          categories['Unknown'] += 1;
+      }
     });
     
     // Prepare distribution data
     const categoriesDistribution: CategoryDistribution[] = Object.entries(categories)
       .filter(([_, count]) => count > 0)
       .map(([category, count]) => ({
-        name: category.charAt(0).toUpperCase() + category.slice(1),
+        name: category,
         value: count,
         percentage: trendData.length > 0 ? (count / trendData.length) * 100 : 0
       }));
     
-    // Find the dominant category
+    // Find the dominant category (excluding Unknown)
     let dominantCategory: string | null = null;
     let maxCount = 0;
     
     Object.entries(categories).forEach(([category, count]) => {
-      if (count > maxCount) {
+      // Only consider real emotion categories (not Unknown) as dominant
+      if (category !== 'Unknown' && count > maxCount) {
         maxCount = count;
         dominantCategory = category;
       }
     });
     
-    // Format the dominant category if it exists
-    let formattedDominantCategory: string | null = null;
-    if (dominantCategory) {
-      formattedDominantCategory = dominantCategory.charAt(0).toUpperCase() + dominantCategory.slice(1);
+    // If we have no dominant category but have Unknown entries, check if there's any data at all
+    if (!dominantCategory && categories['Unknown'] > 0) {
+      const totalCount = Object.values(categories).reduce((a, b) => a + b, 0);
+      if (trendData.length > 0 && totalCount === categories['Unknown']) {
+        // All data is Unknown, so mark Unknown as dominant
+        dominantCategory = 'Unknown';
+      }
     }
     
     return {
       categoriesDistribution,
-      dominantCategory: formattedDominantCategory,
+      dominantCategory,
       totalCount: trendData.length
     };
   }

@@ -438,28 +438,60 @@ export function registerEmotionsRoutes(app: Express) {
           else if (entry.categoryId === 'neutral') categoryCount.neutral++;
         }
         
-        // Determine dominant category
+        // Determine dominant category and overall mood
         let dominantCategory = 'neutral';
+        let overallMood = 'neutral';
+        
         if (categoryCount.positive > categoryCount.negative && 
             categoryCount.positive > categoryCount.neutral) {
           dominantCategory = 'positive';
+          overallMood = 'positive';
         } else if (categoryCount.negative > categoryCount.positive && 
                   categoryCount.negative > categoryCount.neutral) {
           dominantCategory = 'negative';
+          overallMood = 'negative';
+        } else if (categoryCount.positive === categoryCount.negative && 
+                  categoryCount.positive > 0) {
+          // If there's an equal mix of positive and negative emotions
+          overallMood = 'mixed';
+        }
+        
+        // Find the dominant emotion (most frequent)
+        const emotionCounts: {[emotion: string]: number} = {};
+        for (const entry of dayEntries) {
+          emotionCounts[entry.emotionName] = (emotionCounts[entry.emotionName] || 0) + 1;
+        }
+        
+        let dominantEmotion = null;
+        let maxCount = 0;
+        for (const [emotion, count] of Object.entries(emotionCounts)) {
+          if (count > maxCount) {
+            maxCount = count;
+            dominantEmotion = emotion;
+          }
         }
         
         // Format emotions data
-        const emotions = dayEntries.map(entry => ({
-          id: entry.emotionId,
-          name: entry.emotionName,
-          intensity: entry.intensity
-        }));
+        const formattedEmotions: {[name: string]: {count: number, averageIntensity: number}} = {};
+        
+        for (const entry of dayEntries) {
+          if (!formattedEmotions[entry.emotionName]) {
+            formattedEmotions[entry.emotionName] = { count: 0, averageIntensity: 0 };
+          }
+          formattedEmotions[entry.emotionName].count += 1;
+          formattedEmotions[entry.emotionName].averageIntensity += entry.intensity;
+        }
+        
+        // Calculate average intensity for each emotion
+        for (const emotion of Object.keys(formattedEmotions)) {
+          formattedEmotions[emotion].averageIntensity /= formattedEmotions[emotion].count;
+        }
 
         return {
           date,
-          emotions,
-          averageIntensity,
-          dominantCategory
+          emotions: formattedEmotions,
+          overallMood,
+          dominantEmotion
         };
       });
 

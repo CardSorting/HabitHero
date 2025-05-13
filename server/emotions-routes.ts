@@ -3,6 +3,7 @@ import { db } from './db';
 import { z } from 'zod';
 import { getCopingStrategy } from './anthropicService';
 import * as schema from '../shared/schema';
+import { format } from 'date-fns';
 
 // Define a type for authenticated requests
 type AuthRequest = Request & {
@@ -193,6 +194,7 @@ export function registerEmotionsRoutes(app: Express) {
         emotionName: validatedData.emotionName,
         intensity: validatedData.intensity,
         date: validatedData.date,
+        time: validatedData.time || format(new Date(), 'HH:mm:ss'), // Store current time if not provided
         notes: validatedData.notes,
         triggers: validatedData.triggers || [],
         copingMechanisms: copingStrategies,

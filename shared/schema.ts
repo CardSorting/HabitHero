@@ -11,6 +11,9 @@ export const emotionIntensityEnum = pgEnum('emotion_intensity', ['very_low', 'lo
 export const crisisIntensityEnum = pgEnum('crisis_intensity', ['mild', 'moderate', 'severe', 'extreme']);
 export const crisisTypeEnum = pgEnum('crisis_type', ['panic_attack', 'emotional_crisis', 'suicidal_thoughts', 'self_harm_urge', 'substance_urge', 'other']);
 
+// User role enum for RBAC
+export const userRoleEnum = pgEnum('user_role', ['client', 'therapist', 'admin']);
+
 // User table for authentication
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -18,6 +21,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: varchar("email", { length: 100 }),
   fullName: varchar("full_name", { length: 100 }),
+  role: userRoleEnum("role").default('client').notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => {
   return {
@@ -212,6 +216,56 @@ export const crisisEvents = pgTable("crisis_events", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Therapist-Client relationships - for managing therapist and client relationships
+export const therapistClients = pgTable("therapist_clients", {
+  id: serial("id").primaryKey(),
+  therapistId: integer("therapist_id").notNull(),
+  clientId: integer("client_id").notNull(),
+  startDate: date("start_date").notNull().defaultNow(),
+  endDate: date("end_date"),
+  status: varchar("status", { length: 20 }).default('active').notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    // Ensure a client can only be assigned once to a therapist at a time (if status is active)
+    unqClientTherapist: unique().on(table.therapistId, table.clientId, table.status)
+  };
+});
+
+// Therapist notes about clients
+export const therapistNotes = pgTable("therapist_notes", {
+  id: serial("id").primaryKey(),
+  therapistId: integer("therapist_id").notNull(),
+  clientId: integer("client_id").notNull(),
+  sessionDate: date("session_date").notNull(),
+  content: text("content").notNull(),
+  mood: varchar("mood", { length: 50 }),
+  progress: varchar("progress", { length: 50 }),
+  goalCompletion: integer("goal_completion"),
+  isPrivate: boolean("is_private").default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Treatment plans for clients
+export const treatmentPlans = pgTable("treatment_plans", {
+  id: serial("id").primaryKey(),
+  therapistId: integer("therapist_id").notNull(),
+  clientId: integer("client_id").notNull(),
+  title: varchar("title", { length: 100 }).notNull(),
+  description: text("description"),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  status: varchar("status", { length: 20 }).default('active').notNull(),
+  goals: jsonb("goals"),
+  assessments: jsonb("assessments"),
+  interventions: jsonb("interventions"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Define relationships
 export const usersRelations = relations(users, ({ many }) => ({
   habits: many(habits),
@@ -225,6 +279,13 @@ export const usersRelations = relations(users, ({ many }) => ({
   wellnessChallenges: many(wellnessChallenges),
   userEmotions: many(userEmotions),
   crisisEvents: many(crisisEvents),
+  // Therapist-specific relations
+  therapistClientsAsTherapist: many(therapistClients, { relationName: 'therapistToClients' }),
+  therapistClientsAsClient: many(therapistClients, { relationName: 'clientToTherapist' }),
+  therapistNotesAsTherapist: many(therapistNotes, { relationName: 'therapistToNotes' }),
+  therapistNotesAsClient: many(therapistNotes, { relationName: 'clientToNotes' }),
+  treatmentPlansAsTherapist: many(treatmentPlans, { relationName: 'therapistToPlans' }),
+  treatmentPlansAsClient: many(treatmentPlans, { relationName: 'clientToPlans' }),
 }));
 
 export const habitsRelations = relations(habits, ({ many, one }) => ({
@@ -341,6 +402,48 @@ export const crisisEventsRelations = relations(crisisEvents, ({ one }) => ({
   user: one(users, {
     fields: [crisisEvents.userId],
     references: [users.id],
+  }),
+}));
+
+// Therapist-client relationship relations
+export const therapistClientsRelations = relations(therapistClients, ({ one }) => ({
+  therapist: one(users, {
+    fields: [therapistClients.therapistId],
+    references: [users.id],
+    relationName: 'therapistToClients'
+  }),
+  client: one(users, {
+    fields: [therapistClients.clientId],
+    references: [users.id],
+    relationName: 'clientToTherapist'
+  }),
+}));
+
+// Therapist notes relations
+export const therapistNotesRelations = relations(therapistNotes, ({ one }) => ({
+  therapist: one(users, {
+    fields: [therapistNotes.therapistId],
+    references: [users.id],
+    relationName: 'therapistToNotes'
+  }),
+  client: one(users, {
+    fields: [therapistNotes.clientId],
+    references: [users.id],
+    relationName: 'clientToNotes'
+  }),
+}));
+
+// Treatment plans relations
+export const treatmentPlansRelations = relations(treatmentPlans, ({ one }) => ({
+  therapist: one(users, {
+    fields: [treatmentPlans.therapistId],
+    references: [users.id],
+    relationName: 'therapistToPlans'
+  }),
+  client: one(users, {
+    fields: [treatmentPlans.clientId],
+    references: [users.id],
+    relationName: 'clientToPlans'
   }),
 }));
 

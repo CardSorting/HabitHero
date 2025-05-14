@@ -8,9 +8,12 @@ import {
   insertTherapistClientSchema, 
   insertTherapistNoteSchema,
   insertTreatmentPlanSchema, 
-  userRoleEnum
+  userRoleEnum,
+  users,
+  therapistClients
 } from "@shared/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, like } from "drizzle-orm";
+import { db } from './db';
 
 // Define the authenticated request type with user role
 type AuthRequest = Request & {
@@ -56,11 +59,6 @@ export function registerTherapistRoutes(app: Express) {
       console.log(`Fetching clients for therapist ID: ${therapistId}`);
       
       try {
-        // Import necessary database modules
-        const { db } = require('../db');
-        const { eq, and } = require('drizzle-orm');
-        const { users, therapistClients } = require('@shared/schema');
-        
         // Get all active therapist-client relationships for this therapist
         const relationships = await db
           .select({
@@ -144,11 +142,6 @@ export function registerTherapistRoutes(app: Express) {
       console.log(`Searching for clients with query: "${query}"`);
       
       try {
-        // Import necessary tools from drizzle-orm
-        const { db } = require('../db');
-        const { like, eq, and } = require('drizzle-orm');
-        const { users } = require('@shared/schema');
-        
         // Search for clients with role 'client'
         const clients = await db.select({
           id: users.id,
@@ -263,11 +256,6 @@ export function registerTherapistRoutes(app: Express) {
       });
       
       try {
-        // Import necessary database modules
-        const { db } = require('../db');
-        const { eq, and } = require('drizzle-orm');
-        const { users, therapistClients } = require('@shared/schema');
-        
         // Find the client by username
         const [client] = await db
           .select()

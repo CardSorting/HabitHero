@@ -1,4 +1,4 @@
-import { eq, sql, and, desc, between, count, avg, gte, lte } from 'drizzle-orm';
+import { eq, sql, and, desc, between, count, avg, gte, lte, like, or, isNull, isNotNull } from 'drizzle-orm';
 import { db, pool } from './db';
 import { 
   habits, 
@@ -14,6 +14,10 @@ import {
   wellnessChallengeGoals,
   wellnessChallengeProgress,
   crisisEvents,
+  therapistClients,
+  therapistNotes,
+  treatmentPlans,
+  emotionTrackingEntries,
   Habit, 
   HabitCompletion, 
   InsertHabit, 
@@ -23,6 +27,12 @@ import {
   DbtSleep,
   DbtEmotion,
   DbtUrge,
+  TherapistClient,
+  InsertTherapistClient,
+  TherapistNote,
+  InsertTherapistNote,
+  TreatmentPlan,
+  InsertTreatmentPlan,
   DbtSkill,
   DbtEvent,
   User,
@@ -1108,6 +1118,508 @@ export class DatabaseStorage implements IStorage {
       count,
       averageIntensity,
       trend
+    };
+  }
+
+  // =====================================================
+  // THERAPIST FEATURE METHODS
+  // =====================================================
+
+  /**
+   * Checks if a therapist is assigned to a specific client
+   */
+  async isTherapistForClient(therapistId: number, clientId: number): Promise<boolean> {
+    const relationship = await db.query.therapistClients.findFirst({
+      where: and(
+        eq(therapistClients.therapistId, therapistId),
+        eq(therapistClients.clientId, clientId)
+      )
+    });
+
+    return !!relationship;
+  }
+
+  /**
+   * Gets all clients assigned to a therapist
+   */
+  async getTherapistClients(therapistId: number): Promise<ClientSummary[]> {
+    // Get all therapist-client relationships for this therapist
+    const relationships = await db.query.therapistClients.findMany({
+      where: eq(therapistClients.therapistId, therapistId),
+      with: {
+        client: true
+      },
+      orderBy: desc(therapistClients.startDate)
+    });
+
+    // For each client, get additional analytics data
+    const clientSummaries: ClientSummary[] = [];
+
+    for (const rel of relationships) {
+      const client = rel.client;
+
+      // Get counts for analytics
+      const emotionsCount = await db.select({ count: count() })
+        .from(emotionTrackingEntries)
+        .where(eq(emotionTrackingEntries.userId, client.id))
+        .execute()
+        .then(result => result[0]?.count || 0);
+
+      const crisisEventsCount = await db.select({ count: count() })
+        .from(crisisEvents)
+        .where(eq(crisisEvents.userId, client.id))
+        .execute()
+        .then(result => result[0]?.count || 0);
+
+      const wellnessChallengesCount = await db.select({ count: count() })
+        .from(wellnessChallenges)
+        .where(eq(wellnessChallenges.userId, client.id))
+        .execute()
+        .then(result => result[0]?.count || 0);
+
+      // Get last activity timestamp (could be from any table)
+      // For simplicity, we're using the most recent emotion entry as a proxy for activity
+      const lastActivity = await db.query.emotionTrackingEntries.findFirst({
+        where: eq(emotionTrackingEntries.userId, client.id),
+        orderBy: desc(emotionTrackingEntries.createdAt)
+      }).then(entry => entry?.createdAt?.toISOString().split('T')[0] || undefined);
+
+      clientSummaries.push({
+        id: client.id,
+        username: client.username,
+        fullName: client.fullName || undefined,
+        email: client.email || undefined,
+        startDate: rel.startDate,
+        status: rel.status || 'active',
+        lastActivity,
+        notes: rel.notes || undefined,
+        emotionsCount,
+        crisisEventsCount,
+        wellnessChallengesCount
+      });
+    }
+
+    return clientSummaries;
+  }
+
+  /**
+   * Gets all therapists assigned to a client
+   */
+  async getClientTherapists(clientId: number): Promise<User[]> {
+    const relationships = await db.query.therapistClients.findMany({
+      where: eq(therapistClients.clientId, clientId),
+      with: {
+        therapist: true
+      }
+    });
+
+    return relationships.map(rel => rel.therapist);
+  }
+
+  /**
+   * Assigns a client to a therapist
+   */
+  async assignClientToTherapist(
+    therapistId: number, 
+    clientId: number, 
+    data: Omit<InsertTherapistClient, 'therapistId' | 'clientId'>
+  ): Promise<TherapistClient> {
+    // Check if relationship already exists
+    const existing = await this.isTherapistForClient(therapistId, clientId);
+    
+    if (existing) {
+      throw new Error('Client is already assigned to this therapist');
+    }
+
+    // Create the relationship
+    const result = await db.insert(therapistClients)
+      .values({
+        therapistId,
+        clientId,
+        startDate: data.startDate || new Date().toISOString().split('T')[0],
+        notes: data.notes,
+        status: 'active'
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  }
+
+  /**
+   * Removes a client from a therapist
+   */
+  async removeClientFromTherapist(therapistId: number, clientId: number): Promise<boolean> {
+    // Find the relationship ID first
+    const relationship = await db.query.therapistClients.findFirst({
+      where: and(
+        eq(therapistClients.therapistId, therapistId),
+        eq(therapistClients.clientId, clientId)
+      )
+    });
+
+    if (!relationship) {
+      return false;
+    }
+
+    // Delete the relationship
+    await db.delete(therapistClients)
+      .where(eq(therapistClients.id, relationship.id))
+      .execute();
+
+    return true;
+  }
+
+  /**
+   * Updates a therapist-client relationship
+   */
+  async updateClientTherapistRelationship(
+    id: number, 
+    data: Partial<TherapistClient>
+  ): Promise<TherapistClient> {
+    // Find the relationship
+    const relationship = await db.query.therapistClients.findFirst({
+      where: eq(therapistClients.id, id)
+    });
+
+    if (!relationship) {
+      throw new Error(`Relationship with ID ${id} not found`);
+    }
+
+    // Update the relationship
+    const result = await db.update(therapistClients)
+      .set({
+        status: data.status || relationship.status,
+        endDate: data.endDate || relationship.endDate,
+        notes: data.notes !== undefined ? data.notes : relationship.notes
+      })
+      .where(eq(therapistClients.id, id))
+      .returning()
+      .execute();
+
+    return result[0];
+  }
+
+  /**
+   * Gets all therapy notes for a client
+   */
+  async getTherapistNotes(therapistId: number, clientId: number): Promise<TherapistNote[]> {
+    const notes = await db.query.therapistNotes.findMany({
+      where: and(
+        eq(therapistNotes.therapistId, therapistId),
+        eq(therapistNotes.clientId, clientId)
+      ),
+      orderBy: desc(therapistNotes.sessionDate)
+    });
+
+    return notes;
+  }
+
+  /**
+   * Gets a specific therapy note by ID
+   */
+  async getTherapistNoteById(id: number): Promise<TherapistNote | undefined> {
+    const note = await db.query.therapistNotes.findFirst({
+      where: eq(therapistNotes.id, id)
+    });
+
+    return note || undefined;
+  }
+
+  /**
+   * Creates a new therapy note
+   */
+  async createTherapistNote(note: InsertTherapistNote): Promise<TherapistNote> {
+    const result = await db.insert(therapistNotes)
+      .values({
+        therapistId: note.therapistId,
+        clientId: note.clientId,
+        sessionDate: note.sessionDate,
+        content: note.content,
+        mood: note.mood,
+        progress: note.progress,
+        goalCompletion: note.goalCompletion,
+        isPrivate: note.isPrivate !== undefined ? note.isPrivate : true,
+        createdAt: new Date()
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  }
+
+  /**
+   * Updates a therapy note
+   */
+  async updateTherapistNote(id: number, note: Partial<TherapistNote>): Promise<TherapistNote> {
+    const existingNote = await this.getTherapistNoteById(id);
+    
+    if (!existingNote) {
+      throw new Error(`Note with ID ${id} not found`);
+    }
+
+    const result = await db.update(therapistNotes)
+      .set({
+        content: note.content !== undefined ? note.content : existingNote.content,
+        mood: note.mood !== undefined ? note.mood : existingNote.mood,
+        progress: note.progress !== undefined ? note.progress : existingNote.progress,
+        goalCompletion: note.goalCompletion !== undefined ? note.goalCompletion : existingNote.goalCompletion,
+        isPrivate: note.isPrivate !== undefined ? note.isPrivate : existingNote.isPrivate,
+        updatedAt: new Date()
+      })
+      .where(eq(therapistNotes.id, id))
+      .returning()
+      .execute();
+
+    return result[0];
+  }
+
+  /**
+   * Deletes a therapy note
+   */
+  async deleteTherapistNote(id: number): Promise<boolean> {
+    await db.delete(therapistNotes)
+      .where(eq(therapistNotes.id, id))
+      .execute();
+
+    return true;
+  }
+
+  /**
+   * Gets all treatment plans for a client
+   */
+  async getTreatmentPlans(therapistId: number, clientId?: number): Promise<TreatmentPlan[]> {
+    let query = db.select().from(treatmentPlans).where(eq(treatmentPlans.therapistId, therapistId));
+    
+    if (clientId) {
+      query = query.where(eq(treatmentPlans.clientId, clientId));
+    }
+    
+    const plans = await query.orderBy(desc(treatmentPlans.startDate)).execute();
+    
+    return plans;
+  }
+
+  /**
+   * Gets a treatment plan by ID
+   */
+  async getTreatmentPlanById(id: number): Promise<TreatmentPlan | undefined> {
+    const plan = await db.query.treatmentPlans.findFirst({
+      where: eq(treatmentPlans.id, id)
+    });
+
+    return plan || undefined;
+  }
+
+  /**
+   * Creates a new treatment plan
+   */
+  async createTreatmentPlan(plan: InsertTreatmentPlan): Promise<TreatmentPlan> {
+    const result = await db.insert(treatmentPlans)
+      .values({
+        therapistId: plan.therapistId,
+        clientId: plan.clientId,
+        title: plan.title,
+        description: plan.description,
+        startDate: plan.startDate,
+        endDate: plan.endDate,
+        goals: plan.goals,
+        status: plan.status || 'active',
+        createdAt: new Date()
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  }
+
+  /**
+   * Updates a treatment plan
+   */
+  async updateTreatmentPlan(id: number, plan: Partial<TreatmentPlan>): Promise<TreatmentPlan> {
+    const existingPlan = await this.getTreatmentPlanById(id);
+    
+    if (!existingPlan) {
+      throw new Error(`Treatment plan with ID ${id} not found`);
+    }
+
+    const result = await db.update(treatmentPlans)
+      .set({
+        title: plan.title || existingPlan.title,
+        description: plan.description !== undefined ? plan.description : existingPlan.description,
+        startDate: plan.startDate || existingPlan.startDate,
+        endDate: plan.endDate !== undefined ? plan.endDate : existingPlan.endDate,
+        goals: plan.goals !== undefined ? plan.goals : existingPlan.goals,
+        status: plan.status || existingPlan.status,
+        updatedAt: new Date()
+      })
+      .where(eq(treatmentPlans.id, id))
+      .returning()
+      .execute();
+
+    return result[0];
+  }
+
+  /**
+   * Deletes a treatment plan
+   */
+  async deleteTreatmentPlan(id: number): Promise<boolean> {
+    await db.delete(treatmentPlans)
+      .where(eq(treatmentPlans.id, id))
+      .execute();
+
+    return true;
+  }
+
+  /**
+   * Gets client analytics for therapist view
+   */
+  async getClientAnalytics(
+    therapistId: number, 
+    clientId: number, 
+    startDate?: string, 
+    endDate?: string
+  ): Promise<ClientAnalytics> {
+    // Verify therapist has access to this client
+    const hasAccess = await this.isTherapistForClient(therapistId, clientId);
+    
+    if (!hasAccess) {
+      throw new Error('Therapist does not have access to this client');
+    }
+
+    // Determine date range
+    const today = new Date();
+    const defaultEndDate = format(today, 'yyyy-MM-dd');
+    const defaultStartDate = format(subDays(today, 30), 'yyyy-MM-dd');
+    
+    const queryStartDate = startDate || defaultStartDate;
+    const queryEndDate = endDate || defaultEndDate;
+
+    // Get emotion tracking data
+    const emotions = await db.query.emotionTrackingEntries.findMany({
+      where: and(
+        eq(emotionTrackingEntries.userId, clientId),
+        gte(emotionTrackingEntries.date, queryStartDate),
+        lte(emotionTrackingEntries.date, queryEndDate)
+      ),
+      orderBy: emotionTrackingEntries.date
+    });
+
+    // Group emotions by date
+    const emotionsByDate: Record<string, any[]> = {};
+    
+    for (const emotion of emotions) {
+      if (!emotionsByDate[emotion.date]) {
+        emotionsByDate[emotion.date] = [];
+      }
+      emotionsByDate[emotion.date].push(emotion);
+    }
+
+    // Format emotion trends data
+    const emotionTrends = Object.entries(emotionsByDate).map(([date, dateEmotions]) => {
+      const totalIntensity = dateEmotions.reduce((sum, emotion) => sum + emotion.intensity, 0);
+      const averageIntensity = totalIntensity / dateEmotions.length;
+      
+      return {
+        date,
+        emotions: dateEmotions.map(e => ({
+          name: e.emotionName,
+          intensity: e.intensity,
+          categoryId: e.categoryId
+        })),
+        averageIntensity
+      };
+    });
+
+    // Get crisis events data
+    const crisisAnalytics = await this.getCrisisAnalytics(clientId, queryStartDate, queryEndDate);
+    
+    // Get recent crisis events
+    const recentEvents = await db.query.crisisEvents.findMany({
+      where: and(
+        eq(crisisEvents.userId, clientId),
+        gte(crisisEvents.date, queryStartDate),
+        lte(crisisEvents.date, queryEndDate)
+      ),
+      orderBy: desc(crisisEvents.date),
+      limit: 5
+    });
+    
+    // Determine trend by comparing with previous period
+    let trend: 'increasing' | 'decreasing' | 'stable' = 'stable';
+    
+    const previousStartDate = format(subDays(new Date(queryStartDate), 30), 'yyyy-MM-dd');
+    const previousEndDate = format(subDays(new Date(queryEndDate), 30), 'yyyy-MM-dd');
+    
+    const previousCount = await db.select({ count: count() })
+      .from(crisisEvents)
+      .where(and(
+        eq(crisisEvents.userId, clientId),
+        gte(crisisEvents.date, previousStartDate),
+        lte(crisisEvents.date, previousEndDate)
+      ))
+      .execute()
+      .then(result => result[0]?.count || 0);
+    
+    if (crisisAnalytics.totalEvents > previousCount) {
+      trend = 'increasing';
+    } else if (crisisAnalytics.totalEvents < previousCount) {
+      trend = 'decreasing';
+    }
+
+    // Get wellness challenge data
+    const challenges = await db.query.wellnessChallenges.findMany({
+      where: eq(wellnessChallenges.userId, clientId)
+    });
+    
+    const activeChallenges = challenges.filter(c => c.status === 'active').length;
+    const completedChallenges = challenges.filter(c => c.status === 'completed').length;
+    const abandonedChallenges = challenges.filter(c => c.status === 'abandoned').length;
+    
+    // Calculate completion rate
+    const completionRate = challenges.length > 0 
+      ? (completedChallenges / challenges.length) * 100 
+      : 0;
+
+    // Get treatment plan data
+    const treatmentPlans = await this.getTreatmentPlans(therapistId, clientId);
+    
+    const activePlans = treatmentPlans.filter(p => p.status === 'active').length;
+    const completedPlans = treatmentPlans.filter(p => p.status === 'completed').length;
+    
+    // Count goals (from all plans)
+    const allGoals = treatmentPlans.reduce((total, plan) => {
+      const planGoals = plan.goals?.length || 0;
+      return total + planGoals;
+    }, 0);
+    
+    // For now, mock achieved goals as 50% of total
+    // In a real implementation, we would have a separate table to track goal progress
+    const goalsAchieved = Math.floor(allGoals / 2);
+
+    // Build the complete analytics object
+    return {
+      clientId,
+      emotionTrends,
+      crisisEvents: {
+        count: crisisAnalytics.totalEvents,
+        byType: crisisAnalytics.byType,
+        byIntensity: crisisAnalytics.byIntensity,
+        recentEvents,
+        trend
+      },
+      treatmentProgress: {
+        activePlans,
+        completedPlans,
+        goalsAchieved,
+        totalGoals: allGoals
+      },
+      wellnessChallenges: {
+        active: activeChallenges,
+        completed: completedChallenges,
+        abandonedCount: abandonedChallenges,
+        completionRate
+      }
     };
   }
 }

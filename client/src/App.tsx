@@ -24,6 +24,7 @@ import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { CrisisTrackerPage } from "@/features/crisis-tracker";
+import { TherapistDashboard, ClientDetails } from "@/features/therapist/presentation/pages";
 
 function Router() {
   const [location] = useLocation();
@@ -52,6 +53,30 @@ function Router() {
           <ProtectedRoute path="/wellness-challenges/:id" component={WellnessChallengeDetails} />
           <ProtectedRoute path="/settings" component={Settings} />
           <Route path="/auth" component={AuthPage} />
+          
+          {/* Therapist routes */}
+          <ProtectedRoute 
+            path="/therapist" 
+            component={(props) => {
+              // Only allow access if user is a therapist
+              const user = props.user || {};
+              if (user.role !== 'therapist' && user.role !== 'admin') {
+                return <NotFound />;
+              }
+              return <TherapistDashboard />;
+            }} 
+          />
+          <ProtectedRoute 
+            path="/therapist/clients/:clientId" 
+            component={(props) => {
+              // Only allow access if user is a therapist
+              const user = props.user || {};
+              if (user.role !== 'therapist' && user.role !== 'admin') {
+                return <NotFound />;
+              }
+              return <ClientDetails />;
+            }} 
+          />
           <Route component={NotFound} />
         </Switch>
       </ResponsiveLayout>

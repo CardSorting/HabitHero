@@ -61,23 +61,41 @@ export default function LandingPage() {
             </div>
             <h1 className="text-xl font-bold text-foreground">MindfulTrack</h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
-                Client Login
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/therapist-auth")}>
-                Therapist Login
-              </Button>
+          <div className="hidden md:flex md:items-center">
+            <div className="border-r pr-4 mr-4">
+              <div className="text-center mb-1">
+                <span className="text-xs text-muted-foreground">For Clients</span>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+                  Login
+                </Button>
+                <Button size="sm" onClick={() => navigate("/auth")}>
+                  Sign Up
+                </Button>
+              </div>
             </div>
+            
             <div>
-              <Button size="sm" onClick={() => navigate("/auth")} className="mr-1">
-                Client Sign Up
-              </Button>
-              <Button size="sm" onClick={() => navigate("/therapist-auth")}>
-                Therapist Sign Up
-              </Button>
+              <div className="text-center mb-1">
+                <span className="text-xs text-muted-foreground">For Therapists</span>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate("/therapist-auth")}>
+                  Login
+                </Button>
+                <Button size="sm" onClick={() => navigate("/therapist-auth")}>
+                  Sign Up
+                </Button>
+              </div>
             </div>
+          </div>
+          
+          {/* Mobile menu */}
+          <div className="md:hidden">
+            <Button onClick={() => navigate("/onboarding")} size="sm">
+              Get Started
+            </Button>
           </div>
         </div>
       </header>

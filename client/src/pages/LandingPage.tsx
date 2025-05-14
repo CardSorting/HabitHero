@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart2,
   Brain,
@@ -45,6 +46,7 @@ const fadeInUp = {
 
 export default function LandingPage() {
   const [, navigate] = useLocation();
+  const [selectedTab, setSelectedTab] = useState<"client" | "therapist">("client");
 
   const handleGetStarted = () => {
     navigate("/onboarding");
@@ -54,48 +56,52 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen bg-background">
       {/* Navbar */}
       <header className="border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center md:justify-between gap-4">
           <div className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
               <Brain className="h-5 w-5 text-white" />
             </div>
             <h1 className="text-xl font-bold text-foreground">MindfulTrack</h1>
           </div>
-          <div className="hidden md:flex md:items-center">
-            <div className="border-r pr-4 mr-4">
-              <div className="text-center mb-1">
-                <span className="text-xs text-muted-foreground">For Clients</span>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
-                  Login
-                </Button>
-                <Button size="sm" onClick={() => navigate("/auth")}>
-                  Sign Up
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <div className="text-center mb-1">
-                <span className="text-xs text-muted-foreground">For Therapists</span>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate("/therapist-auth")}>
-                  Login
-                </Button>
-                <Button size="sm" onClick={() => navigate("/therapist-auth")}>
-                  Sign Up
-                </Button>
-              </div>
-            </div>
-          </div>
           
-          {/* Mobile menu */}
-          <div className="md:hidden">
-            <Button onClick={() => navigate("/onboarding")} size="sm">
-              Get Started
-            </Button>
+          <div className="flex flex-col items-center w-full md:w-auto">
+            <Tabs 
+              defaultValue={selectedTab}
+              value={selectedTab} 
+              onValueChange={(value) => setSelectedTab(value as "client" | "therapist")}
+              className="w-full max-w-md"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="client" className="flex items-center gap-1">
+                  <UserPlus className="h-4 w-4" />
+                  <span>I am a Client</span>
+                </TabsTrigger>
+                <TabsTrigger value="therapist" className="flex items-center gap-1">
+                  <Brain className="h-4 w-4" />
+                  <span>I am a Therapist</span>
+                </TabsTrigger>
+              </TabsList>
+              
+              <div className="mt-3">
+                <TabsContent value="client" className="flex justify-center gap-2 m-0">
+                  <Button size="sm" onClick={() => navigate("/auth")}>
+                    Sign Up
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+                    Login
+                  </Button>
+                </TabsContent>
+                
+                <TabsContent value="therapist" className="flex justify-center gap-2 m-0">
+                  <Button size="sm" onClick={() => navigate("/therapist-auth")}>
+                    Sign Up
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/therapist-auth")}>
+                    Login
+                  </Button>
+                </TabsContent>
+              </div>
+            </Tabs>
           </div>
         </div>
       </header>
@@ -109,28 +115,67 @@ export default function LandingPage() {
             animate="visible"
             variants={fadeIn}
           >
-            <Badge variant="outline" className="mb-5 px-3 py-1 text-sm">
-              For therapists & clients
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-              Transform{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-                therapy outcomes
-              </span>{" "}
-              with data-driven insights
-            </h1>
-            <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Track emotions, build positive habits, and gain valuable insights to improve mental health outcomes and therapeutic progress.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={handleGetStarted} className="rounded-full px-8">
-                Get started for free
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-8">
-                Book a demo
-              </Button>
-            </div>
+            <Tabs
+              defaultValue={selectedTab}
+              value={selectedTab}
+              onValueChange={(value) => setSelectedTab(value as "client" | "therapist")}
+              className="mb-8 max-w-md mx-auto"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="client" className="flex items-center justify-center gap-1 py-3">
+                  <UserPlus className="h-4 w-4" />
+                  <span>I am a Client</span>
+                </TabsTrigger>
+                <TabsTrigger value="therapist" className="flex items-center justify-center gap-1 py-3">
+                  <Brain className="h-4 w-4" />
+                  <span>I am a Therapist</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <TabsContent value="client" className="mt-0 block">
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+                Transform{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+                  your wellbeing
+                </span>{" "}
+                with data-driven insights
+              </h1>
+              <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+                Track emotions, build positive habits, and gain valuable insights to improve your mental health journey and personal growth.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" onClick={() => navigate("/auth")} className="rounded-full px-8">
+                  Sign up as a client
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="lg" onClick={() => navigate("/auth")} className="rounded-full px-8">
+                  Login
+                </Button>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="therapist" className="mt-0 block">
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+                Enhance{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+                  therapeutic outcomes
+                </span>{" "}
+                with data-driven insights
+              </h1>
+              <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+                Monitor client progress, analyze emotion patterns, and deliver more effective treatment with detailed analytics and client tracking tools.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" onClick={() => navigate("/therapist-auth")} className="rounded-full px-8">
+                  Sign up as a therapist
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="lg" onClick={() => navigate("/therapist-auth")} className="rounded-full px-8">
+                  Login
+                </Button>
+              </div>
+            </TabsContent>
           </motion.div>
         </div>
       </section>
@@ -183,12 +228,35 @@ export default function LandingPage() {
             variants={fadeIn}
           >
             <Badge variant="outline" className="mb-4">Features</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Everything you need for better mental health tracking
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Comprehensive tools designed for both clients and therapists to monitor progress and improve outcomes.
-            </p>
+            <Tabs
+              defaultValue={selectedTab}
+              value={selectedTab}
+              onValueChange={(value) => setSelectedTab(value as "client" | "therapist")}
+              className="mt-4 mb-6 max-w-md mx-auto"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="client">For Clients</TabsTrigger>
+                <TabsTrigger value="therapist">For Therapists</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <TabsContent value="client" className="mt-0 block">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Everything you need for better mental wellbeing
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Comprehensive tools designed to help you track emotions, build habits, and improve your mental health journey.
+              </p>
+            </TabsContent>
+            
+            <TabsContent value="therapist" className="mt-0 block">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Everything you need for better client outcomes
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Powerful analytics and management tools designed to help you track client progress and deliver more effective treatment.
+              </p>
+            </TabsContent>
           </motion.div>
 
           <motion.div

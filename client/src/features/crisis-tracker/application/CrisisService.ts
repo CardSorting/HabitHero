@@ -1,161 +1,118 @@
 /**
- * Crisis Event Service - Application Service Layer
- * Acts as a facade over commands and queries for the UI layer
- * Following Clean Architecture principles
+ * Crisis Service implementation
+ * This service implements the CQRS Commands and Queries for crisis events
  */
 
 import { 
-  CrisisEvent, 
-  CrisisIntensity, 
-  CrisisType, 
-  DateString, 
-  TimeString, 
-  ID,
-  CrisisAnalytics,
-  CrisisTimePeriodSummary
-} from '../domain/models';
-
-import {
-  CrisisCommandHandlers,
-  CreateCrisisEventCommand,
-  UpdateCrisisEventCommand,
-  DeleteCrisisEventCommand
+  CreateCrisisEventCommand, 
+  UpdateCrisisEventCommand, 
+  DeleteCrisisEventCommand 
 } from './commands';
-
 import {
-  CrisisQueryHandlers,
-  GetCrisisEventsQuery,
+  GetAllCrisisEventsQuery,
   GetCrisisEventsByDateRangeQuery,
   GetCrisisEventByIdQuery,
   GetCrisisAnalyticsQuery,
   GetCrisisTimePeriodSummaryQuery
 } from './queries';
-
-import { ICrisisRepository } from '../domain/CrisisRepository';
+import { ICrisisRepository, ID, DateString } from '../domain/CrisisRepository';
+import { CrisisEvent, CrisisType, CrisisIntensity, CrisisAnalytics, CrisisTimePeriodSummary } from '../domain/models';
 
 /**
- * Application service providing a simplified interface for the UI layer
- * Coordinates the command and query handlers
+ * Crisis Tracker Service
+ * Implements the application layer for the crisis tracker
  */
 export class CrisisService {
-  private commandHandlers: CrisisCommandHandlers;
-  private queryHandlers: CrisisQueryHandlers;
-  
-  constructor(private repository: ICrisisRepository) {
-    this.commandHandlers = new CrisisCommandHandlers(repository);
-    this.queryHandlers = new CrisisQueryHandlers(repository);
+  constructor(private repository: ICrisisRepository) {}
+
+  /**
+   * Command handler to create a new crisis event
+   */
+  createCrisisEvent(command: Omit<CreateCrisisEventCommand, 'execute'>): Promise<number> {
+    return this.repository.create({
+      userId: command.userId,
+      type: command.type,
+      date: command.date,
+      time: command.time,
+      intensity: command.intensity,
+      duration: command.duration,
+      notes: command.notes,
+      symptoms: command.symptoms,
+      triggers: command.triggers,
+      copingStrategiesUsed: command.copingStrategiesUsed,
+      copingStrategyEffectiveness: command.copingStrategyEffectiveness,
+      helpSought: command.helpSought,
+      medication: command.medication
+    }).then(event => event.id!);
   }
-  
-  // Command methods (write operations)
-  
-  async createCrisisEvent(
-    userId: ID,
-    crisisType: CrisisType,
-    date: DateString,
-    intensity: CrisisIntensity,
-    time?: TimeString,
-    duration?: number,
-    notes?: string,
-    symptoms?: string[],
-    triggers?: string[],
-    copingStrategiesUsed?: string[],
-    copingStrategyEffectiveness?: number,
-    helpSought: boolean = false,
-    medication: boolean = false
-  ): Promise<CrisisEvent> {
-    const command = new CreateCrisisEventCommand(
-      userId,
-      crisisType,
-      date,
-      time,
-      intensity,
-      duration,
-      notes,
-      symptoms,
-      triggers,
-      copingStrategiesUsed,
-      copingStrategyEffectiveness,
-      helpSought,
-      medication
+
+  /**
+   * Command handler to update an existing crisis event
+   */
+  updateCrisisEvent(command: Omit<UpdateCrisisEventCommand, 'execute'>): Promise<boolean> {
+    return this.repository.update(command.id, {
+      type: command.type,
+      date: command.date,
+      time: command.time,
+      intensity: command.intensity,
+      duration: command.duration,
+      notes: command.notes,
+      symptoms: command.symptoms,
+      triggers: command.triggers,
+      copingStrategiesUsed: command.copingStrategiesUsed,
+      copingStrategyEffectiveness: command.copingStrategyEffectiveness,
+      helpSought: command.helpSought,
+      medication: command.medication
+    }).then(() => true);
+  }
+
+  /**
+   * Command handler to delete a crisis event
+   */
+  deleteCrisisEvent(command: Omit<DeleteCrisisEventCommand, 'execute'>): Promise<boolean> {
+    return this.repository.delete(command.id);
+  }
+
+  /**
+   * Query handler to get all crisis events
+   */
+  getAllCrisisEvents(query: Omit<GetAllCrisisEventsQuery, 'execute'>): Promise<CrisisEvent[]> {
+    return this.repository.getAll(query.userId);
+  }
+
+  /**
+   * Query handler to get crisis events by date range
+   */
+  getCrisisEventsByDateRange(query: Omit<GetCrisisEventsByDateRangeQuery, 'execute'>): Promise<CrisisEvent[]> {
+    return this.repository.getByDateRange(
+      query.userId,
+      query.startDate,
+      query.endDate
     );
-    
-    return this.commandHandlers.handleCreateCrisisEvent(command);
   }
-  
-  async updateCrisisEvent(
-    id: ID,
-    crisisType?: CrisisType,
-    date?: DateString,
-    time?: TimeString,
-    intensity?: CrisisIntensity,
-    duration?: number,
-    notes?: string,
-    symptoms?: string[],
-    triggers?: string[],
-    copingStrategiesUsed?: string[],
-    copingStrategyEffectiveness?: number,
-    helpSought?: boolean,
-    medication?: boolean
-  ): Promise<CrisisEvent> {
-    const command = new UpdateCrisisEventCommand(
-      id,
-      crisisType,
-      date,
-      time,
-      intensity,
-      duration,
-      notes,
-      symptoms,
-      triggers,
-      copingStrategiesUsed,
-      copingStrategyEffectiveness,
-      helpSought,
-      medication
+
+  /**
+   * Query handler to get a specific crisis event by ID
+   */
+  getCrisisEventById(query: Omit<GetCrisisEventByIdQuery, 'execute'>): Promise<CrisisEvent | null> {
+    return this.repository.getById(query.id);
+  }
+
+  /**
+   * Query handler to get analytics data
+   */
+  getCrisisAnalytics(query: Omit<GetCrisisAnalyticsQuery, 'execute'>): Promise<CrisisAnalytics> {
+    return this.repository.getAnalytics(
+      query.userId,
+      query.startDate,
+      query.endDate
     );
-    
-    return this.commandHandlers.handleUpdateCrisisEvent(command);
   }
-  
-  async deleteCrisisEvent(id: ID): Promise<boolean> {
-    const command = new DeleteCrisisEventCommand(id);
-    return this.commandHandlers.handleDeleteCrisisEvent(command);
-  }
-  
-  // Query methods (read operations)
-  
-  async getCrisisEvents(userId: ID): Promise<CrisisEvent[]> {
-    const query = new GetCrisisEventsQuery(userId);
-    return this.queryHandlers.handleGetCrisisEvents(query);
-  }
-  
-  async getCrisisEventsByDateRange(
-    userId: ID, 
-    startDate: DateString, 
-    endDate: DateString
-  ): Promise<CrisisEvent[]> {
-    const query = new GetCrisisEventsByDateRangeQuery(userId, startDate, endDate);
-    return this.queryHandlers.handleGetCrisisEventsByDateRange(query);
-  }
-  
-  async getCrisisEventById(id: ID): Promise<CrisisEvent | undefined> {
-    const query = new GetCrisisEventByIdQuery(id);
-    return this.queryHandlers.handleGetCrisisEventById(query);
-  }
-  
-  async getCrisisAnalytics(
-    userId: ID, 
-    startDate?: DateString, 
-    endDate?: DateString
-  ): Promise<CrisisAnalytics> {
-    const query = new GetCrisisAnalyticsQuery(userId, startDate, endDate);
-    return this.queryHandlers.handleGetCrisisAnalytics(query);
-  }
-  
-  async getCrisisTimePeriodSummary(
-    userId: ID, 
-    period: 'day' | 'week' | 'month' | 'year'
-  ): Promise<CrisisTimePeriodSummary> {
-    const query = new GetCrisisTimePeriodSummaryQuery(userId, period);
-    return this.queryHandlers.handleGetCrisisTimePeriodSummary(query);
+
+  /**
+   * Query handler to get summary data for a specific time period
+   */
+  getCrisisTimePeriodSummary(query: Omit<GetCrisisTimePeriodSummaryQuery, 'execute'>): Promise<CrisisTimePeriodSummary> {
+    return this.repository.getTimePeriodSummary(query.userId, query.period);
   }
 }

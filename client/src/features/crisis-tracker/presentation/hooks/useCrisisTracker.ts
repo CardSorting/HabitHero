@@ -3,115 +3,99 @@
  * Provides UI layer with access to application services
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ApiCrisisRepository } from '../../infrastructure/CrisisRepository';
-import { CrisisService } from '../../application/CrisisService';
-import { 
-  CrisisEvent, 
-  CrisisIntensity, 
-  CrisisType,
-  DateString, 
-  TimeString,
-  ID
-} from '../../domain/models';
-import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
-// Initialize the repository and service
-const crisisRepository = new ApiCrisisRepository();
-const crisisService = new CrisisService(crisisRepository);
+import { CrisisService } from '../../application/CrisisService';
+import { ApiCrisisRepository } from '../../infrastructure/ApiCrisisRepository';
+import { CrisisEvent, CrisisType, CrisisIntensity } from '../../domain/models';
+import { ID, DateString, TimeString } from '../../domain/CrisisRepository';
 
 export function useCrisisTracker(userId: ID) {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   
-  // Queries
+  // Initialize services
+  const crisisService = useMemo(() => {
+    const repository = new ApiCrisisRepository();
+    return new CrisisService(repository);
+  }, []);
+
+  // Query for fetching all crisis events
   const { 
-    data: crisisEvents,
+    data: crisisEvents = [], 
     isLoading: isLoadingEvents,
     error: eventsError,
+    refetch: refetchEvents
   } = useQuery({
     queryKey: ['/api/crisis-events'],
-    queryFn: () => crisisService.getCrisisEvents(userId),
+    queryFn: () => crisisService.getAllCrisisEvents({ userId })
   });
-  
+
+  // Callback for fetching crisis events by date range
   const getCrisisEventsByDateRange = useCallback((startDate: DateString, endDate: DateString) => {
-    return useQuery({
-      queryKey: ['/api/crisis-events/range', startDate, endDate],
-      queryFn: () => crisisService.getCrisisEventsByDateRange(userId, startDate, endDate),
+    return crisisService.getCrisisEventsByDateRange({
+      userId,
+      startDate,
+      endDate
     });
-  }, [userId]);
-  
+  }, [crisisService, userId]);
+
+  // Callback for fetching a single crisis event by ID
   const getCrisisEventById = useCallback((id: ID) => {
-    return useQuery({
-      queryKey: ['/api/crisis-events', id],
-      queryFn: () => crisisService.getCrisisEventById(id),
-    });
-  }, []);
-  
+    return crisisService.getCrisisEventById({ id });
+  }, [crisisService]);
+
+  // Callback for fetching analytics data
   const getAnalytics = useCallback((startDate?: DateString, endDate?: DateString) => {
-    return useQuery({
-      queryKey: ['/api/crisis-events/analytics/summary', startDate, endDate],
-      queryFn: () => crisisService.getCrisisAnalytics(userId, startDate, endDate),
+    return crisisService.getCrisisAnalytics({
+      userId,
+      startDate,
+      endDate
     });
-  }, [userId]);
-  
-  const getTimePeriodSummary = useCallback((period: 'day' | 'week' | 'month' | 'year') => {
-    return useQuery({
-      queryKey: ['/api/crisis-events/analytics/period', period],
-      queryFn: () => crisisService.getCrisisTimePeriodSummary(userId, period),
-    });
-  }, [userId]);
-  
-  // Mutations
-  const createCrisisMutation = useMutation({
+  }, [crisisService, userId]);
+
+  // Mutation for creating crisis events
+  const { mutate: createCrisis, isPending: isCreating } = useMutation({
     mutationFn: (data: {
+      userId: ID;
       crisisType: CrisisType;
       date: DateString;
-      intensity: CrisisIntensity;
       time?: TimeString;
+      intensity: CrisisIntensity;
       duration?: number;
       notes?: string;
       symptoms?: string[];
       triggers?: string[];
       copingStrategiesUsed?: string[];
       copingStrategyEffectiveness?: number;
-      helpSought?: boolean;
-      medication?: boolean;
+      helpSought: boolean;
+      medication: boolean;
     }) => {
-      return crisisService.createCrisisEvent(
-        userId,
-        data.crisisType,
-        data.date,
-        data.intensity,
-        data.time,
-        data.duration,
-        data.notes,
-        data.symptoms,
-        data.triggers,
-        data.copingStrategiesUsed,
-        data.copingStrategyEffectiveness,
-        data.helpSought || false,
-        data.medication || false
-      );
+      return crisisService.createCrisisEvent({
+        userId: data.userId,
+        type: data.crisisType,
+        date: data.date,
+        time: data.time,
+        intensity: data.intensity,
+        duration: data.duration,
+        notes: data.notes,
+        symptoms: data.symptoms,
+        triggers: data.triggers,
+        copingStrategiesUsed: data.copingStrategiesUsed,
+        copingStrategyEffectiveness: data.copingStrategyEffectiveness,
+        helpSought: data.helpSought,
+        medication: data.medication
+      });
     },
     onSuccess: () => {
+      // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['/api/crisis-events'] });
-      toast({
-        title: "Success",
-        description: "Crisis event recorded successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to record crisis event",
-        variant: "destructive",
-      });
     }
   });
-  
-  const updateCrisisMutation = useMutation({
+
+  // Mutation for updating crisis events
+  const { mutate: updateCrisis, isPending: isUpdating } = useMutation({
     mutationFn: (data: {
       id: ID;
       crisisType?: CrisisType;
@@ -127,76 +111,53 @@ export function useCrisisTracker(userId: ID) {
       helpSought?: boolean;
       medication?: boolean;
     }) => {
-      return crisisService.updateCrisisEvent(
-        data.id,
-        data.crisisType,
-        data.date,
-        data.time,
-        data.intensity,
-        data.duration,
-        data.notes,
-        data.symptoms,
-        data.triggers,
-        data.copingStrategiesUsed,
-        data.copingStrategyEffectiveness,
-        data.helpSought,
-        data.medication
-      );
+      return crisisService.updateCrisisEvent({
+        id: data.id,
+        type: data.crisisType,
+        date: data.date,
+        time: data.time,
+        intensity: data.intensity,
+        duration: data.duration,
+        notes: data.notes,
+        symptoms: data.symptoms,
+        triggers: data.triggers,
+        copingStrategiesUsed: data.copingStrategiesUsed,
+        copingStrategyEffectiveness: data.copingStrategyEffectiveness,
+        helpSought: data.helpSought,
+        medication: data.medication
+      });
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
+      // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['/api/crisis-events'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/crisis-events', variables.id] });
-      toast({
-        title: "Success",
-        description: "Crisis event updated successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update crisis event",
-        variant: "destructive",
-      });
     }
   });
-  
-  const deleteCrisisMutation = useMutation({
+
+  // Mutation for deleting crisis events
+  const { mutate: deleteCrisis, isPending: isDeleting } = useMutation({
     mutationFn: (id: ID) => {
-      return crisisService.deleteCrisisEvent(id);
+      return crisisService.deleteCrisisEvent({ id });
     },
-    onSuccess: (_, id) => {
+    onSuccess: () => {
+      // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['/api/crisis-events'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/crisis-events', id] });
-      toast({
-        title: "Success",
-        description: "Crisis event deleted successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete crisis event",
-        variant: "destructive",
-      });
     }
   });
-  
+
+  // Return hook interface
   return {
-    // Queries
     crisisEvents,
     isLoadingEvents,
     eventsError,
+    refetchEvents,
     getCrisisEventsByDateRange,
     getCrisisEventById,
     getAnalytics,
-    getTimePeriodSummary,
-    
-    // Mutations
-    createCrisis: createCrisisMutation.mutate,
-    updateCrisis: updateCrisisMutation.mutate,
-    deleteCrisis: deleteCrisisMutation.mutate,
-    isCreating: createCrisisMutation.isPending,
-    isUpdating: updateCrisisMutation.isPending,
-    isDeleting: deleteCrisisMutation.isPending,
+    createCrisis,
+    isCreating,
+    updateCrisis,
+    isUpdating,
+    deleteCrisis,
+    isDeleting
   };
 }

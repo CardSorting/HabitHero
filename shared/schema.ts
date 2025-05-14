@@ -433,6 +433,12 @@ export const insertUserEmotionSchema = createInsertSchema(userEmotions).omit({
   createdAt: true,
 });
 
+export const insertCrisisEventSchema = createInsertSchema(crisisEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Define types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -481,3 +487,6 @@ export type InsertEmotion = z.infer<typeof insertEmotionSchema>;
 
 export type UserEmotion = typeof userEmotions.$inferSelect;
 export type InsertUserEmotion = z.infer<typeof insertUserEmotionSchema>;
+
+export type CrisisEvent = typeof crisisEvents.$inferSelect;
+export type InsertCrisisEvent = z.infer<typeof insertCrisisEventSchema>;

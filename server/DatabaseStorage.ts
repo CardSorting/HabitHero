@@ -1,4 +1,4 @@
-import { eq, sql, and, desc } from 'drizzle-orm';
+import { eq, sql, and, desc, between, count, avg, gte, lte } from 'drizzle-orm';
 import { db, pool } from './db';
 import { 
   habits, 
@@ -13,6 +13,7 @@ import {
   wellnessChallenges,
   wellnessChallengeGoals,
   wellnessChallengeProgress,
+  crisisEvents,
   Habit, 
   HabitCompletion, 
   InsertHabit, 
@@ -31,9 +32,11 @@ import {
   WellnessChallengeProgress,
   InsertWellnessChallenge,
   InsertWellnessChallengeGoal,
-  InsertWellnessChallengeProgress
+  InsertWellnessChallengeProgress,
+  CrisisEvent,
+  InsertCrisisEvent
 } from '@shared/schema';
-import { IStorage, HabitWithCompletions, WellnessChallengeWithDetails, ChallengeSummary, ChallengeStreak } from './storage';
+import { IStorage, HabitWithCompletions, WellnessChallengeWithDetails, ChallengeSummary, ChallengeStreak, CrisisAnalytics, CrisisTimePeriodSummary } from './storage';
 
 export class DatabaseStorage implements IStorage {
   pool: any;

@@ -13,7 +13,9 @@ import {
   type WellnessChallengeGoal,
   type InsertWellnessChallengeGoal,
   type WellnessChallengeProgress,
-  type InsertWellnessChallengeProgress
+  type InsertWellnessChallengeProgress,
+  type CrisisEvent,
+  type InsertCrisisEvent
 } from "@shared/schema";
 import { startOfDay, subDays, format, addDays } from "date-fns";
 
@@ -45,6 +47,27 @@ export interface ChallengeStreak {
   challengeId: number;
   currentStreak: number;
   longestStreak: number;
+}
+
+// Crisis event analytics
+export interface CrisisAnalytics {
+  totalEvents: number;
+  byType: { [key: string]: number };
+  byIntensity: { [key: string]: number };
+  commonTriggers: string[];
+  commonSymptoms: string[];
+  effectiveCopingStrategies: string[];
+  averageDuration: number;
+}
+
+// Crisis event time period summary
+export interface CrisisTimePeriodSummary {
+  period: 'day' | 'week' | 'month' | 'year';
+  startDate: string;
+  endDate: string;
+  count: number;
+  averageIntensity: number;
+  trend: 'increasing' | 'decreasing' | 'stable';
 }
 
 export interface IStorage {
@@ -84,6 +107,18 @@ export interface IStorage {
   // Challenge analytics methods
   getChallengeSummary(userId: number): Promise<ChallengeSummary>;
   getChallengeStreak(challengeId: number): Promise<ChallengeStreak>;
+  
+  // Crisis events methods
+  getCrisisEvents(userId: number): Promise<CrisisEvent[]>;
+  getCrisisEventsByDateRange(userId: number, startDate: string, endDate: string): Promise<CrisisEvent[]>;
+  getCrisisEventById(id: number): Promise<CrisisEvent | undefined>;
+  createCrisisEvent(crisisEvent: InsertCrisisEvent): Promise<CrisisEvent>;
+  updateCrisisEvent(id: number, crisisEvent: Partial<CrisisEvent>): Promise<CrisisEvent>;
+  deleteCrisisEvent(id: number): Promise<boolean>;
+  
+  // Crisis analytics methods
+  getCrisisAnalytics(userId: number, startDate?: string, endDate?: string): Promise<CrisisAnalytics>;
+  getCrisisTimePeriodSummary(userId: number, period: 'day' | 'week' | 'month' | 'year'): Promise<CrisisTimePeriodSummary>;
 }
 
 export class MemStorage implements IStorage {

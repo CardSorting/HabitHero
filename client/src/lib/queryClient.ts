@@ -7,11 +7,17 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
+export interface ApiRequestOptions {
+  url: string;
+  method: string;
+  data?: unknown;
+}
+
+export async function apiRequest({
+  url,
+  method,
+  data,
+}: ApiRequestOptions): Promise<any> {
   console.log(`Making ${method} request to ${url}`, data);
   
   try {
@@ -36,7 +42,7 @@ export async function apiRequest(
     }
     
     await throwIfResNotOk(res);
-    return res;
+    return res.json().catch(() => res);
   } catch (error) {
     console.error("API request error:", error);
     throw error;

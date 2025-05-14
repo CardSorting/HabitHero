@@ -47,7 +47,7 @@ export default function LandingPage() {
   const [, navigate] = useLocation();
 
   const handleGetStarted = () => {
-    navigate("/auth");
+    navigate("/onboarding");
   };
 
   return (
@@ -65,7 +65,7 @@ export default function LandingPage() {
             <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
               Log in
             </Button>
-            <Button size="sm" onClick={() => navigate("/auth")}>
+            <Button size="sm" onClick={() => navigate("/onboarding")}>
               Sign up
             </Button>
           </div>

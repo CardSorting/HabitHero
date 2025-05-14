@@ -6,24 +6,29 @@ import { motion } from "framer-motion";
 
 const onboardingScreens = [
   {
-    title: "Welcome to Habit Builder",
-    description: "Your personal habit tracking app that helps you build positive daily habits and improve your wellbeing.",
+    title: "Welcome to MindfulTrack",
+    description: "Your comprehensive mental health tracking app that helps you monitor emotions and build positive habits.",
     icon: "👋",
   },
   {
-    title: "Track Your Habits",
-    description: "Build consistency by tracking your daily habits and watching your progress grow over time.",
-    icon: "📈",
-  },
-  {
-    title: "Log Your Emotions",
-    description: "Use the DBT diary card to monitor your emotional wellbeing and practice healthy coping skills.",
+    title: "Track Your Emotions",
+    description: "Log and visualize your emotions with intensity tracking to identify patterns and reduce ineffective reactions.",
     icon: "😌",
   },
   {
-    title: "Set Meaningful Goals",
-    description: "Create daily goals that align with your values and track your progress towards achieving them.",
-    icon: "🎯",
+    title: "Build Positive Habits",
+    description: "Create and maintain healthy daily habits with streak tracking and insightful progress analytics.",
+    icon: "📈",
+  },
+  {
+    title: "Therapy Integration",
+    description: "Share insights with your therapist to improve session outcomes and track progress between appointments.",
+    icon: "🧠",
+  },
+  {
+    title: "DBT Skills Practice",
+    description: "Use the digital DBT diary card to practice skills, track urges, and monitor emotional wellness daily.",
+    icon: "🛠️",
   },
 ];
 

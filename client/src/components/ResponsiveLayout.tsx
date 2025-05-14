@@ -10,10 +10,18 @@ interface ResponsiveLayoutProps {
 
 const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({ children }) => {
   const [location] = useLocation();
-  const isAuthOrOnboarding = location === "/auth" || location === "/";
+  
+  // For landing page, use a full-width layout with no constraints
+  if (location === "/") {
+    return (
+      <div className="min-h-screen bg-background">
+        {children}
+      </div>
+    );
+  }
   
   // For auth/onboarding screens, use a simple centered layout
-  if (isAuthOrOnboarding) {
+  if (location === "/auth" || location === "/onboarding") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-full max-w-md mx-auto">

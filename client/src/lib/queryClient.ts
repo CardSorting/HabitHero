@@ -21,8 +21,12 @@ export async function apiRequest({
   console.log(`Making ${method} request to ${url}`, data);
   
   try {
+    // Validate HTTP method
+    const validMethod = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase()) ? 
+                        method.toUpperCase() : 'GET';
+    
     const res = await fetch(url, {
-      method,
+      method: validMethod,
       headers: data ? { "Content-Type": "application/json" } : {},
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",

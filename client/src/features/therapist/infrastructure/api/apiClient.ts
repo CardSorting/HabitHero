@@ -126,9 +126,8 @@ export const therapistApiClient = {
    */
   async searchClients(usernameQuery: string): Promise<Client[]> {
     return apiRequest({
-      url: therapistEndpoints.searchClients,
-      method: 'GET',
-      params: { query: usernameQuery }
+      url: `${therapistEndpoints.searchClients}?query=${encodeURIComponent(usernameQuery)}`,
+      method: 'GET'
     });
   },
   
@@ -270,14 +269,20 @@ export const therapistApiClient = {
     startDate?: DateString, 
     endDate?: DateString
   ): Promise<ClientAnalytics> {
-    const params: QueryParams = {};
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
+    let url = therapistEndpoints.getClientAnalytics(clientId);
+    
+    // Add query parameters if provided
+    const queryParams = [];
+    if (startDate) queryParams.push(`startDate=${encodeURIComponent(startDate)}`);
+    if (endDate) queryParams.push(`endDate=${encodeURIComponent(endDate)}`);
+    
+    if (queryParams.length > 0) {
+      url = `${url}?${queryParams.join('&')}`;
+    }
     
     return apiRequest({
-      url: therapistEndpoints.getClientAnalytics(clientId),
-      method: 'GET',
-      params
+      url,
+      method: 'GET'
     });
   }
 };

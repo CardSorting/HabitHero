@@ -24,6 +24,9 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 export async function registerRoutes(app: Express): Promise<any> {
   const server = createServer(app);
   
+  // Set up the storage in app locals so it's accessible to all routes
+  app.locals.storage = storage;
+  
   // Setup authentication routes and middleware
   setupAuth(app);
   

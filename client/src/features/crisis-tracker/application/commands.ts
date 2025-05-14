@@ -1,153 +1,59 @@
 /**
- * Command objects for the Crisis Events system following CQRS pattern
- * Commands represent operations that change state
+ * CQRS Command definitions for Crisis Tracker
+ * Following the Command Query Responsibility Segregation pattern
  */
 
-import { 
-  CrisisIntensity, 
-  CrisisType, 
-  DateString, 
-  TimeString,
-  ID
-} from '../domain/models';
+import { ID, DateString } from '../domain/CrisisRepository';
+import { CrisisType, CrisisIntensity } from '../domain/models';
 
-// Base Command interface
-export interface Command {
-  readonly type: string;
-  readonly timestamp: string;
+/**
+ * Base command interface
+ */
+export interface Command<T = void> {
+  execute(): Promise<T>;
 }
 
-// Crisis Event Commands
-export class CreateCrisisEventCommand implements Command {
-  readonly type = 'CREATE_CRISIS_EVENT';
-  readonly timestamp: string;
-  
-  constructor(
-    public readonly userId: ID,
-    public readonly crisisType: CrisisType,
-    public readonly date: DateString,
-    public readonly time: TimeString | undefined,
-    public readonly intensity: CrisisIntensity,
-    public readonly duration: number | undefined,
-    public readonly notes: string | undefined,
-    public readonly symptoms: string[] | undefined,
-    public readonly triggers: string[] | undefined,
-    public readonly copingStrategiesUsed: string[] | undefined,
-    public readonly copingStrategyEffectiveness: number | undefined,
-    public readonly helpSought: boolean,
-    public readonly medication: boolean,
-  ) {
-    this.timestamp = new Date().toISOString();
-  }
+/**
+ * Command to create a new crisis event
+ */
+export interface CreateCrisisEventCommand extends Command<number> {
+  userId: ID;
+  type: CrisisType;
+  date: DateString;
+  time?: string;
+  intensity: CrisisIntensity;
+  duration?: number;
+  notes?: string;
+  symptoms?: string[];
+  triggers?: string[];
+  copingStrategiesUsed?: string[];
+  copingStrategyEffectiveness?: number;
+  helpSought: boolean;
+  medication: boolean;
 }
 
-export class UpdateCrisisEventCommand implements Command {
-  readonly type = 'UPDATE_CRISIS_EVENT';
-  readonly timestamp: string;
-  
-  constructor(
-    public readonly id: ID,
-    public readonly crisisType?: CrisisType,
-    public readonly date?: DateString,
-    public readonly time?: TimeString,
-    public readonly intensity?: CrisisIntensity,
-    public readonly duration?: number,
-    public readonly notes?: string,
-    public readonly symptoms?: string[],
-    public readonly triggers?: string[],
-    public readonly copingStrategiesUsed?: string[],
-    public readonly copingStrategyEffectiveness?: number,
-    public readonly helpSought?: boolean,
-    public readonly medication?: boolean,
-  ) {
-    this.timestamp = new Date().toISOString();
-  }
+/**
+ * Command to update an existing crisis event
+ */
+export interface UpdateCrisisEventCommand extends Command<boolean> {
+  id: ID;
+  type?: CrisisType;
+  date?: DateString;
+  time?: string;
+  intensity?: CrisisIntensity;
+  duration?: number;
+  notes?: string;
+  symptoms?: string[];
+  triggers?: string[];
+  copingStrategiesUsed?: string[];
+  copingStrategyEffectiveness?: number;
+  helpSought?: boolean;
+  medication?: boolean;
 }
 
-export class DeleteCrisisEventCommand implements Command {
-  readonly type = 'DELETE_CRISIS_EVENT';
-  readonly timestamp: string;
-  
-  constructor(
-    public readonly id: ID
-  ) {
-    this.timestamp = new Date().toISOString();
-  }
-}
-
-// Command Handlers
-export class CrisisCommandHandlers {
-  constructor(private repository: any) {}
-  
-  async handleCreateCrisisEvent(command: CreateCrisisEventCommand) {
-    const {
-      userId,
-      crisisType: type,
-      date,
-      time,
-      intensity,
-      duration,
-      notes,
-      symptoms,
-      triggers,
-      copingStrategiesUsed,
-      copingStrategyEffectiveness,
-      helpSought,
-      medication
-    } = command;
-    
-    return this.repository.createCrisisEvent({
-      userId,
-      type,
-      date,
-      time,
-      intensity,
-      duration,
-      notes,
-      symptoms,
-      triggers,
-      copingStrategiesUsed,
-      copingStrategyEffectiveness,
-      helpSought,
-      medication
-    });
-  }
-  
-  async handleUpdateCrisisEvent(command: UpdateCrisisEventCommand) {
-    const {
-      id,
-      crisisType: type,
-      date,
-      time,
-      intensity,
-      duration,
-      notes,
-      symptoms,
-      triggers,
-      copingStrategiesUsed,
-      copingStrategyEffectiveness,
-      helpSought,
-      medication
-    } = command;
-    
-    return this.repository.updateCrisisEvent({
-      id,
-      type,
-      date,
-      time,
-      intensity,
-      duration,
-      notes,
-      symptoms,
-      triggers,
-      copingStrategiesUsed,
-      copingStrategyEffectiveness,
-      helpSought,
-      medication
-    });
-  }
-  
-  async handleDeleteCrisisEvent(command: DeleteCrisisEventCommand) {
-    return this.repository.deleteCrisisEvent(command.id);
-  }
+/**
+ * Command to delete a crisis event
+ */
+export interface DeleteCrisisEventCommand extends Command<boolean> {
+  id: ID;
 }

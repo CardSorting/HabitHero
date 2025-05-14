@@ -1,22 +1,9 @@
 /**
- * Domain models for the Crisis Events feature
- * Following DDD principles, these models represent the core business entities and value objects
+ * Domain models for the Crisis Tracker feature
  */
 
-// Type aliases for primitive types with semantic meaning
-export type DateString = string;
-export type TimeString = string; // Format: HH:MM:SS
-export type ID = number;
+// Type definitions
 
-// Crisis Intensity enum - mirrors the DB enum
-export enum CrisisIntensity {
-  MILD = 'mild',
-  MODERATE = 'moderate',
-  SEVERE = 'severe',
-  EXTREME = 'extreme'
-}
-
-// Crisis Type enum - mirrors the DB enum
 export enum CrisisType {
   PANIC_ATTACK = 'panic_attack',
   EMOTIONAL_CRISIS = 'emotional_crisis',
@@ -26,129 +13,114 @@ export enum CrisisType {
   OTHER = 'other'
 }
 
-// Core domain entity for Crisis Event
-export interface CrisisEvent {
-  id: ID;
-  userId: ID;
-  type: CrisisType;
-  date: DateString;
-  time?: TimeString;
-  intensity: CrisisIntensity;
-  duration?: number; // in minutes
-  notes?: string;
-  symptoms?: string[];
-  triggers?: string[];
-  copingStrategiesUsed?: string[];
-  copingStrategyEffectiveness?: number; // 1-10 scale
-  helpSought: boolean;
-  medication: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+export enum CrisisIntensity {
+  MILD = 'mild',
+  MODERATE = 'moderate',
+  SEVERE = 'severe',
+  EXTREME = 'extreme'
 }
 
-// Data structure for creating a new crisis event
-export interface CreateCrisisEventData {
-  userId: ID;
-  type: CrisisType;
-  date: DateString;
-  time?: TimeString;
-  intensity: CrisisIntensity;
-  duration?: number;
-  notes?: string;
-  symptoms?: string[];
-  triggers?: string[];
-  copingStrategiesUsed?: string[];
-  copingStrategyEffectiveness?: number;
-  helpSought: boolean;
-  medication: boolean;
-}
-
-// Data structure for updating an existing crisis event
-export interface UpdateCrisisEventData {
-  id: ID;
-  type?: CrisisType;
-  date?: DateString;
-  time?: TimeString;
-  intensity?: CrisisIntensity;
-  duration?: number;
-  notes?: string;
-  symptoms?: string[];
-  triggers?: string[];
-  copingStrategiesUsed?: string[];
-  copingStrategyEffectiveness?: number;
-  helpSought?: boolean;
-  medication?: boolean;
-}
-
-// Analytics value objects
-export interface CrisisAnalytics {
-  totalEvents: number;
-  byType: Record<string, number>;
-  byIntensity: Record<string, number>;
-  commonTriggers: string[];
-  commonSymptoms: string[];
-  effectiveCopingStrategies: string[];
-  averageDuration: number;
-}
-
-export interface CrisisTimePeriodSummary {
-  period: 'day' | 'week' | 'month' | 'year';
-  startDate: DateString;
-  endDate: DateString;
-  count: number;
-  averageIntensity: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
-}
-
-// Common symptom categories for panic/crisis tracking
+// Common symptoms experienced during crisis events
 export const CommonPanicSymptoms = [
-  'Shortness of breath',
-  'Racing heart',
   'Chest pain',
-  'Feeling of choking',
-  'Nausea',
-  'Dizziness',
-  'Trembling or shaking',
+  'Racing heart',
+  'Shortness of breath',
+  'Choking sensation',
+  'Dizziness/lightheadedness',
   'Sweating',
+  'Nausea',
+  'Trembling/shaking',
   'Chills or hot flashes',
-  'Numbness or tingling',
+  'Numbness/tingling sensations',
   'Feeling of unreality',
   'Fear of losing control',
-  'Fear of dying',
+  'Fear of dying'
 ];
 
-// Common crisis triggers
+// Common triggers for crisis events
 export const CommonCrisisTriggers = [
   'Social situation',
+  'Conflict',
+  'Rejection',
   'Work stress',
-  'Relationship conflict',
-  'Financial pressure',
+  'Financial stress',
   'Health concerns',
-  'Past trauma reminder',
+  'Criticism',
+  'Trauma reminder',
   'Substance use',
+  'Isolation',
+  'Physical discomfort',
   'Sleep deprivation',
-  'Medication change',
-  'Sensory overload',
-  'Uncertainty',
-  'Criticism or rejection',
-  'Physical pain',
-  'Negative news/media',
+  'Environmental (noise, crowds, etc.)'
 ];
 
-// Common coping strategies
+// Common coping strategies for crisis management
 export const CommonCopingStrategies = [
   'Deep breathing',
-  'Progressive muscle relaxation',
   'Grounding techniques',
+  'Progressive muscle relaxation',
   'Mindfulness meditation',
+  'Crisis hotline call',
+  'Talking to a friend/family member',
   'Distraction activities',
-  'Physical exercise',
-  'Talking to a friend/therapist',
-  'Cold water on face/hands',
-  'Using PRN medication',
-  'Self-soothing with comfort items',
-  'Journaling',
-  'Positive self-talk',
-  'Opposite action (DBT)',
+  'Self-soothing techniques',
   'TIPP skills (DBT)',
+  'Physical exercise',
+  'Opposite action (DBT)',
+  'Radical acceptance (DBT)',
+  'Medication use'
 ];
+
+// Domain Entities
+
+/**
+ * Crisis Event entity representing a panic attack or emotional crisis.
+ */
+export interface CrisisEvent {
+  id?: number;
+  userId: number;
+  type: CrisisType;
+  date: string;
+  time?: string;
+  intensity: CrisisIntensity;
+  duration?: number;
+  notes?: string;
+  symptoms?: string[];
+  triggers?: string[];
+  copingStrategiesUsed?: string[];
+  copingStrategyEffectiveness?: number;
+  helpSought: boolean;
+  medication: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Crisis Analytics data structure for statistics and insights
+ */
+export interface CrisisAnalytics {
+  totalEvents: number;
+  eventsPerType: {[key: string]: number};
+  eventsPerIntensity: {[key: string]: number};
+  commonTriggers: {trigger: string, count: number}[];
+  commonSymptoms: {symptom: string, count: number}[];
+  effectiveCopingStrategies: {strategy: string, averageEffectiveness: number}[];
+  timeOfDayDistribution: {timeRange: string, count: number}[];
+  intensityTrend: {date: string, averageIntensity: number}[];
+}
+
+/**
+ * Crisis Summary data representing period-based statistics (day/week/month/year)
+ */
+export interface CrisisTimePeriodSummary {
+  period: 'day' | 'week' | 'month' | 'year';
+  totalEvents: number;
+  averageIntensity: number;
+  mostCommonType: string;
+  mostCommonTriggers: string[];
+  mostEffectiveStrategies: string[];
+  comparedToPrevious: {
+    percentChange: number;
+    trend: 'increasing' | 'decreasing' | 'stable';
+  }
+}

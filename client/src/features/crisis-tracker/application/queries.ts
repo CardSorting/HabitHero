@@ -1,96 +1,54 @@
 /**
- * Query objects for the Crisis Events system following CQRS pattern
- * Queries represent operations that read state
+ * CQRS Query definitions for Crisis Tracker
+ * Following the Command Query Responsibility Segregation pattern
  */
 
-import { 
-  DateString,
-  ID
-} from '../domain/models';
+import { ID, DateString } from '../domain/CrisisRepository';
+import { CrisisEvent, CrisisAnalytics, CrisisTimePeriodSummary } from '../domain/models';
 
-// Base Query interface
+/**
+ * Base query interface
+ */
 export interface Query<T> {
-  readonly type: string;
+  execute(): Promise<T>;
 }
 
-// Crisis Event Queries
-export class GetCrisisEventsQuery implements Query<any[]> {
-  readonly type = 'GET_CRISIS_EVENTS';
-  
-  constructor(
-    public readonly userId: ID
-  ) {}
+/**
+ * Query to get all crisis events for a user
+ */
+export interface GetAllCrisisEventsQuery extends Query<CrisisEvent[]> {
+  userId: ID;
 }
 
-export class GetCrisisEventsByDateRangeQuery implements Query<any[]> {
-  readonly type = 'GET_CRISIS_EVENTS_BY_DATE_RANGE';
-  
-  constructor(
-    public readonly userId: ID,
-    public readonly startDate: DateString,
-    public readonly endDate: DateString
-  ) {}
+/**
+ * Query to get crisis events in a date range
+ */
+export interface GetCrisisEventsByDateRangeQuery extends Query<CrisisEvent[]> {
+  userId: ID;
+  startDate: DateString;
+  endDate: DateString;
 }
 
-export class GetCrisisEventByIdQuery implements Query<any> {
-  readonly type = 'GET_CRISIS_EVENT_BY_ID';
-  
-  constructor(
-    public readonly id: ID
-  ) {}
+/**
+ * Query to get a specific crisis event by ID
+ */
+export interface GetCrisisEventByIdQuery extends Query<CrisisEvent | null> {
+  id: ID;
 }
 
-export class GetCrisisAnalyticsQuery implements Query<any> {
-  readonly type = 'GET_CRISIS_ANALYTICS';
-  
-  constructor(
-    public readonly userId: ID,
-    public readonly startDate?: DateString,
-    public readonly endDate?: DateString
-  ) {}
+/**
+ * Query to get analytics data about crisis events
+ */
+export interface GetCrisisAnalyticsQuery extends Query<CrisisAnalytics> {
+  userId: ID;
+  startDate?: DateString;
+  endDate?: DateString;
 }
 
-export class GetCrisisTimePeriodSummaryQuery implements Query<any> {
-  readonly type = 'GET_CRISIS_TIME_PERIOD_SUMMARY';
-  
-  constructor(
-    public readonly userId: ID,
-    public readonly period: 'day' | 'week' | 'month' | 'year'
-  ) {}
-}
-
-// Query Handlers
-export class CrisisQueryHandlers {
-  constructor(private repository: any) {}
-  
-  async handleGetCrisisEvents(query: GetCrisisEventsQuery) {
-    return this.repository.getCrisisEvents(query.userId);
-  }
-  
-  async handleGetCrisisEventsByDateRange(query: GetCrisisEventsByDateRangeQuery) {
-    return this.repository.getCrisisEventsByDateRange(
-      query.userId,
-      query.startDate,
-      query.endDate
-    );
-  }
-  
-  async handleGetCrisisEventById(query: GetCrisisEventByIdQuery) {
-    return this.repository.getCrisisEventById(query.id);
-  }
-  
-  async handleGetCrisisAnalytics(query: GetCrisisAnalyticsQuery) {
-    return this.repository.getCrisisAnalytics(
-      query.userId,
-      query.startDate,
-      query.endDate
-    );
-  }
-  
-  async handleGetCrisisTimePeriodSummary(query: GetCrisisTimePeriodSummaryQuery) {
-    return this.repository.getCrisisTimePeriodSummary(
-      query.userId,
-      query.period
-    );
-  }
+/**
+ * Query to get crisis summary for a specific time period
+ */
+export interface GetCrisisTimePeriodSummaryQuery extends Query<CrisisTimePeriodSummary> {
+  userId: ID;
+  period: 'day' | 'week' | 'month' | 'year';
 }

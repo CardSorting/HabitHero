@@ -542,6 +542,25 @@ export const insertCrisisEventSchema = createInsertSchema(crisisEvents).omit({
   updatedAt: true,
 });
 
+// Therapist-related insert schemas
+export const insertTherapistClientSchema = createInsertSchema(therapistClients).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTherapistNoteSchema = createInsertSchema(therapistNotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTreatmentPlanSchema = createInsertSchema(treatmentPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Define types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -593,3 +612,13 @@ export type InsertUserEmotion = z.infer<typeof insertUserEmotionSchema>;
 
 export type CrisisEvent = typeof crisisEvents.$inferSelect;
 export type InsertCrisisEvent = z.infer<typeof insertCrisisEventSchema>;
+
+// Therapist-related types
+export type TherapistClient = typeof therapistClients.$inferSelect;
+export type InsertTherapistClient = z.infer<typeof insertTherapistClientSchema>;
+
+export type TherapistNote = typeof therapistNotes.$inferSelect;
+export type InsertTherapistNote = z.infer<typeof insertTherapistNoteSchema>;
+
+export type TreatmentPlan = typeof treatmentPlans.$inferSelect;
+export type InsertTreatmentPlan = z.infer<typeof insertTreatmentPlanSchema>;

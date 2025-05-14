@@ -15,7 +15,13 @@ import {
   type WellnessChallengeProgress,
   type InsertWellnessChallengeProgress,
   type CrisisEvent,
-  type InsertCrisisEvent
+  type InsertCrisisEvent,
+  type TherapistClient,
+  type InsertTherapistClient,
+  type TherapistNote,
+  type InsertTherapistNote,
+  type TreatmentPlan,
+  type InsertTreatmentPlan
 } from "@shared/schema";
 import { startOfDay, subDays, format, addDays } from "date-fns";
 
@@ -70,6 +76,50 @@ export interface CrisisTimePeriodSummary {
   trend: 'increasing' | 'decreasing' | 'stable';
 }
 
+// Client summary for therapists
+export interface ClientSummary {
+  id: number;
+  username: string;
+  fullName?: string;
+  email?: string;
+  startDate: string;
+  status: string;
+  lastActivity?: string;
+  notes?: string;
+  emotionsCount: number;
+  crisisEventsCount: number;
+  wellnessChallengesCount: number;
+}
+
+// Client analytics data for therapists
+export interface ClientAnalytics {
+  clientId: number;
+  emotionTrends: {
+    date: string;
+    emotions: Array<{ name: string; intensity: number; categoryId: string; }>;
+    averageIntensity: number;
+  }[];
+  crisisEvents: {
+    count: number;
+    byType: { [key: string]: number };
+    byIntensity: { [key: string]: number };
+    recentEvents: CrisisEvent[];
+    trend: 'increasing' | 'decreasing' | 'stable';
+  };
+  treatmentProgress: {
+    activePlans: number;
+    completedPlans: number;
+    goalsAchieved: number;
+    totalGoals: number;
+  };
+  wellnessChallenges: {
+    active: number;
+    completed: number;
+    abandonedCount: number;
+    completionRate: number;
+  };
+}
+
 export interface IStorage {
   pool: any;
   getUser(id: number): Promise<User | undefined>;
@@ -119,6 +169,31 @@ export interface IStorage {
   // Crisis analytics methods
   getCrisisAnalytics(userId: number, startDate?: string, endDate?: string): Promise<CrisisAnalytics>;
   getCrisisTimePeriodSummary(userId: number, period: 'day' | 'week' | 'month' | 'year'): Promise<CrisisTimePeriodSummary>;
+  
+  // Therapist-client relationship methods
+  getTherapistClients(therapistId: number): Promise<ClientSummary[]>;
+  getClientTherapists(clientId: number): Promise<User[]>; 
+  assignClientToTherapist(therapistId: number, clientId: number, data: Omit<InsertTherapistClient, 'therapistId' | 'clientId'>): Promise<TherapistClient>;
+  removeClientFromTherapist(therapistId: number, clientId: number): Promise<boolean>;
+  updateClientTherapistRelationship(id: number, data: Partial<TherapistClient>): Promise<TherapistClient>;
+  
+  // Therapist notes methods
+  getTherapistNotes(therapistId: number, clientId: number): Promise<TherapistNote[]>;
+  getTherapistNoteById(id: number): Promise<TherapistNote | undefined>;
+  createTherapistNote(note: InsertTherapistNote): Promise<TherapistNote>;
+  updateTherapistNote(id: number, note: Partial<TherapistNote>): Promise<TherapistNote>;
+  deleteTherapistNote(id: number): Promise<boolean>;
+  
+  // Treatment plan methods
+  getTreatmentPlans(therapistId: number, clientId?: number): Promise<TreatmentPlan[]>;
+  getTreatmentPlanById(id: number): Promise<TreatmentPlan | undefined>;
+  createTreatmentPlan(plan: InsertTreatmentPlan): Promise<TreatmentPlan>;
+  updateTreatmentPlan(id: number, plan: Partial<TreatmentPlan>): Promise<TreatmentPlan>;
+  deleteTreatmentPlan(id: number): Promise<boolean>;
+  
+  // Therapist analytics methods
+  getClientAnalytics(therapistId: number, clientId: number, startDate?: string, endDate?: string): Promise<ClientAnalytics>;
+  isTherapistForClient(therapistId: number, clientId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {

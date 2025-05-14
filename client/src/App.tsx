@@ -58,14 +58,16 @@ function Router() {
           <Route path="/auth" component={ClientAuthPage} />
           <Route path="/therapist-auth" component={TherapistAuthPage} />
           
-          {/* Therapist routes */}
+          {/* Therapist routes with role protection */}
           <ProtectedRoute 
             path="/therapist" 
             component={TherapistDashboard}
+            requiredRole="therapist"
           />
           <ProtectedRoute 
             path="/therapist/clients/:clientId" 
-            component={ClientDetails} 
+            component={ClientDetails}
+            requiredRole="therapist"
           />
           <Route component={NotFound} />
         </Switch>

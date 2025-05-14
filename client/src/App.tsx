@@ -23,6 +23,7 @@ import ResponsiveLayout from "@/components/ResponsiveLayout";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { CrisisTrackerPage } from "@/features/crisis-tracker";
 
 function Router() {
   const [location] = useLocation();
@@ -41,6 +42,11 @@ function Router() {
           <ProtectedRoute path="/therapy" component={TherapyCompanion} />
           <ProtectedRoute path="/emotions" component={EmotionsTracker} />
           <ProtectedRoute path="/emotions/time-analysis/:timePeriod" component={EmotionTimeAnalysis} />
+          <ProtectedRoute path="/crisis-tracker" component={(props) => {
+            // Get the user id from auth context and pass to the CrisisTrackerPage
+            const user = props.user || { id: 1 };
+            return <CrisisTrackerPage userId={user.id} />;
+          }} />
           <ProtectedRoute path="/wellness-challenges" component={WellnessChallenges} />
           <ProtectedRoute path="/wellness-challenges/categories/:category" component={WellnessChallengeCategory} />
           <ProtectedRoute path="/wellness-challenges/:id" component={WellnessChallengeDetails} />

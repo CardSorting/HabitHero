@@ -18,7 +18,7 @@ import WellnessChallengeDetails from "@/pages/WellnessChallengeDetails";
 import WellnessChallengeCategory from "@/pages/WellnessChallengeCategory";
 import AuthPage from "@/pages/auth-page";
 import OnboardingPage from "@/pages/onboarding-page";
-import BottomNav from "@/components/BottomNav";
+import ResponsiveLayout from "@/components/ResponsiveLayout";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";

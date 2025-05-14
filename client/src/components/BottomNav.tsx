@@ -99,12 +99,12 @@ const BottomNav: React.FC = () => {
   return (
     <>
       <motion.nav 
-        className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-1 z-10 shadow-lg"
+        className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-1 z-10 shadow-lg lg:hidden"
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <div className="max-w-lg mx-auto px-0.5 sm:px-1">
+        <div className="w-full max-w-lg mx-auto px-0.5 sm:px-1">
           <div className="flex justify-between items-center relative">
             {/* Active indicator */}
             <motion.div 

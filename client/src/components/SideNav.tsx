@@ -10,19 +10,25 @@ import {
   SmilePlus,
   Target,
   AlertCircle,
+  UserCheck,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 interface NavItem {
   icon: React.ElementType;
   label: string;
   path: string;
   priority: number;
+  roleRequired?: "client" | "therapist" | "admin";
 }
 
 const SideNav: React.FC = () => {
   const [location] = useLocation();
-
+  const { user } = useAuth();
+  
+  // Define role-specific items
   const navItems: NavItem[] = [
     { icon: Home, label: "Today", path: "/today", priority: 100 },
     { icon: SmilePlus, label: "Emotions", path: "/emotions", priority: 90 },
@@ -32,6 +38,7 @@ const SideNav: React.FC = () => {
     { icon: Target, label: "Challenges", path: "/wellness-challenges", priority: 80 },
     { icon: BarChart2, label: "Progress", path: "/progress", priority: 60 },
     { icon: PieChart, label: "Analytics", path: "/analytics", priority: 50 },
+    { icon: ShieldCheck, label: "Therapist Portal", path: "/therapist", priority: 95, roleRequired: "therapist" },
     { icon: Settings, label: "Settings", path: "/settings", priority: 40 },
   ];
 
@@ -43,30 +50,37 @@ const SideNav: React.FC = () => {
       
       <nav className="flex-1">
         <ul className="space-y-1 px-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location === item.path;
-            
-            return (
-              <li key={item.path}>
-                <Link href={item.path}>
-                  <div className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer",
-                    isActive 
-                      ? "bg-primary/10 text-primary" 
-                      : "text-foreground hover:bg-muted hover:text-primary"
-                  )}>
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                    
-                    {isActive && (
-                      <div className="w-1 h-5 bg-primary rounded-full ml-auto" />
-                    )}
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
+          {navItems
+            .filter(item => 
+              // Only show items that match the user's role or don't require a specific role
+              !item.roleRequired || 
+              item.roleRequired === user?.role || 
+              user?.role === 'admin'
+            )
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive = location === item.path;
+              
+              return (
+                <li key={item.path}>
+                  <Link href={item.path}>
+                    <div className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer",
+                      isActive 
+                        ? "bg-primary/10 text-primary" 
+                        : "text-foreground hover:bg-muted hover:text-primary"
+                    )}>
+                      <Icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                      
+                      {isActive && (
+                        <div className="w-1 h-5 bg-primary rounded-full ml-auto" />
+                      )}
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
         </ul>
       </nav>
       

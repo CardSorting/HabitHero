@@ -12,15 +12,18 @@ import {
   X,
   Target,
   Award,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
 
 interface NavItem {
   icon: React.ElementType;
   label: string;
   path: string;
   priority: number; // Higher number = higher priority
+  roleRequired?: "client" | "therapist" | "admin";
 }
 
 const BottomNav: React.FC = () => {
@@ -28,6 +31,7 @@ const BottomNav: React.FC = () => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [visibleItemCount, setVisibleItemCount] = useState(5);
   const [windowWidth, setWindowWidth] = useState(0);
+  const { user } = useAuth();
 
   // Define all navigation items with priority
   const allNavItems: NavItem[] = [
@@ -39,6 +43,7 @@ const BottomNav: React.FC = () => {
     { icon: Target, label: "Challenges", path: "/wellness-challenges", priority: 80 },
     { icon: BarChart2, label: "Progress", path: "/progress", priority: 60 },
     { icon: PieChart, label: "Analytics", path: "/analytics", priority: 50 },
+    { icon: ShieldCheck, label: "Therapist", path: "/therapist", priority: 95, roleRequired: "therapist" },
     { icon: Settings, label: "Settings", path: "/settings", priority: 40 },
   ];
 
@@ -68,8 +73,15 @@ const BottomNav: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Filter items based on user role and then sort by priority
+  const filteredNavItems = allNavItems.filter(item => 
+    !item.roleRequired || 
+    item.roleRequired === user?.role || 
+    user?.role === 'admin'
+  );
+  
   // Sort items by priority and split into visible and overflow
-  const sortedNavItems = [...allNavItems].sort((a, b) => b.priority - a.priority);
+  const sortedNavItems = [...filteredNavItems].sort((a, b) => b.priority - a.priority);
   
   // Check if current page is in visible items, if not make it visible
   const currentPageIndex = sortedNavItems.findIndex(item => item.path === location);
@@ -195,7 +207,7 @@ const BottomNav: React.FC = () => {
               
               {/* All navigation items */}
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
-                {allNavItems.map((item) => {
+                {filteredNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location === item.path;
                   

@@ -1129,14 +1129,25 @@ export class DatabaseStorage implements IStorage {
    * Checks if a therapist is assigned to a specific client
    */
   async isTherapistForClient(therapistId: number, clientId: number): Promise<boolean> {
-    const relationship = await db.query.therapistClients.findFirst({
-      where: and(
-        eq(therapistClients.therapistId, therapistId),
-        eq(therapistClients.clientId, clientId)
-      )
-    });
+    // Validate inputs to make sure they're valid integers
+    if (isNaN(therapistId) || isNaN(clientId) || !Number.isInteger(Number(therapistId)) || !Number.isInteger(Number(clientId))) {
+      console.warn(`Invalid parameters passed to isTherapistForClient: therapistId=${therapistId}, clientId=${clientId}`);
+      return false;
+    }
+    
+    try {
+      const relationship = await db.query.therapistClients.findFirst({
+        where: and(
+          eq(therapistClients.therapistId, Number(therapistId)),
+          eq(therapistClients.clientId, Number(clientId))
+        )
+      });
 
-    return !!relationship;
+      return !!relationship;
+    } catch (error) {
+      console.error('Error in isTherapistForClient:', error);
+      return false;
+    }
   }
 
   /**

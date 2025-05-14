@@ -828,4 +828,286 @@ export class DatabaseStorage implements IStorage {
       longestStreak
     };
   }
+  
+  // Crisis Events methods
+  async getCrisisEvents(userId: number): Promise<CrisisEvent[]> {
+    return await db.select()
+      .from(crisisEvents)
+      .where(eq(crisisEvents.userId, userId))
+      .orderBy(desc(crisisEvents.date), desc(crisisEvents.time));
+  }
+
+  async getCrisisEventsByDateRange(userId: number, startDate: string, endDate: string): Promise<CrisisEvent[]> {
+    return await db.select()
+      .from(crisisEvents)
+      .where(
+        and(
+          eq(crisisEvents.userId, userId),
+          gte(crisisEvents.date, startDate),
+          lte(crisisEvents.date, endDate)
+        )
+      )
+      .orderBy(desc(crisisEvents.date), desc(crisisEvents.time));
+  }
+
+  async getCrisisEventById(id: number): Promise<CrisisEvent | undefined> {
+    const [event] = await db.select()
+      .from(crisisEvents)
+      .where(eq(crisisEvents.id, id));
+    return event;
+  }
+
+  async createCrisisEvent(crisisEvent: InsertCrisisEvent): Promise<CrisisEvent> {
+    const [event] = await db.insert(crisisEvents).values(crisisEvent).returning();
+    return event;
+  }
+
+  async updateCrisisEvent(id: number, crisisEvent: Partial<CrisisEvent>): Promise<CrisisEvent> {
+    const [updatedEvent] = await db.update(crisisEvents)
+      .set(crisisEvent)
+      .where(eq(crisisEvents.id, id))
+      .returning();
+    
+    if (!updatedEvent) {
+      throw new Error(`Crisis event with id ${id} not found`);
+    }
+    
+    return updatedEvent;
+  }
+
+  async deleteCrisisEvent(id: number): Promise<boolean> {
+    const [deletedEvent] = await db.delete(crisisEvents)
+      .where(eq(crisisEvents.id, id))
+      .returning();
+    
+    return !!deletedEvent;
+  }
+
+  // Crisis analytics methods
+  async getCrisisAnalytics(userId: number, startDate?: string, endDate?: string): Promise<CrisisAnalytics> {
+    let query = db.select({
+      id: crisisEvents.id,
+      type: crisisEvents.type,
+      intensity: crisisEvents.intensity,
+      duration: crisisEvents.duration,
+      symptoms: crisisEvents.symptoms,
+      triggers: crisisEvents.triggers,
+      copingStrategiesUsed: crisisEvents.copingStrategiesUsed,
+      copingStrategyEffectiveness: crisisEvents.copingStrategyEffectiveness
+    })
+    .from(crisisEvents)
+    .where(eq(crisisEvents.userId, userId));
+    
+    if (startDate && endDate) {
+      query = query.where(
+        and(
+          gte(crisisEvents.date, startDate),
+          lte(crisisEvents.date, endDate)
+        )
+      );
+    }
+    
+    const events = await query;
+    
+    if (events.length === 0) {
+      return {
+        totalEvents: 0,
+        byType: {},
+        byIntensity: {},
+        commonTriggers: [],
+        commonSymptoms: [],
+        effectiveCopingStrategies: [],
+        averageDuration: 0
+      };
+    }
+    
+    // Calculate analytics
+    const byType: { [key: string]: number } = {};
+    const byIntensity: { [key: string]: number } = {};
+    const triggerCounts: { [key: string]: number } = {};
+    const symptomCounts: { [key: string]: number } = {};
+    const copingStrategyCounts: { [key: string]: { count: number, effectiveness: number } } = {};
+    let totalDuration = 0;
+    let durationCount = 0;
+    
+    events.forEach(event => {
+      // Count by type
+      byType[event.type] = (byType[event.type] || 0) + 1;
+      
+      // Count by intensity
+      byIntensity[event.intensity] = (byIntensity[event.intensity] || 0) + 1;
+      
+      // Count triggers
+      if (event.triggers) {
+        const triggers = event.triggers as string[];
+        triggers.forEach(trigger => {
+          triggerCounts[trigger] = (triggerCounts[trigger] || 0) + 1;
+        });
+      }
+      
+      // Count symptoms
+      if (event.symptoms) {
+        const symptoms = event.symptoms as string[];
+        symptoms.forEach(symptom => {
+          symptomCounts[symptom] = (symptomCounts[symptom] || 0) + 1;
+        });
+      }
+      
+      // Track coping strategies and their effectiveness
+      if (event.copingStrategiesUsed) {
+        const strategies = event.copingStrategiesUsed as string[];
+        strategies.forEach(strategy => {
+          if (!copingStrategyCounts[strategy]) {
+            copingStrategyCounts[strategy] = { count: 0, effectiveness: 0 };
+          }
+          
+          copingStrategyCounts[strategy].count += 1;
+          if (event.copingStrategyEffectiveness) {
+            copingStrategyCounts[strategy].effectiveness += event.copingStrategyEffectiveness;
+          }
+        });
+      }
+      
+      // Sum durations
+      if (event.duration) {
+        totalDuration += event.duration;
+        durationCount++;
+      }
+    });
+    
+    // Sort triggers by frequency
+    const commonTriggers = Object.entries(triggerCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([trigger]) => trigger);
+    
+    // Sort symptoms by frequency
+    const commonSymptoms = Object.entries(symptomCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([symptom]) => symptom);
+    
+    // Sort coping strategies by effectiveness
+    const effectiveCopingStrategies = Object.entries(copingStrategyCounts)
+      .map(([strategy, data]) => ({
+        strategy,
+        effectiveness: data.count > 0 ? data.effectiveness / data.count : 0
+      }))
+      .sort((a, b) => b.effectiveness - a.effectiveness)
+      .slice(0, 5)
+      .map(item => item.strategy);
+    
+    // Calculate average duration
+    const averageDuration = durationCount > 0 ? totalDuration / durationCount : 0;
+    
+    return {
+      totalEvents: events.length,
+      byType,
+      byIntensity,
+      commonTriggers,
+      commonSymptoms,
+      effectiveCopingStrategies,
+      averageDuration
+    };
+  }
+
+  async getCrisisTimePeriodSummary(userId: number, period: 'day' | 'week' | 'month' | 'year'): Promise<CrisisTimePeriodSummary> {
+    const today = new Date();
+    let startDate: Date;
+    let endDate = today;
+    
+    // Calculate start date based on period
+    switch (period) {
+      case 'day':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 1);
+        break;
+      case 'week':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case 'month':
+        startDate = new Date(today);
+        startDate.setMonth(today.getMonth() - 1);
+        break;
+      case 'year':
+        startDate = new Date(today);
+        startDate.setFullYear(today.getFullYear() - 1);
+        break;
+      default:
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+    }
+    
+    // Format dates for SQL query
+    const formattedStartDate = startDate.toISOString().slice(0, 10);
+    const formattedEndDate = endDate.toISOString().slice(0, 10);
+    
+    // Get current period events
+    const events = await this.getCrisisEventsByDateRange(userId, formattedStartDate, formattedEndDate);
+    
+    // Calculate previous period for trend comparison
+    const previousPeriodStartDate = new Date(startDate);
+    const previousPeriodEndDate = new Date(startDate);
+    
+    switch (period) {
+      case 'day':
+        previousPeriodStartDate.setDate(previousPeriodStartDate.getDate() - 1);
+        break;
+      case 'week':
+        previousPeriodStartDate.setDate(previousPeriodStartDate.getDate() - 7);
+        break;
+      case 'month':
+        previousPeriodStartDate.setMonth(previousPeriodStartDate.getMonth() - 1);
+        break;
+      case 'year':
+        previousPeriodStartDate.setFullYear(previousPeriodStartDate.getFullYear() - 1);
+        break;
+    }
+    
+    // Format dates for previous period query
+    const formattedPrevStartDate = previousPeriodStartDate.toISOString().slice(0, 10);
+    const formattedPrevEndDate = previousPeriodEndDate.toISOString().slice(0, 10);
+    
+    // Get previous period events
+    const previousEvents = await this.getCrisisEventsByDateRange(userId, formattedPrevStartDate, formattedPrevEndDate);
+    
+    // Calculate summary data
+    const count = events.length;
+    let averageIntensity = 0;
+    
+    if (count > 0) {
+      // Map intensity levels to numeric values for average calculation
+      const intensityValues: { [key: string]: number } = {
+        'mild': 1,
+        'moderate': 2,
+        'severe': 3,
+        'extreme': 4
+      };
+      
+      const totalIntensity = events.reduce((sum, event) => {
+        return sum + (intensityValues[event.intensity] || 0);
+      }, 0);
+      
+      averageIntensity = totalIntensity / count;
+    }
+    
+    // Determine trend by comparing with previous period
+    let trend: 'increasing' | 'decreasing' | 'stable' = 'stable';
+    
+    if (count > previousEvents.length) {
+      trend = 'increasing';
+    } else if (count < previousEvents.length) {
+      trend = 'decreasing';
+    }
+    
+    return {
+      period,
+      startDate: formattedStartDate,
+      endDate: formattedEndDate,
+      count,
+      averageIntensity,
+      trend
+    };
+  }
 }

@@ -7,6 +7,7 @@ import { getTherapeuticResponse, getCopingStrategy, analyzeDailyReflection } fro
 import { HabitController } from "./interfaces/controllers/HabitController";
 import { setupAuth } from "./auth";
 import { registerWellnessChallengeRoutes } from "./wellness-challenge-routes";
+import { registerCrisisRoutes } from "./crisis-routes";
 
 // Reuse the AuthRequest type to match the existing User definition
 type AuthRequest = Request & {
@@ -31,6 +32,9 @@ export async function registerRoutes(app: Express): Promise<any> {
   
   // Register wellness challenge routes
   registerWellnessChallengeRoutes(app);
+  
+  // Register crisis events routes
+  registerCrisisRoutes(app);
   
   // Get authenticated user
   app.get("/api/user", (req: AuthRequest, res) => {

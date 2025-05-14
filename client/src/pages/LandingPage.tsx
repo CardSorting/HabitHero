@@ -238,25 +238,25 @@ export default function LandingPage() {
                 <TabsTrigger value="client">For Clients</TabsTrigger>
                 <TabsTrigger value="therapist">For Therapists</TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="client" className="mt-4 px-2">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  Everything you need for better mental wellbeing
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                  Comprehensive tools designed to help you track emotions, build habits, and improve your mental health journey.
+                </p>
+              </TabsContent>
+              
+              <TabsContent value="therapist" className="mt-4 px-2">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  Everything you need for better client outcomes
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                  Powerful analytics and management tools designed to help you track client progress and deliver more effective treatment.
+                </p>
+              </TabsContent>
             </Tabs>
-            
-            <TabsContent value="client" className="mt-0 block">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Everything you need for better mental wellbeing
-              </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Comprehensive tools designed to help you track emotions, build habits, and improve your mental health journey.
-              </p>
-            </TabsContent>
-            
-            <TabsContent value="therapist" className="mt-0 block">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Everything you need for better client outcomes
-              </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Powerful analytics and management tools designed to help you track client progress and deliver more effective treatment.
-              </p>
-            </TabsContent>
           </motion.div>
 
           <motion.div

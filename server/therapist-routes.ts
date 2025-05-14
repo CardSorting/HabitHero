@@ -103,67 +103,6 @@ export function registerTherapistRoutes(app: Express) {
     }
   });
   
-  // Get a specific client by ID
-  app.get('/api/therapist/clients/:clientId', isAuthenticated, isTherapist, async (req: AuthRequest, res: Response) => {
-    try {
-      const therapistId = req.user!.id;
-      
-      // Safely parse the client ID
-      const rawClientId = req.params.clientId;
-      const clientId = parseInt(rawClientId);
-      
-      // Validate clientId
-      if (isNaN(clientId)) {
-        console.error(`Invalid client ID: "${rawClientId}"`);
-        return res.status(400).json({ message: 'Invalid client ID format' });
-      }
-      
-      console.log(`Fetching client details: therapistId=${therapistId}, clientId=${clientId}`);
-      
-      try {
-        // First, check if therapist is authorized for this client
-        const isAuthorized = await req.app.locals.storage.isTherapistForClient(therapistId, clientId);
-        
-        if (!isAuthorized) {
-          console.log(`Authorization check failed: therapist ${therapistId} is not authorized for client ${clientId}`);
-          return res.status(403).json({ message: 'Forbidden: This client is not assigned to you' });
-        }
-      } catch (authError) {
-        console.error('Error checking therapist authorization:', authError);
-        return res.status(500).json({ message: 'Error verifying client access' });
-      }
-      
-      try {
-        const client = await req.app.locals.storage.getUser(clientId);
-        
-        if (!client) {
-          console.log(`Client not found: ${clientId}`);
-          
-          // For demo/testing, return a mock client if storage doesn't work
-          return res.json({
-            id: clientId,
-            username: `client${clientId}`,
-            email: `client${clientId}@example.com`,
-            fullName: `Client ${clientId}`,
-            role: 'client',
-            createdAt: new Date().toISOString()
-          });
-        }
-        
-        // Don't expose password
-        const { password, ...clientWithoutPassword } = client;
-        
-        return res.json(clientWithoutPassword);
-      } catch (fetchError) {
-        console.error('Error fetching client from storage:', fetchError);
-        return res.status(500).json({ message: 'Error fetching client data' });
-      }
-    } catch (error) {
-      console.error('Unexpected error in client details endpoint:', error);
-      res.status(500).json({ message: 'Error fetching client' });
-    }
-  });
-  
   // Search for clients by username
   app.get('/api/therapist/clients/search', isAuthenticated, isTherapist, async (req: AuthRequest, res: Response) => {
     try {
@@ -228,6 +167,67 @@ export function registerTherapistRoutes(app: Express) {
     } catch (error) {
       console.error('Error searching clients:', error);
       res.status(500).json({ message: 'Error searching clients' });
+    }
+  });
+  
+  // Get a specific client by ID
+  app.get('/api/therapist/clients/:clientId', isAuthenticated, isTherapist, async (req: AuthRequest, res: Response) => {
+    try {
+      const therapistId = req.user!.id;
+      
+      // Safely parse the client ID
+      const rawClientId = req.params.clientId;
+      const clientId = parseInt(rawClientId);
+      
+      // Validate clientId
+      if (isNaN(clientId)) {
+        console.error(`Invalid client ID: "${rawClientId}"`);
+        return res.status(400).json({ message: 'Invalid client ID format' });
+      }
+      
+      console.log(`Fetching client details: therapistId=${therapistId}, clientId=${clientId}`);
+      
+      try {
+        // First, check if therapist is authorized for this client
+        const isAuthorized = await req.app.locals.storage.isTherapistForClient(therapistId, clientId);
+        
+        if (!isAuthorized) {
+          console.log(`Authorization check failed: therapist ${therapistId} is not authorized for client ${clientId}`);
+          return res.status(403).json({ message: 'Forbidden: This client is not assigned to you' });
+        }
+      } catch (authError) {
+        console.error('Error checking therapist authorization:', authError);
+        return res.status(500).json({ message: 'Error verifying client access' });
+      }
+      
+      try {
+        const client = await req.app.locals.storage.getUser(clientId);
+        
+        if (!client) {
+          console.log(`Client not found: ${clientId}`);
+          
+          // For demo/testing, return a mock client if storage doesn't work
+          return res.json({
+            id: clientId,
+            username: `client${clientId}`,
+            email: `client${clientId}@example.com`,
+            fullName: `Client ${clientId}`,
+            role: 'client',
+            createdAt: new Date().toISOString()
+          });
+        }
+        
+        // Don't expose password
+        const { password, ...clientWithoutPassword } = client;
+        
+        return res.json(clientWithoutPassword);
+      } catch (fetchError) {
+        console.error('Error fetching client from storage:', fetchError);
+        return res.status(500).json({ message: 'Error fetching client data' });
+      }
+    } catch (error) {
+      console.error('Unexpected error in client details endpoint:', error);
+      res.status(500).json({ message: 'Error fetching client' });
     }
   });
   

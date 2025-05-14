@@ -40,13 +40,17 @@ export default function OnboardingPage() {
     if (currentScreen < onboardingScreens.length - 1) {
       setCurrentScreen(currentScreen + 1);
     } else {
-      navigate("/auth");
+      // Show options for client or therapist instead of navigating directly
+      setShowUserTypeOptions(true);
     }
   };
   
   const handleSkip = () => {
-    navigate("/auth");
+    // Show options for client or therapist instead of navigating directly
+    setShowUserTypeOptions(true);
   };
+  
+  const [showUserTypeOptions, setShowUserTypeOptions] = useState(false);
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background flex flex-col">
@@ -94,23 +98,61 @@ export default function OnboardingPage() {
       
       {/* Actions */}
       <div className="p-6 flex flex-col gap-2">
-        <Button 
-          size="lg" 
-          className="w-full"
-          onClick={handleNext}
-        >
-          {currentScreen < onboardingScreens.length - 1 ? "Next" : "Get Started"}
-        </Button>
-        
-        {currentScreen < onboardingScreens.length - 1 && (
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            className="w-full"
-            onClick={handleSkip}
+        {!showUserTypeOptions ? (
+          <>
+            <Button 
+              size="lg" 
+              className="w-full"
+              onClick={handleNext}
+            >
+              {currentScreen < onboardingScreens.length - 1 ? "Next" : "Get Started"}
+            </Button>
+            
+            {currentScreen < onboardingScreens.length - 1 && (
+              <Button 
+                variant="ghost" 
+                size="lg" 
+                className="w-full"
+                onClick={handleSkip}
+              >
+                Skip
+              </Button>
+            )}
+          </>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-4"
           >
-            Skip
-          </Button>
+            <Card className="p-6 border shadow-md bg-background">
+              <h2 className="text-xl font-semibold text-center mb-4">I am a...</h2>
+              <div className="space-y-3">
+                <Button 
+                  size="lg" 
+                  className="w-full"
+                  onClick={() => navigate("/auth")}
+                >
+                  Client seeking therapy support
+                </Button>
+                <Button 
+                  size="lg" 
+                  className="w-full"
+                  onClick={() => navigate("/therapist-auth")}
+                >
+                  Therapist providing treatment
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full mt-2"
+                  onClick={() => setShowUserTypeOptions(false)}
+                >
+                  Go back
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
         )}
       </div>
     </div>

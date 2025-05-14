@@ -62,12 +62,22 @@ export default function LandingPage() {
             <h1 className="text-xl font-bold text-foreground">MindfulTrack</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
-              Log in
-            </Button>
-            <Button size="sm" onClick={() => navigate("/onboarding")}>
-              Sign up
-            </Button>
+            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
+                Client Login
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/therapist-auth")}>
+                Therapist Login
+              </Button>
+            </div>
+            <div>
+              <Button size="sm" onClick={() => navigate("/auth")} className="mr-1">
+                Client Sign Up
+              </Button>
+              <Button size="sm" onClick={() => navigate("/therapist-auth")}>
+                Therapist Sign Up
+              </Button>
+            </div>
           </div>
         </div>
       </header>

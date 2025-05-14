@@ -116,7 +116,7 @@ const Today: React.FC = () => {
     : 0;
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-md">
+    <div className="w-full">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-primary">Today</h1>
         <Badge variant="outline" className="text-sm">
@@ -128,38 +128,84 @@ const Today: React.FC = () => {
         </Badge>
       </div>
       
-      <DailyProgressSummary 
-        completedHabits={completedHabits} 
-        totalHabits={totalHabits} 
-      />
-      
-      <Card className="mb-6 shadow-sm border-muted">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium">Daily Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Progress value={completionPercentage} className="h-2 mb-2" />
-          <p className="text-sm text-muted-foreground">
-            {completedHabits} of {totalHabits} habits completed
-          </p>
-        </CardContent>
-      </Card>
-      
-      <DailySummary />
-      
-      <div className="mt-6 mb-4">
-        <h2 className="text-xl font-semibold text-foreground">Your Habits</h2>
-        <p className="text-sm text-muted-foreground">Track your daily habits below</p>
+      {/* Desktop layout (2-column grid) */}
+      <div className="hidden lg:grid lg:grid-cols-12 lg:gap-6">
+        <div className="lg:col-span-8 space-y-6">
+          <DailyProgressSummary 
+            completedHabits={completedHabits} 
+            totalHabits={totalHabits} 
+          />
+          
+          <div>
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-foreground">Your Habits</h2>
+              <p className="text-sm text-muted-foreground">Track your daily habits below</p>
+            </div>
+            
+            <HabitsList 
+              habits={habits}
+              onToggleHabit={handleToggleHabit}
+              isLoading={isLoadingHabits}
+            />
+          </div>
+        </div>
+        
+        <div className="lg:col-span-4 space-y-6">
+          <Card className="shadow-sm border-muted">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-medium">Daily Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Progress value={completionPercentage} className="h-2 mb-2" />
+              <p className="text-sm text-muted-foreground">
+                {completedHabits} of {totalHabits} habits completed
+              </p>
+            </CardContent>
+          </Card>
+          
+          <DailySummary />
+          
+          <DailyGoalTracker />
+        </div>
       </div>
       
-      <HabitsList 
-        habits={habits}
-        onToggleHabit={handleToggleHabit}
-        isLoading={isLoadingHabits}
-      />
-      
-      <div className="mt-8 mb-20">
-        <DailyGoalTracker />
+      {/* Mobile layout (single column) */}
+      <div className="lg:hidden space-y-6">
+        <DailyProgressSummary 
+          completedHabits={completedHabits} 
+          totalHabits={totalHabits} 
+        />
+        
+        <Card className="shadow-sm border-muted">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium">Daily Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Progress value={completionPercentage} className="h-2 mb-2" />
+            <p className="text-sm text-muted-foreground">
+              {completedHabits} of {totalHabits} habits completed
+            </p>
+          </CardContent>
+        </Card>
+        
+        <DailySummary />
+        
+        <div>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-foreground">Your Habits</h2>
+            <p className="text-sm text-muted-foreground">Track your daily habits below</p>
+          </div>
+          
+          <HabitsList 
+            habits={habits}
+            onToggleHabit={handleToggleHabit}
+            isLoading={isLoadingHabits}
+          />
+        </div>
+        
+        <div className="mb-20">
+          <DailyGoalTracker />
+        </div>
       </div>
       
       <FloatingActionButton onClick={() => setIsAddModalOpen(true)} />

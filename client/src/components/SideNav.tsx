@@ -48,8 +48,8 @@ const SideNav: React.FC = () => {
             return (
               <li key={item.path}>
                 <Link href={item.path}>
-                  <a className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  <div className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer",
                     isActive 
                       ? "bg-primary/10 text-primary" 
                       : "text-foreground hover:bg-muted hover:text-primary"
@@ -60,7 +60,7 @@ const SideNav: React.FC = () => {
                     {isActive && (
                       <div className="w-1 h-5 bg-primary rounded-full ml-auto" />
                     )}
-                  </a>
+                  </div>
                 </Link>
               </li>
             );

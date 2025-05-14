@@ -45,8 +45,8 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({ children }) => {
           "md:max-w-2xl md:px-6 md:py-6",
           // Desktop: Appropriate width and padding
           "lg:max-w-4xl lg:px-8 lg:py-8",
-          // Extra large screens: Limit width
-          "xl:max-w-5xl"
+          // Extra large screens: Limit width for better readability
+          "xl:max-w-6xl"
         )}>
           {children}
         </div>

@@ -28,7 +28,7 @@ function Router() {
   
   return (
     <AnimatePresence mode="wait">
-      <div className="max-w-lg mx-auto h-full min-h-screen bg-background flex flex-col relative pb-16">
+      <ResponsiveLayout>
         <Switch location={location} key={location}>
           <Route path="/" component={OnboardingPage} />
           <ProtectedRoute path="/today" component={Today} />
@@ -46,8 +46,7 @@ function Router() {
           <Route path="/auth" component={AuthPage} />
           <Route component={NotFound} />
         </Switch>
-        {location !== "/auth" && location !== "/" && <BottomNav />}
-      </div>
+      </ResponsiveLayout>
     </AnimatePresence>
   );
 }

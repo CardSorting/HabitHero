@@ -53,49 +53,78 @@ export function registerTherapistRoutes(app: Express) {
     try {
       const therapistId = req.user!.id;
       
-      // Check if the method exists before calling it
-      if (req.app.locals.storage && req.app.locals.storage.getTherapistClients) {
-        const clients = await req.app.locals.storage.getTherapistClients(therapistId);
-        return res.json(clients);
-      } else {
-        // For testing purposes, return mock clients
-        console.log('Using mock client data for therapist', therapistId);
+      console.log(`Fetching clients for therapist ID: ${therapistId}`);
+      
+      try {
+        // Import necessary database modules
+        const { db } = require('../db');
+        const { eq, and } = require('drizzle-orm');
+        const { users, therapistClients } = require('@shared/schema');
         
-        // Generate mock client data
-        const mockClients = [
-          {
-            id: 101,
-            userId: 201,
-            username: 'client101',
-            email: 'client101@example.com',
-            fullName: 'Client One',
-            relationshipId: 1001,
-            relationshipStatus: 'active',
-            startDate: '2023-01-15',
-            lastSessionDate: '2023-05-10',
-            nextSessionDate: '2023-05-24',
-            notes: 'Regular weekly sessions',
-            totalSessions: 12,
-            isActive: true
-          },
-          {
-            id: 102,
-            userId: 202,
-            username: 'client102',
-            email: 'client102@example.com',
-            fullName: 'Client Two',
-            relationshipId: 1002,
-            relationshipStatus: 'active',
-            startDate: '2023-02-20',
-            lastSessionDate: '2023-05-08',
-            nextSessionDate: '2023-05-22',
-            notes: 'Bi-weekly sessions',
-            totalSessions: 8,
-            isActive: true
-          }
-        ];
+        // Get all active therapist-client relationships for this therapist
+        const relationships = await db
+          .select({
+            relationshipId: therapistClients.id,
+            clientId: therapistClients.clientId,
+            startDate: therapistClients.startDate,
+            endDate: therapistClients.endDate,
+            status: therapistClients.status,
+            notes: therapistClients.notes,
+            createdAt: therapistClients.createdAt
+          })
+          .from(therapistClients)
+          .where(
+            and(
+              eq(therapistClients.therapistId, therapistId),
+              eq(therapistClients.status, 'active')
+            )
+          );
         
-        return res.json(mockClients);
+        console.log(`Found ${relationships.length} client relationships`);
+        
+        // If no relationships, return empty array
+        if (!relationships || relationships.length === 0) {
+          return res.json([]);
+        }
+        
+        // Get all client details
+        const clientPromises = relationships.map(async (rel) => {
+          const [client] = await db
+            .select({
+              id: users.id,
+              username: users.username,
+              email: users.email,
+              fullName: users.fullName,
+              role: users.role,
+              createdAt: users.createdAt
+            })
+            .from(users)
+            .where(eq(users.id, rel.clientId));
+          
+          // Format response with both client and relationship details
+          return {
+            id: client.id,
+            userId: client.id,
+            username: client.username,
+            email: client.email,
+            fullName: client.fullName,
+            relationshipId: rel.relationshipId,
+            relationshipStatus: rel.status,
+            startDate: rel.startDate,
+            endDate: rel.endDate,
+            notes: rel.notes,
+            createdAt: client.createdAt,
+            isActive: rel.status === 'active'
+          };
+        });
+        
+        const clientsWithDetails = await Promise.all(clientPromises);
+        console.log(`Returning ${clientsWithDetails.length} clients with details`);
+        
+        return res.json(clientsWithDetails);
+      } catch (dbError) {
+        console.error('Database error while fetching clients:', dbError);
+        return res.json([]);
       }
     } catch (error) {
       console.error('Error fetching therapist clients:', error);
@@ -112,51 +141,33 @@ export function registerTherapistRoutes(app: Express) {
         return res.status(400).json({ message: 'Query must be at least 2 characters' });
       }
       
-      // Check if the database object exists
-      if (!req.app.locals.db || !req.app.locals.db.query || !req.app.locals.db.query.users) {
-        console.warn('Database query object not available, returning mock results');
-        
-        // Return mock results for testing
-        return res.json([
-          {
-            id: 201,
-            username: 'client201',
-            email: 'client201@example.com',
-            fullName: 'Test Client',
-            role: 'client',
-            createdAt: new Date().toISOString()
-          }
-        ]);
-      }
+      console.log(`Searching for clients with query: "${query}"`);
       
       try {
-        // Search for clients with role 'client'
-        const clients = await req.app.locals.db.query.users.findMany({
-          where: (users: any, { like, eq }: any) => {
-            const conditions = [];
-            
-            // Only add username condition if query is valid
-            if (query && typeof query === 'string') {
-              conditions.push(like(users.username, `%${query}%`));
-            }
-            
-            // Always filter by role
-            conditions.push(eq(users.role, 'client'));
-            
-            return and(...conditions);
-          },
-          // Limit results and exclude password
-          columns: {
-            id: true,
-            username: true,
-            email: true,
-            fullName: true,
-            role: true,
-            createdAt: true
-          },
-          limit: 10 // Limit results to prevent large result sets
-        });
+        // Import necessary tools from drizzle-orm
+        const { db } = require('../db');
+        const { like, eq, and } = require('drizzle-orm');
+        const { users } = require('@shared/schema');
         
+        // Search for clients with role 'client'
+        const clients = await db.select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          fullName: users.fullName,
+          role: users.role,
+          createdAt: users.createdAt
+        })
+        .from(users)
+        .where(
+          and(
+            like(users.username, `%${query}%`),
+            eq(users.role, 'client')
+          )
+        )
+        .limit(10);
+        
+        console.log(`Found ${clients.length} clients matching query "${query}"`);
         return res.json(clients);
       } catch (dbError) {
         console.error('Database error while searching clients:', dbError);
@@ -251,68 +262,62 @@ export function registerTherapistRoutes(app: Express) {
         notes
       });
       
-      // Find the client by username
-      const client = await req.app.locals.storage.getUserByUsername(clientUsername);
-      
-      if (!client) {
-        // For testing purposes, create a mock client if not found
-        console.log(`Client ${clientUsername} not found, creating mock client response`);
+      try {
+        // Import necessary database modules
+        const { db } = require('../db');
+        const { eq, and } = require('drizzle-orm');
+        const { users, therapistClients } = require('@shared/schema');
         
-        const clientId = parseInt(clientUsername.replace(/\D/g, '')) || 999;
+        // Find the client by username
+        const [client] = await db
+          .select()
+          .from(users)
+          .where(eq(users.username, clientUsername));
         
-        // Return a successful response with a mock relationship
-        return res.status(201).json({
-          id: Math.floor(Math.random() * 1000),
-          therapistId,
-          clientId,
-          startDate: startDate || new Date().toISOString().split('T')[0],
-          notes: notes || '',
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        });
-      }
-      
-      // Check if client has role 'client'
-      if (client.role !== 'client') {
-        return res.status(400).json({ message: 'User is not a client' });
-      }
-      
-      // Check if the client is already assigned to this therapist
-      if (req.app.locals.storage.isTherapistForClient) {
-        const isAlreadyAssigned = await req.app.locals.storage.isTherapistForClient(therapistId, client.id);
+        if (!client) {
+          console.log(`Client ${clientUsername} not found`);
+          return res.status(404).json({ message: 'Client not found' });
+        }
         
-        if (isAlreadyAssigned) {
+        // Check if client has role 'client'
+        if (client.role !== 'client') {
+          return res.status(400).json({ message: 'User is not a client' });
+        }
+        
+        // Check if the client is already assigned to this therapist
+        const existingRelationship = await db
+          .select()
+          .from(therapistClients)
+          .where(
+            and(
+              eq(therapistClients.therapistId, therapistId),
+              eq(therapistClients.clientId, client.id),
+              eq(therapistClients.status, 'active')
+            )
+          );
+        
+        if (existingRelationship && existingRelationship.length > 0) {
           return res.status(400).json({ message: 'Client is already assigned to you' });
         }
-      }
-      
-      // Create the therapist-client relationship
-      const data = {
-        startDate: startDate || new Date().toISOString().split('T')[0],
-        notes
-      };
-      
-      if (req.app.locals.storage.assignClientToTherapist) {
-        const relationship = await req.app.locals.storage.assignClientToTherapist(
-          therapistId, 
-          client.id, 
-          data
-        );
         
+        // Create the therapist-client relationship
+        const currentDate = new Date().toISOString().split('T')[0];
+        const [relationship] = await db
+          .insert(therapistClients)
+          .values({
+            therapistId,
+            clientId: client.id,
+            startDate: startDate || currentDate,
+            notes: notes || null,
+            status: 'active',
+          })
+          .returning();
+        
+        console.log('Created therapist-client relationship:', relationship);
         return res.status(201).json(relationship);
-      } else {
-        // Fallback if method is not available
-        return res.status(201).json({
-          id: Math.floor(Math.random() * 1000),
-          therapistId,
-          clientId: client.id,
-          startDate: data.startDate,
-          notes: data.notes || '',
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        });
+      } catch (dbError) {
+        console.error('Database error while assigning client:', dbError);
+        return res.status(500).json({ message: 'Database error while assigning client' });
       }
     } catch (error) {
       console.error('Error assigning client to therapist:', error);

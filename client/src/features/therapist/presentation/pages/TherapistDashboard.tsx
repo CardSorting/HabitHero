@@ -85,8 +85,8 @@ const TherapistDashboard: React.FC = () => {
     if (!clients || clients.length === 0) return null;
     
     const sortedClients = [...clients].sort((a, b) => {
-      const aDate = a.lastEmotionEntryDate || '1970-01-01';
-      const bDate = b.lastEmotionEntryDate || '1970-01-01';
+      const aDate = a.lastActivity || '1970-01-01';
+      const bDate = b.lastActivity || '1970-01-01';
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
     
@@ -169,8 +169,8 @@ const TherapistDashboard: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">Recent Activity</p>
                 <h3 className="text-2xl font-bold">{recentActivity ? recentActivity.username : 'None'}</h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {recentActivity?.lastEmotionEntryDate 
-                    ? `Last activity on ${new Date(recentActivity.lastEmotionEntryDate).toLocaleDateString()}` 
+                  {recentActivity?.lastActivity 
+                    ? `Last activity on ${new Date(recentActivity.lastActivity).toLocaleDateString()}` 
                     : 'No recent activity'}
                 </p>
               </div>

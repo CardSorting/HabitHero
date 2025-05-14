@@ -61,25 +61,11 @@ function Router() {
           {/* Therapist routes */}
           <ProtectedRoute 
             path="/therapist" 
-            component={(props) => {
-              // Only allow access if user is a therapist
-              const user = props.user || {};
-              if (user.role !== 'therapist' && user.role !== 'admin') {
-                return <NotFound />;
-              }
-              return <TherapistDashboard />;
-            }} 
+            component={TherapistDashboard}
           />
           <ProtectedRoute 
             path="/therapist/clients/:clientId" 
-            component={(props) => {
-              // Only allow access if user is a therapist
-              const user = props.user || {};
-              if (user.role !== 'therapist' && user.role !== 'admin') {
-                return <NotFound />;
-              }
-              return <ClientDetails />;
-            }} 
+            component={ClientDetails} 
           />
           <Route component={NotFound} />
         </Switch>

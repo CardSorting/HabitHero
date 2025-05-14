@@ -27,6 +27,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { CrisisTrackerPage } from "@/features/crisis-tracker";
 import { TherapistDashboard, ClientDetails } from "@/features/therapist/presentation/pages";
+import { TherapistProvider } from "@/features/therapist/presentation/hooks/useTherapistContext";
 
 function Router() {
   const [location] = useLocation();
@@ -61,12 +62,20 @@ function Router() {
           {/* Therapist routes with role protection */}
           <ProtectedRoute 
             path="/therapist" 
-            component={TherapistDashboard}
+            component={(props) => (
+              <TherapistProvider>
+                <TherapistDashboard {...props} />
+              </TherapistProvider>
+            )}
             requiredRole="therapist"
           />
           <ProtectedRoute 
             path="/therapist/clients/:clientId" 
-            component={ClientDetails}
+            component={(props) => (
+              <TherapistProvider>
+                <ClientDetails {...props} />
+              </TherapistProvider>
+            )}
             requiredRole="therapist"
           />
           <Route component={NotFound} />

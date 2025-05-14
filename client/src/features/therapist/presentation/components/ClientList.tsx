@@ -2,7 +2,7 @@
  * Component for displaying a list of clients
  */
 import React, { useState } from 'react';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { useTherapistClients } from '../hooks';
 import { ClientStatus, ID } from '../../domain/entities';
 
@@ -73,7 +73,7 @@ import {
  * Component for displaying a list of clients
  */
 export const ClientList: React.FC = () => {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const {
     clients,

@@ -24,7 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -43,7 +43,7 @@ const registerSchema = insertUserSchema
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export default function ClientAuthPage() {
+export default function TherapistAuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { user, loginMutation, registerMutation } = useAuth();
 
@@ -63,6 +63,7 @@ export default function ClientAuthPage() {
       confirmPassword: "",
       email: "",
       fullName: "",
+      role: "therapist", // Default role for this form
     },
   });
 
@@ -72,12 +73,17 @@ export default function ClientAuthPage() {
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
     const { confirmPassword, ...userData } = data;
-    // Always register as a client from this page
-    registerMutation.mutate({ ...userData, role: "client" });
+    // Always register as a therapist from this page
+    registerMutation.mutate({ ...userData, role: "therapist" });
   };
 
   // Redirect if already logged in
   if (user) {
+    // Therapists should go to their dashboard
+    if (user.role === 'therapist' || user.role === 'admin') {
+      return <Redirect to="/therapist" />;
+    }
+    // Other users go to the main app
     return <Redirect to="/today" />;
   }
 
@@ -86,10 +92,10 @@ export default function ClientAuthPage() {
       {/* App logo and welcome message */}
       <div className="pt-8 pb-4 px-6 text-center">
         <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-primary text-2xl">🌱</span>
+          <ShieldCheck className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Habit Builder</h1>
-        <p className="text-sm text-muted-foreground mt-1">Build better habits, one day at a time</p>
+        <h1 className="text-2xl font-bold text-foreground">Therapist Portal</h1>
+        <p className="text-sm text-muted-foreground mt-1">Secure access for mental health professionals</p>
       </div>
       
       {/* Auth Forms */}
@@ -159,7 +165,7 @@ export default function ClientAuthPage() {
                         Signing In...
                       </>
                     ) : (
-                      "Sign In"
+                      "Therapist Sign In"
                     )}
                   </Button>
                   
@@ -175,7 +181,16 @@ export default function ClientAuthPage() {
                 </form>
               </Form>
               
-
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    For Therapists Only
+                  </span>
+                </div>
+              </div>
             </div>
           </TabsContent>
           
@@ -287,10 +302,10 @@ export default function ClientAuthPage() {
                     {registerMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating Account...
+                        Creating Therapist Account...
                       </>
                     ) : (
-                      "Create Account"
+                      "Create Therapist Account"
                     )}
                   </Button>
                   
@@ -305,12 +320,14 @@ export default function ClientAuthPage() {
                   </div>
                 </form>
               </Form>
+              
+              <div className="text-center text-xs text-muted-foreground mt-2">
+                <p>By registering, you confirm that you are a licensed mental health professional.</p>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
       </div>
-      
-
     </div>
   );
 }

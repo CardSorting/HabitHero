@@ -16,7 +16,8 @@ import EmotionTimeAnalysis from "@/pages/EmotionTimeAnalysis";
 import WellnessChallenges from "@/pages/WellnessChallenges";
 import WellnessChallengeDetails from "@/pages/WellnessChallengeDetails";
 import WellnessChallengeCategory from "@/pages/WellnessChallengeCategory";
-import AuthPage from "@/pages/auth-page";
+import ClientAuthPage from "@/pages/auth-page";
+import TherapistAuthPage from "@/pages/therapist-auth-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import LandingPage from "@/pages/LandingPage";
 import ResponsiveLayout from "@/components/ResponsiveLayout";
@@ -52,7 +53,8 @@ function Router() {
           <ProtectedRoute path="/wellness-challenges/categories/:category" component={WellnessChallengeCategory} />
           <ProtectedRoute path="/wellness-challenges/:id" component={WellnessChallengeDetails} />
           <ProtectedRoute path="/settings" component={Settings} />
-          <Route path="/auth" component={AuthPage} />
+          <Route path="/auth" component={ClientAuthPage} />
+          <Route path="/therapist-auth" component={TherapistAuthPage} />
           
           {/* Therapist routes */}
           <ProtectedRoute 

@@ -32,7 +32,7 @@ const BottomNav: React.FC = () => {
   const allNavItems: NavItem[] = [
     { icon: Home, label: "Today", path: "/today", priority: 100 },
     { icon: SmilePlus, label: "Emotions", path: "/emotions", priority: 90 },
-    { icon: HeartHandshake, label: "Therapy", path: "/therapy", priority: 88 },
+    { icon: HeartHandshake, label: "Skills Coach", path: "/therapy", priority: 88 },
     { icon: Calendar, label: "Calendar", path: "/calendar", priority: 85 },
     { icon: Target, label: "Challenges", path: "/wellness-challenges", priority: 80 },
     { icon: BarChart2, label: "Progress", path: "/progress", priority: 60 },

@@ -123,7 +123,7 @@ function TherapyCompanion() {
 
   return (
     <div className="min-h-screen pb-16">
-      <Header title="Therapy Companion" />
+      <Header title="Skills Coach" />
 
       {/* Main chat content area */}
       <div className="mx-4 mb-24 pt-2">

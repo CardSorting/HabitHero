@@ -178,6 +178,15 @@ export default function TherapistAuthPage() {
                       Don't have an account? Register
                     </Button>
                   </div>
+                  <div className="text-center mt-2">
+                    <Button
+                      variant="link"
+                      onClick={() => window.location.href = "/auth"}
+                      className="text-xs text-muted-foreground hover:text-primary"
+                    >
+                      Are you a client? Login here
+                    </Button>
+                  </div>
                 </form>
               </Form>
               

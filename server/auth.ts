@@ -88,10 +88,19 @@ export function setupAuth(app: Express) {
       // Hash the password
       const hashedPassword = await hashPassword(req.body.password);
 
+      // Get the role from the request body or default to 'client'
+      const role = req.body.role || 'client';
+      
+      // Ensure only valid roles are allowed
+      if (!['client', 'therapist', 'admin'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role specified" });
+      }
+
       // Create the user
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
+        role: role,
       });
 
       req.login(user, (err) => {
@@ -109,6 +118,9 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err, user, info) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
+      
+      // Check for any role restrictions (not implemented here but could be used)
+      // For example, if we had a "therapistsOnly" flag to restrict certain routes
       
       req.login(user, (err) => {
         if (err) return next(err);

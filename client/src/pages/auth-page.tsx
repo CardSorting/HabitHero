@@ -172,6 +172,15 @@ export default function ClientAuthPage() {
                       Don't have an account? Register
                     </Button>
                   </div>
+                  <div className="text-center mt-2">
+                    <Button
+                      variant="link"
+                      onClick={() => window.location.href = "/therapist-auth"}
+                      className="text-xs text-muted-foreground hover:text-primary"
+                    >
+                      Are you a therapist? Login here
+                    </Button>
+                  </div>
                 </form>
               </Form>
               

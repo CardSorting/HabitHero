@@ -108,51 +108,55 @@ export default function LandingPage() {
               into mental health journeys with advanced analytics.
             </p>
             
-            <div className="max-w-3xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-              <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all">
-                <CardContent className="p-0">
-                  <div className="bg-primary/10 p-6 flex items-center justify-center">
-                    <UserPlus className="h-12 w-12 text-primary" />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold mb-3">I am a Client</h3>
-                    <p className="text-muted-foreground mb-6">
+            <Tabs
+              defaultValue={selectedTab}
+              value={selectedTab}
+              onValueChange={(value) => setSelectedTab(value as "client" | "therapist")}
+              className="w-full max-w-3xl mx-auto"
+            >
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+                <TabsTrigger value="client" className="flex items-center justify-center gap-1 py-3">
+                  <UserPlus className="h-4 w-4" />
+                  <span>I am a Client</span>
+                </TabsTrigger>
+                <TabsTrigger value="therapist" className="flex items-center justify-center gap-1 py-3">
+                  <Brain className="h-4 w-4" />
+                  <span>I am a Therapist</span>
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="client" className="mt-0 px-2">
+                <Card className="border-2 hover:border-primary/50 transition-all">
+                  <CardContent className="p-6">
+                    <p className="text-muted-foreground mb-6 text-lg">
                       Track emotions, build positive habits, and gain valuable insights to improve your mental health journey.
                     </p>
-                    <div className="flex flex-col gap-2">
-                      <Button onClick={() => navigate("/auth")} className="w-full">
-                        Sign Up
-                      </Button>
-                      <Button variant="outline" onClick={() => navigate("/auth")} className="w-full">
-                        Login
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <Button size="lg" onClick={() => navigate("/pricing")} className="rounded-full px-8">
+                        Get Started
+                        <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </TabsContent>
               
-              <Card className="overflow-hidden border-2 hover:border-primary/50 transition-all">
-                <CardContent className="p-0">
-                  <div className="bg-primary/10 p-6 flex items-center justify-center">
-                    <Brain className="h-12 w-12 text-primary" />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold mb-3">I am a Therapist</h3>
-                    <p className="text-muted-foreground mb-6">
+              <TabsContent value="therapist" className="mt-0 px-2">
+                <Card className="border-2 hover:border-primary/50 transition-all">
+                  <CardContent className="p-6">
+                    <p className="text-muted-foreground mb-6 text-lg">
                       Monitor client progress, analyze emotion patterns, and deliver more effective treatment with detailed analytics.
                     </p>
-                    <div className="flex flex-col gap-2">
-                      <Button onClick={() => navigate("/therapist-auth")} className="w-full">
-                        Sign Up
-                      </Button>
-                      <Button variant="outline" onClick={() => navigate("/therapist-auth")} className="w-full">
-                        Login
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <Button size="lg" onClick={() => navigate("/pricing")} className="rounded-full px-8">
+                        Get Started
+                        <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </motion.div>
         </div>
       </section>

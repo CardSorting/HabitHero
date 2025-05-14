@@ -155,8 +155,7 @@ export function registerTherapistRoutes(app: Express) {
         .where(
           and(
             like(users.username, `%${query}%`),
-            // Include both clients and admin users in search results
-            sql`${users.role} IN ('client', 'admin')`
+            eq(users.role, 'client')
           )
         )
         .limit(10);
@@ -268,9 +267,9 @@ export function registerTherapistRoutes(app: Express) {
           return res.status(404).json({ message: 'Client not found' });
         }
         
-        // Check if client has an acceptable role (client or admin)
-        if (client.role !== 'client' && client.role !== 'admin') {
-          return res.status(400).json({ message: 'User cannot be assigned as a client' });
+        // Check if client has role 'client'
+        if (client.role !== 'client') {
+          return res.status(400).json({ message: 'User is not a client' });
         }
         
         // Check if the client is already assigned to this therapist

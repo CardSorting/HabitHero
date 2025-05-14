@@ -9,6 +9,7 @@ import {
   HeartHandshake, 
   SmilePlus,
   Target,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ const SideNav: React.FC = () => {
     { icon: Home, label: "Today", path: "/today", priority: 100 },
     { icon: SmilePlus, label: "Emotions", path: "/emotions", priority: 90 },
     { icon: HeartHandshake, label: "Skills Coach", path: "/therapy", priority: 88 },
+    { icon: AlertCircle, label: "Crisis Tracker", path: "/crisis-tracker", priority: 87 },
     { icon: Calendar, label: "Calendar", path: "/calendar", priority: 85 },
     { icon: Target, label: "Challenges", path: "/wellness-challenges", priority: 80 },
     { icon: BarChart2, label: "Progress", path: "/progress", priority: 60 },

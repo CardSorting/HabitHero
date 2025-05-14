@@ -18,6 +18,7 @@ import WellnessChallengeDetails from "@/pages/WellnessChallengeDetails";
 import WellnessChallengeCategory from "@/pages/WellnessChallengeCategory";
 import AuthPage from "@/pages/auth-page";
 import OnboardingPage from "@/pages/onboarding-page";
+import LandingPage from "@/pages/LandingPage";
 import ResponsiveLayout from "@/components/ResponsiveLayout";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -30,7 +31,8 @@ function Router() {
     <AnimatePresence mode="wait">
       <ResponsiveLayout>
         <Switch location={location} key={location}>
-          <Route path="/" component={OnboardingPage} />
+          <Route path="/" component={LandingPage} />
+          <Route path="/onboarding" component={OnboardingPage} />
           <ProtectedRoute path="/today" component={Today} />
           <ProtectedRoute path="/progress" component={Progress} />
           <ProtectedRoute path="/calendar" component={Calendar} />

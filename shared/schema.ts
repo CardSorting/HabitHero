@@ -8,6 +8,8 @@ export const challengeFrequencyEnum = pgEnum('challenge_frequency', ['daily', 'w
 export const challengeStatusEnum = pgEnum('challenge_status', ['active', 'completed', 'abandoned']);
 export const challengeTypeEnum = pgEnum('challenge_type', ['emotions', 'meditation', 'journaling', 'activity', 'custom']);
 export const emotionIntensityEnum = pgEnum('emotion_intensity', ['very_low', 'low', 'medium', 'high', 'very_high']);
+export const crisisIntensityEnum = pgEnum('crisis_intensity', ['mild', 'moderate', 'severe', 'extreme']);
+export const crisisTypeEnum = pgEnum('crisis_type', ['panic_attack', 'emotional_crisis', 'suicidal_thoughts', 'self_harm_urge', 'substance_urge', 'other']);
 
 // User table for authentication
 export const users = pgTable("users", {
@@ -190,6 +192,26 @@ export const wellnessChallengeProgress = pgTable("wellness_challenge_progress", 
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Crisis Events - Track crisis/panic attacks and related details
+export const crisisEvents = pgTable("crisis_events", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: crisisTypeEnum("type").notNull(),
+  date: date("date").notNull(),
+  time: varchar("time", { length: 8 }),  // Store time as HH:MM:SS
+  intensity: crisisIntensityEnum("intensity").notNull(),
+  duration: integer("duration"),  // Duration in minutes
+  notes: text("notes"),
+  symptoms: jsonb("symptoms"),  // Array of physical and emotional symptoms
+  triggers: jsonb("triggers"),  // Array of potential triggers
+  copingStrategiesUsed: jsonb("coping_strategies_used"),  // Array of coping strategies used
+  copingStrategyEffectiveness: integer("coping_strategy_effectiveness"),  // Rating 1-10
+  helpSought: boolean("help_sought").notNull().default(false),  // Whether professional help was sought
+  medication: boolean("medication").notNull().default(false),  // Whether medication was used
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Define relationships
 export const usersRelations = relations(users, ({ many }) => ({
   habits: many(habits),
@@ -202,6 +224,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   emotionTrackingEntries: many(emotionTrackingEntries),
   wellnessChallenges: many(wellnessChallenges),
   userEmotions: many(userEmotions),
+  crisisEvents: many(crisisEvents),
 }));
 
 export const habitsRelations = relations(habits, ({ many, one }) => ({
@@ -311,6 +334,13 @@ export const wellnessChallengeProgressRelations = relations(wellnessChallengePro
   challenge: one(wellnessChallenges, {
     fields: [wellnessChallengeProgress.challengeId],
     references: [wellnessChallenges.id],
+  }),
+}));
+
+export const crisisEventsRelations = relations(crisisEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [crisisEvents.userId],
+    references: [users.id],
   }),
 }));
 

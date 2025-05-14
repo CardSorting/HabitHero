@@ -21,6 +21,8 @@ import {
   UserPlus,
   MessageSquare,
   TrendingUp,
+  Check,
+  UserCheck,
 } from "lucide-react";
 
 // Animation variants
@@ -108,50 +110,115 @@ export default function LandingPage() {
               into mental health journeys with advanced analytics.
             </p>
             
+            <div className="mb-10">
+              <div className="inline-flex items-center gap-2 px-4 py-1 bg-muted/60 rounded-full mb-2">
+                <UserCheck className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Choose your path</span>
+              </div>
+            </div>
+            
             <Tabs
               defaultValue={selectedTab}
               value={selectedTab}
               onValueChange={(value) => setSelectedTab(value as "client" | "therapist")}
               className="w-full max-w-3xl mx-auto"
             >
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
-                <TabsTrigger value="client" className="flex items-center justify-center gap-1 py-3">
-                  <UserPlus className="h-4 w-4" />
-                  <span>I am a Client</span>
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8 p-1 bg-muted/30 border border-border rounded-xl">
+                <TabsTrigger 
+                  value="client" 
+                  className="flex items-center justify-center gap-2 py-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-200"
+                >
+                  <div className="flex flex-col items-center sm:flex-row sm:items-center sm:gap-2">
+                    <div className="bg-primary/10 p-2 rounded-full mb-1 sm:mb-0">
+                      <UserPlus className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="font-medium">I am a Client</span>
+                  </div>
                 </TabsTrigger>
-                <TabsTrigger value="therapist" className="flex items-center justify-center gap-1 py-3">
-                  <Brain className="h-4 w-4" />
-                  <span>I am a Therapist</span>
+                <TabsTrigger 
+                  value="therapist" 
+                  className="flex items-center justify-center gap-2 py-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-200"
+                >
+                  <div className="flex flex-col items-center sm:flex-row sm:items-center sm:gap-2">
+                    <div className="bg-primary/10 p-2 rounded-full mb-1 sm:mb-0">
+                      <Brain className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="font-medium">I am a Therapist</span>
+                  </div>
                 </TabsTrigger>
               </TabsList>
               
               <TabsContent value="client" className="mt-0 px-2">
-                <Card className="border-2 hover:border-primary/50 transition-all">
-                  <CardContent className="p-6">
-                    <p className="text-muted-foreground mb-6 text-lg">
-                      Track emotions, build positive habits, and gain valuable insights to improve your mental health journey.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                      <Button size="lg" onClick={() => navigate("/pricing")} className="rounded-full px-8">
-                        Get Started
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Button>
+                <Card className="border-2 hover:border-primary/50 transition-all overflow-hidden shadow-sm hover:shadow-md">
+                  <CardContent className="p-0">
+                    <div className="bg-gradient-to-r from-primary/5 to-secondary/5 p-8 border-b border-border">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="bg-primary/10 p-2 rounded-full">
+                          <UserPlus className="h-5 w-5 text-primary" />
+                        </div>
+                        <h3 className="text-xl font-semibold">Client Path</h3>
+                      </div>
+                      <ul className="space-y-2 mb-6">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span>Track emotions and mood patterns</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span>Build positive habits with streak tracking</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span>Gain insights from detailed analytics</span>
+                        </li>
+                      </ul>
+                      <p className="text-muted-foreground text-lg mb-6">
+                        Track emotions, build positive habits, and gain valuable insights to improve your mental health journey.
+                      </p>
+                      <div className="flex justify-center">
+                        <Button size="lg" onClick={() => navigate("/pricing")} className="rounded-full px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all">
+                          Get Started
+                          <ChevronRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
               
               <TabsContent value="therapist" className="mt-0 px-2">
-                <Card className="border-2 hover:border-primary/50 transition-all">
-                  <CardContent className="p-6">
-                    <p className="text-muted-foreground mb-6 text-lg">
-                      Monitor client progress, analyze emotion patterns, and deliver more effective treatment with detailed analytics.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                      <Button size="lg" onClick={() => navigate("/pricing")} className="rounded-full px-8">
-                        Get Started
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Button>
+                <Card className="border-2 hover:border-primary/50 transition-all overflow-hidden shadow-sm hover:shadow-md">
+                  <CardContent className="p-0">
+                    <div className="bg-gradient-to-r from-secondary/5 to-primary/5 p-8 border-b border-border">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="bg-primary/10 p-2 rounded-full">
+                          <Brain className="h-5 w-5 text-primary" />
+                        </div>
+                        <h3 className="text-xl font-semibold">Therapist Path</h3>
+                      </div>
+                      <ul className="space-y-2 mb-6">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span>Monitor client progress with ease</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span>Analyze emotion patterns and triggers</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span>Create and track personalized treatment plans</span>
+                        </li>
+                      </ul>
+                      <p className="text-muted-foreground text-lg mb-6">
+                        Monitor client progress, analyze emotion patterns, and deliver more effective treatment with detailed analytics.
+                      </p>
+                      <div className="flex justify-center">
+                        <Button size="lg" onClick={() => navigate("/pricing")} className="rounded-full px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all">
+                          Get Started
+                          <ChevronRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

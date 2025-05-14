@@ -55,13 +55,31 @@ export class ApiTherapistRepository implements ITherapistRepository {
   ): Promise<TherapistClient> {
     // The API client automatically uses the authenticated user's ID as the therapist ID
     // so we don't need to pass it explicitly
-    return therapistApiClient.assignClient(
-      // Since our API expects a username and not an ID, we need to find the client first
-      // This is a workaround for the demo - in a real app, the API would accept a client ID
-      `client${clientId}`, // This is a workaround for demo purposes
+    console.log('ApiTherapistRepository.assignClientToTherapist', {
+      therapistId,
+      clientId,
       startDate,
       notes
-    );
+    });
+    
+    try {
+      // For demo purposes, we're constructing a username from the client ID
+      // In a real app, we would pass the client ID directly
+      const clientUsername = `client${clientId}`;
+      console.log('Using client username:', clientUsername);
+      
+      const result = await therapistApiClient.assignClient(
+        clientUsername,
+        startDate,
+        notes
+      );
+      
+      console.log('Assignment successful:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in assignClientToTherapist:', error);
+      throw error;
+    }
   }
 
   /**

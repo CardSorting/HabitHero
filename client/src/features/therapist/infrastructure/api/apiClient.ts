@@ -1,7 +1,7 @@
 /**
  * API client for therapist-related endpoints
  */
-import { apiRequest, QueryParams } from '@/lib/queryClient';
+import { apiRequest, ApiRequestOptions } from '@/lib/queryClient';
 import { 
   ID, 
   DateString, 
@@ -68,7 +68,7 @@ export const therapistApiClient = {
     startDate: DateString, 
     notes?: string
   ): Promise<TherapistClient> {
-    return apiRequest({
+    const result = await apiRequest({
       url: therapistEndpoints.assignClient,
       method: 'POST',
       data: {
@@ -77,6 +77,7 @@ export const therapistApiClient = {
         notes
       }
     });
+    return result;
   },
   
   /**

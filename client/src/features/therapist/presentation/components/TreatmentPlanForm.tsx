@@ -18,6 +18,20 @@ import {
   GoalStatus
 } from '../../domain/entities';
 
+// Enums
+enum TimeFrame {
+  SHORT_TERM = 'short_term',
+  LONG_TERM = 'long_term'
+}
+
+enum RiskLevel {
+  NONE = 'none',
+  LOW = 'low',
+  MODERATE = 'moderate',
+  HIGH = 'high',
+  EXTREME = 'extreme'
+}
+
 // UI Components
 import { Button } from '@/components/ui/button';
 import {
@@ -374,14 +388,38 @@ const TreatmentPlanForm: React.FC<TreatmentPlanFormProps> = ({
       therapistId,
       startDate: values.startDate.toISOString().split('T')[0],
       endDate: values.endDate ? values.endDate.toISOString().split('T')[0] : undefined,
+      // SMART Goals
       goals: values.goals?.map(goal => ({
         ...goal,
         targetDate: goal.targetDate ? goal.targetDate.toISOString().split('T')[0] : undefined,
       })),
+      // Assessments
       assessments: values.assessments?.map(assessment => ({
         ...assessment,
         date: assessment.date.toISOString().split('T')[0],
-      }))
+      })),
+      // Diagnosis Info
+      diagnosisInfo: values.diagnosisInfo ? {
+        ...values.diagnosisInfo,
+        diagnosisDate: values.diagnosisInfo.diagnosisDate ? 
+          values.diagnosisInfo.diagnosisDate.toISOString().split('T')[0] : undefined,
+      } : undefined,
+      // Risk Assessments
+      riskAssessments: values.riskAssessments?.map(risk => ({
+        ...risk,
+        assessmentDate: risk.assessmentDate.toISOString().split('T')[0],
+      })),
+      // Progress Tracking
+      progressTracking: values.progressTracking?.map(progress => ({
+        ...progress,
+        date: progress.date.toISOString().split('T')[0],
+      })),
+      // Discharge Plan
+      dischargePlan: values.dischargePlan ? {
+        ...values.dischargePlan,
+        anticipatedDate: values.dischargePlan.anticipatedDate ? 
+          values.dischargePlan.anticipatedDate.toISOString().split('T')[0] : undefined,
+      } : undefined
     };
     
     onSubmit(transformedData);
@@ -1371,6 +1409,637 @@ const TreatmentPlanForm: React.FC<TreatmentPlanFormProps> = ({
                 ))}
               </div>
             )}
+          </TabsContent>
+          
+          {/* Progress Tracking Tab */}
+          <TabsContent value="progress" className="space-y-4 py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-medium">Progress Tracking</h3>
+                <p className="text-sm text-muted-foreground">
+                  Track client progress and document changes over time
+                </p>
+              </div>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={handleAddProgressTracking}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Progress Entry
+              </Button>
+            </div>
+            
+            {progressTrackingFields.length === 0 ? (
+              <div className="text-center p-6 border border-dashed rounded-md">
+                <Activity className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                <p className="text-muted-foreground">No progress entries added yet.</p>
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  size="sm" 
+                  className="mt-2" 
+                  onClick={handleAddProgressTracking}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add First Progress Entry
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {progressTrackingFields.map((field, index) => (
+                  <Card key={field.id} className="relative">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-base">
+                          Progress Entry #{index + 1}
+                        </CardTitle>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeProgressTracking(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name={`progressTracking.${index}.date`}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Progress Date</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full pl-3 text-left font-normal"
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) => date < new Date("1900-01-01")}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name={`progressTracking.${index}.goalsAddressed`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Goals Addressed</FormLabel>
+                            <FormDescription>
+                              List the treatment goals that were addressed during this session/period
+                            </FormDescription>
+                            <FormControl>
+                              <Input 
+                                placeholder="Enter a goal and press Enter"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && e.currentTarget.value) {
+                                    e.preventDefault();
+                                    const newValue = [...field.value, e.currentTarget.value];
+                                    field.onChange(newValue);
+                                    e.currentTarget.value = '';
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            {field.value?.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {field.value.map((goal, idx) => (
+                                  <div key={idx} className="flex items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                                    {goal}
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-4 w-4 p-0 ml-2"
+                                      onClick={() => {
+                                        const newValue = [...field.value];
+                                        newValue.splice(idx, 1);
+                                        field.onChange(newValue);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name={`progressTracking.${index}.interventionsUsed`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Interventions Used</FormLabel>
+                            <FormDescription>
+                              List the interventions used during this session/period
+                            </FormDescription>
+                            <FormControl>
+                              <Input 
+                                placeholder="Enter an intervention and press Enter"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && e.currentTarget.value) {
+                                    e.preventDefault();
+                                    const newValue = [...field.value, e.currentTarget.value];
+                                    field.onChange(newValue);
+                                    e.currentTarget.value = '';
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            {field.value?.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {field.value.map((intervention, idx) => (
+                                  <div key={idx} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
+                                    {intervention}
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-4 w-4 p-0 ml-2"
+                                      onClick={() => {
+                                        const newValue = [...field.value];
+                                        newValue.splice(idx, 1);
+                                        field.onChange(newValue);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name={`progressTracking.${index}.progressRating`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Progress Rating (1-10)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={10}
+                                {...field}
+                                onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name={`progressTracking.${index}.barriers`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Barriers to Progress</FormLabel>
+                            <FormDescription>
+                              Identify any barriers that are impeding progress
+                            </FormDescription>
+                            <FormControl>
+                              <Input 
+                                placeholder="Enter a barrier and press Enter"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && e.currentTarget.value) {
+                                    e.preventDefault();
+                                    const newValue = [...field.value, e.currentTarget.value];
+                                    field.onChange(newValue);
+                                    e.currentTarget.value = '';
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            {field.value?.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {field.value.map((barrier, idx) => (
+                                  <div key={idx} className="flex items-center bg-destructive/10 text-destructive px-3 py-1 rounded-full text-sm">
+                                    {barrier}
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-4 w-4 p-0 ml-2"
+                                      onClick={() => {
+                                        const newValue = [...field.value];
+                                        newValue.splice(idx, 1);
+                                        field.onChange(newValue);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name={`progressTracking.${index}.clientFeedback`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Client Feedback</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter client's feedback..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name={`progressTracking.${index}.planAdjustments`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Plan Adjustments</FormLabel>
+                            <FormDescription>
+                              Describe any adjustments needed to the treatment plan based on progress
+                            </FormDescription>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter plan adjustments..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name={`progressTracking.${index}.notes`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Additional Notes</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter additional notes..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          {/* Discharge Plan Tab */}
+          <TabsContent value="discharge" className="space-y-6 py-4">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Discharge Planning</h3>
+              <p className="text-sm text-muted-foreground">
+                Create a comprehensive discharge plan to ensure continuing care and relapse prevention
+              </p>
+              
+              <FormField
+                control={form.control}
+                name="dischargePlan.criteria"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Discharge Criteria</FormLabel>
+                    <FormDescription>
+                      Define the specific criteria that will indicate readiness for discharge
+                    </FormDescription>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter a criterion and press Enter"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value) {
+                            e.preventDefault();
+                            const newValue = [...field.value, e.currentTarget.value];
+                            field.onChange(newValue);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    {field.value?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value.map((criterion, index) => (
+                          <div key={index} className="flex items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                            {criterion}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 ml-2"
+                              onClick={() => {
+                                const newValue = [...field.value];
+                                newValue.splice(index, 1);
+                                field.onChange(newValue);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="dischargePlan.anticipatedDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Anticipated Discharge Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className="w-full pl-3 text-left font-normal"
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date("1900-01-01")}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      The target date for client discharge (if known)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="dischargePlan.aftercarePlan"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Aftercare Plan</FormLabel>
+                    <FormDescription>
+                      Describe the plan for continued care after discharge
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe aftercare plan..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="dischargePlan.referrals"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Referrals</FormLabel>
+                    <FormDescription>
+                      List any referrals to other providers or services
+                    </FormDescription>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter a referral and press Enter"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value) {
+                            e.preventDefault();
+                            const newValue = [...field.value, e.currentTarget.value];
+                            field.onChange(newValue);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    {field.value?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value.map((referral, index) => (
+                          <div key={index} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
+                            {referral}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 ml-2"
+                              onClick={() => {
+                                const newValue = [...field.value];
+                                newValue.splice(index, 1);
+                                field.onChange(newValue);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <Separator className="my-4" />
+              
+              <h3 className="text-lg font-medium">Relapse Prevention</h3>
+              
+              <FormField
+                control={form.control}
+                name="dischargePlan.relapsePrevention"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Relapse Prevention Plan</FormLabel>
+                    <FormDescription>
+                      Detailed plan to prevent relapse or deterioration
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe relapse prevention strategies..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="dischargePlan.warningSignsRecognition"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Warning Signs Recognition</FormLabel>
+                    <FormDescription>
+                      List warning signs that the client should watch for
+                    </FormDescription>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter a warning sign and press Enter"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value) {
+                            e.preventDefault();
+                            const newValue = [...field.value, e.currentTarget.value];
+                            field.onChange(newValue);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    {field.value?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value.map((sign, index) => (
+                          <div key={index} className="flex items-center bg-destructive/10 text-destructive px-3 py-1 rounded-full text-sm">
+                            {sign}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 ml-2"
+                              onClick={() => {
+                                const newValue = [...field.value];
+                                newValue.splice(index, 1);
+                                field.onChange(newValue);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="dischargePlan.supportResources"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Support Resources</FormLabel>
+                    <FormDescription>
+                      List support resources the client can access after discharge
+                    </FormDescription>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter a support resource and press Enter"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value) {
+                            e.preventDefault();
+                            const newValue = [...field.value, e.currentTarget.value];
+                            field.onChange(newValue);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    {field.value?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value.map((resource, index) => (
+                          <div key={index} className="flex items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                            {resource}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 ml-2"
+                              onClick={() => {
+                                const newValue = [...field.value];
+                                newValue.splice(index, 1);
+                                field.onChange(newValue);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="dischargePlan.followUpSchedule"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Follow-Up Schedule</FormLabel>
+                    <FormDescription>
+                      Describe the schedule for follow-up appointments or check-ins
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe follow-up schedule..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </TabsContent>
         </Tabs>
         

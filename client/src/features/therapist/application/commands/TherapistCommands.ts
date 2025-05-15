@@ -137,7 +137,8 @@ export class AssignClientCommandHandler {
   constructor(private readonly therapistRepository: ITherapistRepository) {}
   
   async handle(command: AssignClientCommand): Promise<TherapistClient> {
-    // First, find the client by username
+    // Check if we need to look up the client by username
+    // We want to validate the client exists, but we'll pass the original username forward
     const clients = await this.therapistRepository.searchClientsByUsername(command.clientUsername);
     
     if (!clients.length) {
@@ -156,10 +157,10 @@ export class AssignClientCommandHandler {
       throw new Error(`Client ${command.clientUsername} is already assigned to this therapist`);
     }
     
-    // Assign the client to the therapist
+    // Assign the client to the therapist - pass the username directly
     return this.therapistRepository.assignClientToTherapist(
       command.therapistId,
-      clientId,
+      command.clientUsername, // Use the username directly
       command.startDate,
       command.notes
     );

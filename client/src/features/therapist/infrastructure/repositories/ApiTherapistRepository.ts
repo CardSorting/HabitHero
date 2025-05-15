@@ -49,7 +49,7 @@ export class ApiTherapistRepository implements ITherapistRepository {
    */
   async assignClientToTherapist(
     therapistId: ID,
-    clientId: ID,
+    clientUsernameOrId: string | ID,
     startDate: DateString,
     notes?: string
   ): Promise<TherapistClient> {
@@ -57,46 +57,14 @@ export class ApiTherapistRepository implements ITherapistRepository {
     // so we don't need to pass it explicitly
     console.log('ApiTherapistRepository.assignClientToTherapist', {
       therapistId,
-      clientId,
+      clientUsernameOrId,
       startDate,
       notes
     });
     
     try {
-      // We need the client object to get its username
-      // Since we already have the clientId, we can try to get it directly from the API
-      let client;
-      try {
-        client = await this.getClientById(clientId);
-      } catch (error) {
-        console.error('Error getting client by ID, falling back to search:', error);
-      }
-      
-      let clientUsername = '';
-      
-      if (client) {
-        // We have the client, use its username
-        clientUsername = client.username;
-      } else {
-        // Try searching if ID is not available - for clients seen in search results
-        try {
-          // Use a more reliable search string that will pass the 2-character minimum
-          const searchString = `client${clientId}`; 
-          const clients = await this.searchClientsByUsername(searchString);
-          
-          if (clients && clients.length > 0) {
-            // Use the actual username from the search results
-            clientUsername = clients[0].username;
-          } else {
-            // Last resort - use the ID itself
-            clientUsername = clientId.toString();
-          }
-        } catch (searchError) {
-          console.error('Error searching for client:', searchError);
-          // Fall back to the ID as username if everything else fails
-          clientUsername = clientId.toString();
-        }
-      }
+      // Convert the clientUsernameOrId to a string to ensure it works with the API
+      const clientUsername = clientUsernameOrId.toString();
       
       console.log('Using client username:', clientUsername);
       

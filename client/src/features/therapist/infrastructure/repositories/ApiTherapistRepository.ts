@@ -63,20 +63,44 @@ export class ApiTherapistRepository implements ITherapistRepository {
     });
     
     try {
-      // First, get the user information to get the real username
-      const clients = await this.searchClientsByUsername(clientId.toString());
+      // We need the client object to get its username
+      // Since we already have the clientId, we can try to get it directly from the API
+      let client;
+      try {
+        client = await this.getClientById(clientId);
+      } catch (error) {
+        console.error('Error getting client by ID, falling back to search:', error);
+      }
+      
       let clientUsername = '';
       
-      if (clients && clients.length > 0) {
-        // Use the actual username from the search results
-        clientUsername = clients[0].username;
+      if (client) {
+        // We have the client, use its username
+        clientUsername = client.username;
       } else {
-        // If no match found, try the direct client ID as username as fallback
-        clientUsername = clientId.toString();
+        // Try searching if ID is not available - for clients seen in search results
+        try {
+          // Use a more reliable search string that will pass the 2-character minimum
+          const searchString = `client${clientId}`; 
+          const clients = await this.searchClientsByUsername(searchString);
+          
+          if (clients && clients.length > 0) {
+            // Use the actual username from the search results
+            clientUsername = clients[0].username;
+          } else {
+            // Last resort - use the ID itself
+            clientUsername = clientId.toString();
+          }
+        } catch (searchError) {
+          console.error('Error searching for client:', searchError);
+          // Fall back to the ID as username if everything else fails
+          clientUsername = clientId.toString();
+        }
       }
       
       console.log('Using client username:', clientUsername);
       
+      // Make the actual API call to assign the client
       const result = await therapistApiClient.assignClient(
         clientUsername,
         startDate,

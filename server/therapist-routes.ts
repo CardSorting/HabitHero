@@ -135,30 +135,62 @@ export function registerTherapistRoutes(app: Express) {
     try {
       const query = req.query.query as string;
       
-      if (!query || query.length < 2) {
+      // Check if this is a search by ID - it could be a number
+      const isIdSearch = !isNaN(Number(query)) && Number.isInteger(Number(query));
+      
+      if (!isIdSearch && (!query || query.length < 2)) {
         return res.status(400).json({ message: 'Query must be at least 2 characters' });
       }
       
       console.log(`Searching for clients with query: "${query}"`);
       
       try {
-        // Search for clients with role 'client'
-        const clients = await db.select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          fullName: users.fullName,
-          role: users.role,
-          createdAt: users.createdAt
-        })
-        .from(users)
-        .where(
-          and(
-            like(users.username, `%${query}%`),
-            eq(users.role, 'client')
+        let clients = [];
+        
+        // If it looks like an ID, try to find by exact ID first
+        if (isIdSearch) {
+          const idToSearch = Number(query);
+          const clientsById = await db.select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            fullName: users.fullName,
+            role: users.role,
+            createdAt: users.createdAt
+          })
+          .from(users)
+          .where(
+            and(
+              eq(users.id, idToSearch),
+              eq(users.role, 'client')
+            )
           )
-        )
-        .limit(10);
+          .limit(1);
+            
+          if (clientsById.length > 0) {
+            clients = clientsById;
+          }
+        }
+        
+        // If no results yet or not an ID search, try username search
+        if (clients.length === 0) {
+          clients = await db.select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            fullName: users.fullName,
+            role: users.role,
+            createdAt: users.createdAt
+          })
+          .from(users)
+          .where(
+            and(
+              like(users.username, `%${query}%`),
+              eq(users.role, 'client')
+            )
+          )
+          .limit(10);
+        }
         
         console.log(`Found ${clients.length} clients matching query "${query}"`);
         return res.json(clients);

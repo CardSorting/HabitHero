@@ -65,20 +65,34 @@ export const useClientAnalytics = ({ clientId }: UseClientAnalyticsProps) => {
         throw new Error('Unauthorized to view client data');
       }
       
+      console.log('Fetching crisis events for client:', clientId);
       const url = `/api/crisis-events/range?userId=${clientId}&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
-      return apiRequest(url);
+      const result = await apiRequest(url);
+      console.log('Crisis events result:', result);
+      return result;
     },
     enabled: !!therapistId && !!clientId
   });
 
   // Combine analytics with crisis events data
+  console.log('Original analytics:', analytics);
+  console.log('Crisis events data:', crisisEvents);
+  
   const combinedAnalytics = analytics ? {
     ...analytics,
     crisisEvents: {
       ...analytics.crisisEvents,
-      events: crisisEvents || []
+      events: crisisEvents || [],
+      count: crisisEvents?.length || (analytics.crisisEvents?.count || 0),
     }
   } : undefined;
+  
+  console.log('Combined analytics:', combinedAnalytics);
+  
+  // If analytics already contains events, we don't need to use the separate crisis events query
+  if (analytics?.crisisEvents?.events && analytics.crisisEvents.events.length > 0) {
+    console.log('Using events from analytics:', analytics.crisisEvents.events);
+  }
 
   // Function to set a new date range
   const setAnalyticsDateRange = (startDate: DateString, endDate: DateString) => {

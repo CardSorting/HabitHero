@@ -1573,21 +1573,26 @@ export class DatabaseStorage implements IStorage {
     };
     
     let recentEvents = [];
+    let allCrisisEvents = [];
     
     try {
       // Try to get crisis analytics if table exists
       crisisAnalytics = await this.getCrisisAnalytics(clientId, queryStartDate, queryEndDate);
       
-      // Try to get recent crisis events if table exists
-      recentEvents = await db.query.crisisEvents.findMany({
+      // Try to get ALL crisis events for this date range
+      allCrisisEvents = await db.query.crisisEvents.findMany({
         where: and(
           eq(crisisEvents.userId, clientId),
           gte(crisisEvents.date, queryStartDate),
           lte(crisisEvents.date, queryEndDate)
         ),
-        orderBy: desc(crisisEvents.date),
-        limit: 5
+        orderBy: desc(crisisEvents.date)
       });
+      
+      // Get recent events (top 5)
+      recentEvents = allCrisisEvents.slice(0, 5);
+      
+      console.log(`Found ${allCrisisEvents.length} crisis events for client ${clientId}`);
     } catch (error) {
       console.error('Error fetching crisis data (table may not exist):', error);
       // Continue with default empty values
@@ -1654,6 +1659,7 @@ export class DatabaseStorage implements IStorage {
         byType: crisisAnalytics.byType,
         byIntensity: crisisAnalytics.byIntensity,
         recentEvents,
+        events: allCrisisEvents, // Include all events
         trend
       },
       treatmentProgress: {

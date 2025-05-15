@@ -25,6 +25,19 @@ export enum GoalStatus {
   ACHIEVED = 'achieved'
 }
 
+export enum RiskLevel {
+  NONE = 'none',
+  LOW = 'low',
+  MODERATE = 'moderate',
+  HIGH = 'high',
+  EXTREME = 'extreme'
+}
+
+export enum TimeFrame {
+  SHORT_TERM = 'short_term',
+  LONG_TERM = 'long_term'
+}
+
 /**
  * TherapistClient entity representing the relationship between a therapist and a client
  */
@@ -91,17 +104,51 @@ export interface TreatmentPlan {
   goals?: TreatmentGoal[];
   assessments?: Assessment[];
   interventions?: Intervention[];
+  diagnosisInfo?: DiagnosisInfo;
+  riskAssessments?: RiskAssessment[];
+  progressTracking?: ProgressTracking[];
+  dischargePlan?: DischargePlan;
   createdAt?: DateString;
   updatedAt?: DateString;
 }
 
 /**
+ * DiagnosisInfo entity representing diagnostic information within a treatment plan
+ */
+export interface DiagnosisInfo {
+  diagnosisCodes: string[]; // DSM-5 diagnosis codes
+  presentingProblems: string[];
+  mentalStatusEvaluation?: string;
+  diagnosticFormulation?: string;
+  diagnosisDate?: DateString;
+}
+
+/**
+ * RiskAssessment entity representing a risk assessment within a treatment plan
+ */
+export interface RiskAssessment {
+  assessmentDate: DateString;
+  suicideRisk: RiskLevel;
+  violenceRisk: RiskLevel;
+  selfHarmRisk: RiskLevel;
+  substanceAbuseRisk: RiskLevel;
+  notes?: string;
+  safetyPlan?: string;
+}
+
+/**
  * TreatmentGoal entity representing a goal within a treatment plan
+ * Using SMART framework (Specific, Measurable, Achievable, Relevant, Time-bound)
  */
 export interface TreatmentGoal {
   description: string;
+  specificMeasure: string; // What specifically will be measured
+  achievementCriteria: string; // How achievement will be determined
   targetDate?: DateString;
+  timeFrame: TimeFrame; // Short-term or long-term goal
   status: GoalStatus;
+  progressMetrics?: string[]; // Metrics to track progress
+  relevance?: string; // How this goal relates to overall treatment
   notes?: string;
 }
 
@@ -110,8 +157,12 @@ export interface TreatmentGoal {
  */
 export interface Assessment {
   name: string;
+  type: string; // Standardized test, clinical interview, etc.
   date: DateString;
   score?: number;
+  interpretation?: string;
+  findings?: string[];
+  recommendationsFromAssessment?: string[];
   notes?: string;
 }
 
@@ -121,8 +172,41 @@ export interface Assessment {
 export interface Intervention {
   name: string;
   description: string;
+  evidenceBase?: string; // Evidence basis for this intervention
+  modality: string; // Individual, group, family
   frequency: string;
+  duration: string;
+  techniques?: string[];
+  resources?: string[];
   notes?: string;
+}
+
+/**
+ * ProgressTracking entity for tracking progress in treatment
+ */
+export interface ProgressTracking {
+  date: DateString;
+  goalsAddressed: string[];
+  interventionsUsed: string[];
+  progressRating: number; // Scale 1-10
+  barriers?: string[];
+  clientFeedback?: string;
+  planAdjustments?: string;
+  notes?: string;
+}
+
+/**
+ * DischargePlan entity for planning client discharge
+ */
+export interface DischargePlan {
+  criteria: string[];
+  anticipatedDate?: DateString;
+  aftercarePlan?: string;
+  referrals?: string[];
+  relapsePrevention?: string;
+  warningSignsRecognition?: string[];
+  supportResources?: string[];
+  followUpSchedule?: string;
 }
 
 /**

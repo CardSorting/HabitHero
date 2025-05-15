@@ -73,30 +73,98 @@ const formSchema = z.object({
   startDate: z.date(),
   endDate: z.date().optional(),
   status: z.enum(['active', 'completed', 'abandoned']),
+  
+  // Diagnosis Information
+  diagnosisInfo: z.object({
+    diagnosisCodes: z.array(z.string()).min(1, 'At least one diagnosis code is required'),
+    presentingProblems: z.array(z.string()).min(1, 'At least one presenting problem is required'),
+    mentalStatusEvaluation: z.string().optional(),
+    diagnosticFormulation: z.string().optional(),
+    diagnosisDate: z.date().optional(),
+  }).optional(),
+  
+  // Risk Assessments
+  riskAssessments: z.array(
+    z.object({
+      assessmentDate: z.date(),
+      suicideRisk: z.enum(['none', 'low', 'moderate', 'high', 'extreme']),
+      violenceRisk: z.enum(['none', 'low', 'moderate', 'high', 'extreme']),
+      selfHarmRisk: z.enum(['none', 'low', 'moderate', 'high', 'extreme']),
+      substanceAbuseRisk: z.enum(['none', 'low', 'moderate', 'high', 'extreme']),
+      notes: z.string().optional(),
+      safetyPlan: z.string().optional(),
+    })
+  ).optional(),
+  
+  // SMART Treatment Goals
   goals: z.array(
     z.object({
       description: z.string().min(3, 'Goal description must be at least 3 characters'),
+      specificMeasure: z.string().min(3, 'Specify how this goal will be measured'),
+      achievementCriteria: z.string().min(3, 'Define criteria for achievement'),
       targetDate: z.date().optional(),
+      timeFrame: z.enum(['short_term', 'long_term']),
       status: z.enum(['pending', 'in_progress', 'achieved']),
+      progressMetrics: z.array(z.string()).optional(),
+      relevance: z.string().optional(),
       notes: z.string().optional(),
     })
   ).optional(),
+  
+  // Assessments
   assessments: z.array(
     z.object({
       name: z.string().min(2, 'Assessment name must be at least 2 characters'),
+      type: z.string(),
       date: z.date(),
       score: z.coerce.number().optional(),
+      interpretation: z.string().optional(),
+      findings: z.array(z.string()).optional(),
+      recommendationsFromAssessment: z.array(z.string()).optional(),
       notes: z.string().optional(),
     })
   ).optional(),
+  
+  // Evidence-based Interventions
   interventions: z.array(
     z.object({
       name: z.string().min(2, 'Intervention name must be at least 2 characters'),
       description: z.string().min(3, 'Intervention description must be at least 3 characters'),
+      evidenceBase: z.string().optional(),
+      modality: z.string(),
       frequency: z.string(),
+      duration: z.string(),
+      techniques: z.array(z.string()).optional(),
+      resources: z.array(z.string()).optional(),
       notes: z.string().optional(),
     })
   ).optional(),
+  
+  // Progress Tracking
+  progressTracking: z.array(
+    z.object({
+      date: z.date(),
+      goalsAddressed: z.array(z.string()),
+      interventionsUsed: z.array(z.string()),
+      progressRating: z.number().min(1).max(10),
+      barriers: z.array(z.string()).optional(),
+      clientFeedback: z.string().optional(),
+      planAdjustments: z.string().optional(),
+      notes: z.string().optional(),
+    })
+  ).optional(),
+  
+  // Discharge Planning
+  dischargePlan: z.object({
+    criteria: z.array(z.string()).min(1, 'At least one discharge criterion is required'),
+    anticipatedDate: z.date().optional(),
+    aftercarePlan: z.string().optional(),
+    referrals: z.array(z.string()).optional(),
+    relapsePrevention: z.string().optional(),
+    warningSignsRecognition: z.array(z.string()).optional(),
+    supportResources: z.array(z.string()).optional(),
+    followUpSchedule: z.string().optional(),
+  }).optional(),
 });
 
 interface TreatmentPlanFormProps {

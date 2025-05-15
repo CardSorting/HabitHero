@@ -422,13 +422,18 @@ export function registerEmotionsRoutes(app: Express) {
         return res.status(400).json({ error: 'Missing from or to date parameters' });
       }
       
+      // Check if userId parameter is provided (for therapist viewing client data)
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : req.user!.id;
+      
+      console.log(`Emotion trends API - Fetching for userId: ${userId}, from: ${fromDate}, to: ${toDate}`);
+      
       // Get entries from the database
       const entries = await db.query.emotionTrackingEntries.findMany({
         where: (entries, { eq, and, gte, lte }) => 
           and(
             gte(entries.date, fromDate),
             lte(entries.date, toDate),
-            eq(entries.userId, req.user!.id)
+            eq(entries.userId, userId)
           )
       });
 

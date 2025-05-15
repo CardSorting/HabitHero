@@ -55,13 +55,21 @@ export const useClientEmotionData = (clientId: ID) => {
   } = useQuery({
     queryKey: ['/api/emotions/analytics/trends', dateRange.startDate, dateRange.endDate, clientId],
     queryFn: async () => {
+      // Log the actual params we're sending to help debug
+      console.log(`Fetching emotion trends for userId=${clientId}, from=${dateRange.startDate}, to=${dateRange.endDate}`);
       const response = await fetch(`/api/emotions/analytics/trends?userId=${clientId}&from=${dateRange.startDate}&to=${dateRange.endDate}`);
+      
+      // Log response status to help debug
+      console.log(`Emotion trends response status: ${response.status}`);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch emotion trends');
       }
-      return await response.json() as EmotionTrend[];
+      const data = await response.json();
+      console.log('Trends data received:', data);
+      return data as EmotionTrend[];
     },
-    enabled: !!clientId
+    enabled: !!clientId && Number(clientId) > 0
   });
 
   // Query for frequent emotions
@@ -72,13 +80,17 @@ export const useClientEmotionData = (clientId: ID) => {
   } = useQuery({
     queryKey: ['/api/emotions/analytics/frequent', dateRange.startDate, dateRange.endDate, clientId],
     queryFn: async () => {
+      console.log(`Fetching frequent emotions for userId=${clientId}`);
       const response = await fetch(`/api/emotions/analytics/frequent?userId=${clientId}&from=${dateRange.startDate}&to=${dateRange.endDate}`);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch frequent emotions');
       }
-      return await response.json() as FrequentEmotion[];
+      const data = await response.json();
+      console.log('Frequent emotions data:', data);
+      return data as FrequentEmotion[];
     },
-    enabled: !!clientId
+    enabled: !!clientId && Number(clientId) > 0
   });
 
   // Query for highest intensity emotions
@@ -89,13 +101,17 @@ export const useClientEmotionData = (clientId: ID) => {
   } = useQuery({
     queryKey: ['/api/emotions/analytics/highest-intensity', dateRange.startDate, dateRange.endDate, clientId],
     queryFn: async () => {
+      console.log(`Fetching high intensity emotions for userId=${clientId}`);
       const response = await fetch(`/api/emotions/analytics/highest-intensity?userId=${clientId}&from=${dateRange.startDate}&to=${dateRange.endDate}`);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch highest intensity emotions');
       }
-      return await response.json() as IntensityEmotion[];
+      const data = await response.json();
+      console.log('High intensity emotions data:', data);
+      return data as IntensityEmotion[];
     },
-    enabled: !!clientId
+    enabled: !!clientId && Number(clientId) > 0
   });
 
   // Query for emotion entries
@@ -106,13 +122,17 @@ export const useClientEmotionData = (clientId: ID) => {
   } = useQuery({
     queryKey: ['/api/emotions/entries/range', dateRange.startDate, dateRange.endDate, clientId],
     queryFn: async () => {
+      console.log(`Fetching emotion entries for userId=${clientId}`);
       const response = await fetch(`/api/emotions/entries/range?userId=${clientId}&from=${dateRange.startDate}&to=${dateRange.endDate}`);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch emotion entries');
       }
-      return await response.json() as EmotionEntry[];
+      const data = await response.json();
+      console.log('Emotion entries data:', data);
+      return data as EmotionEntry[];
     },
-    enabled: !!clientId
+    enabled: !!clientId && Number(clientId) > 0
   });
 
   // Function to set a new date range

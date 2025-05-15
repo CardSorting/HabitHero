@@ -13,37 +13,13 @@ export interface ApiRequestOptions {
   data?: unknown;
 }
 
-// Utility function to get JSON data from response
-export async function getResponseData<T>(response: Response): Promise<T> {
-  return await response.json() as T;
-}
-
-// Support both function signatures for backward compatibility
-// 1. apiRequest(method, url, data)
-// 2. apiRequest({ url, method, data })
-export async function apiRequest<T = Response>(
-  methodOrOptions: string | ApiRequestOptions, 
-  urlOrNothing?: string, 
+// Fetch with error handling and basic logging 
+export async function apiRequest(
+  method: string, 
+  url: string, 
   data?: unknown
-): Promise<T> {
-  let method: string;
-  let url: string;
-  let requestData: unknown = undefined;
-  
-  // Handle both calling styles
-  if (typeof methodOrOptions === 'string') {
-    // Called as apiRequest(method, url, data)
-    method = methodOrOptions;
-    url = urlOrNothing || '';
-    requestData = data;
-  } else {
-    // Called as apiRequest({ url, method, data })
-    method = methodOrOptions.method;
-    url = methodOrOptions.url;
-    requestData = methodOrOptions.data;
-  }
-  
-  console.log(`Making ${method} request to ${url}`, requestData);
+): Promise<Response> {
+  console.log(`Making ${method} request to ${url}`, data);
   
   try {
     // Validate HTTP method
@@ -52,8 +28,8 @@ export async function apiRequest<T = Response>(
     
     const res = await fetch(url, {
       method: validMethod,
-      headers: requestData ? { "Content-Type": "application/json" } : {},
-      body: requestData ? JSON.stringify(requestData) : undefined,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
     });
     
@@ -78,22 +54,36 @@ export async function apiRequest<T = Response>(
   }
 }
 
+// Helper to get JSON data from a response
+export async function getResponseData<T>(response: Response): Promise<T> {
+  return await response.json() as T;
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    try {
+      const res = await apiRequest("GET", queryKey[0] as string);
+      
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+      
+      // Parse the response as JSON using our helper
+      return await getResponseData<T>(res);
+    } catch (e) {
+      if (
+        e instanceof Error &&
+        e.message.startsWith("401") &&
+        unauthorizedBehavior === "returnNull"
+      ) {
+        return null as T;
+      }
+      throw e;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

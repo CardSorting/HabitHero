@@ -55,7 +55,7 @@ export const therapistApiClient = {
    */
   async getClients(): Promise<ClientSummary[]> {
     const response = await apiRequest('GET', therapistEndpoints.getClients);
-    return response.json();
+    return getResponseData<ClientSummary[]>(response);
   },
   
   /**

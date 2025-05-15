@@ -1,53 +1,41 @@
 /**
  * Treatment Plan Detail Page
- * Provides comprehensive view of a single treatment plan
- * Following SOLID principles, DDD, Clean Architecture, and CQRS pattern
+ * Displays comprehensive information about a specific treatment plan
+ * Following SOLID principles, DDD, and Clean Architecture
  */
-import React, { useState, useEffect } from 'react';
-import { useParams, useLocation, Link } from 'wouter';
+import React from 'react';
+import { useParams, useLocation } from 'wouter';
 import { format } from 'date-fns';
-import { useAuth } from '@/hooks/use-auth';
-import { useTherapistService } from '../hooks';
-import { useTreatmentPlans } from '../hooks/useTreatmentPlans';
 import { 
-  TreatmentPlan, 
-  TreatmentPlanStatus, 
-  GoalStatus, 
-  ID 
-} from '../../domain/entities';
-
-// UI Components
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Card, 
   CardContent, 
-  CardHeader,
-  CardTitle, 
-  CardDescription,
-  CardFooter 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { 
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {
+  Pencil, 
+  Trash2, 
+  ArrowLeft, 
+  Calendar, 
+  Goal,
+  AlertTriangle,
+  Stethoscope,
+  Activity,
+  CheckCircle,
+  ListChecks
+} from 'lucide-react';
+import { 
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -58,843 +46,720 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
+import { useTherapistContext } from '../hooks/useTherapistContext';
+import { useTreatmentPlans } from '../hooks/useTreatmentPlans';
+import { useClientDetails } from '../../application/hooks/useClientDetails';
+import { TreatmentPlanStatus, RiskLevel, GoalStatus, TimeFrame } from '../../domain/entities';
 
-// Icons
-import { 
-  Calendar, 
-  Clock, 
-  ChevronLeft, 
-  Brain,
-  FileText,
-  Target,
-  AlertCircle,
-  Home,
-  Pencil,
-  Trash2,
-  Check,
-  BarChart4,
-  Stethoscope,
-  Lightbulb,
-  ClipboardCheck,
-  Activity,
-  TimerReset
-} from 'lucide-react';
+// Format date utility
+const formatDate = (dateStr: string | undefined) => {
+  if (!dateStr) return 'Not specified';
+  try {
+    return format(new Date(dateStr), 'PP');
+  } catch (error) {
+    return 'Invalid date';
+  }
+};
 
-const TreatmentPlanDetail: React.FC = () => {
-  const params = useParams<{ clientId: string, planId: string }>();
-  const clientId = params.clientId ? parseInt(params.clientId, 10) : 0;
-  const planId = params.planId ? parseInt(params.planId, 10) : 0;
-  const [, navigate] = useLocation();
-  const { user } = useAuth();
-  const therapistService = useTherapistService();
+// Get risk level color
+const getRiskLevelColor = (level: RiskLevel | undefined) => {
+  if (!level) return 'bg-gray-100 text-gray-800';
   
-  const [clientDetails, setClientDetails] = useState<any>(null);
-  const [isLoadingClient, setIsLoadingClient] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  switch (level) {
+    case RiskLevel.NONE:
+      return 'bg-green-100 text-green-800';
+    case RiskLevel.LOW:
+      return 'bg-blue-100 text-blue-800';
+    case RiskLevel.MODERATE:
+      return 'bg-yellow-100 text-yellow-800';
+    case RiskLevel.HIGH:
+      return 'bg-orange-100 text-orange-800';
+    case RiskLevel.SEVERE:
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+// Get goal status color
+const getGoalStatusColor = (status: GoalStatus) => {
+  switch (status) {
+    case GoalStatus.NOT_STARTED:
+      return 'bg-gray-100 text-gray-800';
+    case GoalStatus.IN_PROGRESS:
+      return 'bg-blue-100 text-blue-800';
+    case GoalStatus.ACHIEVED:
+      return 'bg-green-100 text-green-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+// Get time frame label
+const getTimeFrameLabel = (timeFrame: TimeFrame) => {
+  switch (timeFrame) {
+    case TimeFrame.SHORT_TERM:
+      return 'Short Term';
+    case TimeFrame.MEDIUM_TERM:
+      return 'Medium Term';
+    case TimeFrame.LONG_TERM:
+      return 'Long Term';
+    default:
+      return timeFrame;
+  }
+};
+
+export default function TreatmentPlanDetail() {
+  const [, setLocation] = useLocation();
+  const { clientId, planId } = useParams<{ clientId: string; planId: string }>();
+  const { therapistId } = useTherapistContext();
+  const clientIdNum = parseInt(clientId, 10);
+  const planIdNum = parseInt(planId, 10);
   
+  // Fetch client details
+  const { client, isLoading: isLoadingClient } = useClientDetails(clientIdNum);
+  
+  // Fetch treatment plans
   const {
     plans,
     isLoadingPlans,
-    updateTreatmentPlan,
-    isUpdating,
+    isPlansError,
+    getPlanById,
     deleteTreatmentPlan,
     isDeleting
-  } = useTreatmentPlans({ 
-    clientId, 
-    therapistId: user?.id || 0 
-  });
+  } = useTreatmentPlans({ clientId: clientIdNum, therapistId });
   
-  // Current plan data
-  const plan = plans?.find(p => p.id === planId);
+  // Get the current plan
+  const plan = getPlanById(planIdNum);
   
-  // Fetch client details on component mount
-  useEffect(() => {
-    const fetchClientDetails = async () => {
-      if (!user?.id || !clientId) return;
-      
-      try {
-        setIsLoadingClient(true);
-        setErrorMessage(null);
-        
-        // Verify authorization for this client
-        const isAuthorized = await therapistService.isAuthorizedForClient(user.id, clientId);
-        
-        if (!isAuthorized) {
-          setErrorMessage('You are not authorized to view this client.');
-          setIsLoadingClient(false);
-          return;
-        }
-        
-        // Fetch client details
-        const clientData = await therapistService.getClientById(user.id, clientId);
-        
-        if (!clientData) {
-          setErrorMessage('Client not found.');
-          setIsLoadingClient(false);
-          return;
-        }
-        
-        setClientDetails(clientData);
-      } catch (error) {
-        console.error('Error fetching client details:', error);
-        setErrorMessage('An error occurred while fetching client details.');
-      } finally {
-        setIsLoadingClient(false);
-      }
-    };
-    
-    fetchClientDetails();
-  }, [clientId, user?.id, therapistService]);
-  
-  // Format date for display
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'Not set';
-    return format(new Date(dateStr), 'MMM d, yyyy');
-  };
-  
-  // Calculate completion percentage based on goals
-  const calculateCompletionPercentage = (plan?: TreatmentPlan) => {
-    if (!plan?.goals || plan.goals.length === 0) return 0;
-    
-    const achievedGoals = plan.goals.filter(goal => goal.status === GoalStatus.ACHIEVED).length;
-    return Math.round((achievedGoals / plan.goals.length) * 100);
-  };
-  
-  // Handle plan deletion 
-  const handleDeletePlan = () => {
-    if (planId) {
-      deleteTreatmentPlan(planId);
-      navigate(`/therapist/clients/${clientId}/treatment-plans`);
+  // Handle delete
+  const handleDelete = async () => {
+    try {
+      await deleteTreatmentPlan(planIdNum);
+      toast({
+        title: "Success",
+        description: "Treatment plan has been deleted.",
+        variant: "default",
+      });
+      setLocation(`/therapist/clients/${clientId}/treatment-plans`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete treatment plan.",
+        variant: "destructive",
+      });
     }
   };
   
-  // Handle plan edit
-  const handleEditPlan = () => {
-    navigate(`/therapist/clients/${clientId}/treatment-plans/${planId}/edit`);
+  // Handle edit
+  const handleEdit = () => {
+    setLocation(`/therapist/clients/${clientId}/treatment-plans/${planId}/edit`);
   };
   
-  // Handle back to plans list
-  const handleBackToPlans = () => {
-    navigate(`/therapist/clients/${clientId}/treatment-plans`);
+  // Handle back
+  const handleBack = () => {
+    setLocation(`/therapist/clients/${clientId}/treatment-plans`);
   };
   
-  // Get status badge styling
-  const getStatusBadge = (status?: TreatmentPlanStatus) => {
-    if (!status) return <Badge variant="outline">Unknown</Badge>;
-    
-    switch (status) {
-      case TreatmentPlanStatus.ACTIVE:
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>;
-      case TreatmentPlanStatus.COMPLETED:
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Completed</Badge>;
-      case TreatmentPlanStatus.ABANDONED:
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Abandoned</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
+  // Error state
+  if (isPlansError) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" size="icon" onClick={handleBack}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold ml-2">Error</h1>
+        </div>
+        <div className="p-6 bg-destructive/10 rounded-lg">
+          <p>An error occurred while loading data. Please try again later.</p>
+        </div>
+      </div>
+    );
+  }
   
-  // Get goal status badge
-  const getGoalStatusBadge = (status?: GoalStatus) => {
-    if (!status) return <Badge variant="outline">Not Started</Badge>;
-    
-    switch (status) {
-      case GoalStatus.ACHIEVED:
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Achieved</Badge>;
-      case GoalStatus.IN_PROGRESS:
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">In Progress</Badge>;
-      case GoalStatus.NOT_STARTED:
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Not Started</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
+  // Loading state
+  if (isLoadingPlans || isLoadingClient || !plan) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" size="icon" onClick={handleBack}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <Skeleton className="h-8 w-64 ml-2" />
+        </div>
+        <Skeleton className="h-[600px] w-full rounded-md" />
+      </div>
+    );
+  }
   
   return (
-    <div className="container max-w-screen-xl mx-auto py-6">
-      {/* Breadcrumbs */}
-      <div className="mb-6">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <Link href="/therapist">
-                <Home className="h-4 w-4 mr-1" />
-                Dashboard
-              </Link>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <Link href="/therapist/clients">
-                Clients
-              </Link>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            {clientDetails && (
-              <>
-                <BreadcrumbItem>
-                  <Link href={`/therapist/clients/${clientId}`}>
-                    {clientDetails.fullName || clientDetails.username}
-                  </Link>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-              </>
-            )}
-            <BreadcrumbItem>
-              <Link href={`/therapist/clients/${clientId}/treatment-plans`}>
-                Treatment Plans
-              </Link>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{plan?.title || 'Plan Details'}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-      
-      {/* Back Button */}
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="mb-6"
-        onClick={handleBackToPlans}
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" /> 
-        Back to Treatment Plans
-      </Button>
-      
-      {/* Error Message */}
-      {errorMessage && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      )}
-      
-      {/* Loading State */}
-      {(isLoadingClient || isLoadingPlans) ? (
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-1/3" />
-          <Skeleton className="h-6 w-1/4" />
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-full" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-32 w-full" />
-            </CardContent>
-          </Card>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header with back button and actions */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" onClick={handleBack}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold ml-2">
+            {plan.title}
+          </h1>
+          <Badge 
+            className={`ml-3 ${
+              plan.status === TreatmentPlanStatus.ACTIVE 
+                ? 'bg-green-100 text-green-800' 
+                : plan.status === TreatmentPlanStatus.COMPLETED 
+                  ? 'bg-blue-100 text-blue-800' 
+                  : 'bg-gray-100 text-gray-800'
+            }`}
+            variant="outline"
+          >
+            {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+          </Badge>
         </div>
-      ) : plan ? (
-        <>
-          {/* Plan Header */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center">
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    {plan.title}
-                  </h1>
-                  <div className="ml-3">
-                    {getStatusBadge(plan.status)}
-                  </div>
-                </div>
-                <p className="text-muted-foreground mt-1">
-                  {plan.description || 'No description provided'}
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleEditPlan}
-                >
-                  <Pencil className="h-4 w-4 mr-1" />
-                  Edit Plan
-                </Button>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    variant="destructive" 
-                    size="sm"
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-              </div>
-            </div>
-          </div>
-          
-          {/* Plan Data */}
-          <div className="mb-6">
-            <Card className="mb-6">
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-                  <div className="flex items-start space-x-2">
-                    <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-medium">Start Date</p>
-                      <p className="text-sm text-muted-foreground">{formatDate(plan.startDate)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start space-x-2">
-                    <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-medium">End Date</p>
-                      <p className="text-sm text-muted-foreground">{formatDate(plan.endDate)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start space-x-2">
-                    <Target className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-medium">Goals</p>
-                      <p className="text-sm text-muted-foreground">{plan.goals?.length || 0} goals</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start space-x-2">
-                    <Activity className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-medium">Progress</p>
-                      <p className="text-sm text-muted-foreground">{calculateCompletionPercentage(plan)}% complete</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-6">
-                  <Progress 
-                    value={calculateCompletionPercentage(plan)} 
-                    className="h-2.5"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Tabbed Content */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-5 mb-6">
-                <TabsTrigger value="overview" className="flex items-center">
-                  <FileText className="h-4 w-4 mr-2" />
-                  <span>Overview</span>
-                </TabsTrigger>
-                <TabsTrigger value="diagnosis" className="flex items-center">
-                  <Stethoscope className="h-4 w-4 mr-2" />
-                  <span>Diagnosis</span>
-                </TabsTrigger>
-                <TabsTrigger value="goals" className="flex items-center">
-                  <Target className="h-4 w-4 mr-2" />
-                  <span>Goals</span>
-                </TabsTrigger>
-                <TabsTrigger value="interventions" className="flex items-center">
-                  <Lightbulb className="h-4 w-4 mr-2" />
-                  <span>Interventions</span>
-                </TabsTrigger>
-                <TabsTrigger value="progress" className="flex items-center">
-                  <Activity className="h-4 w-4 mr-2" />
-                  <span>Progress</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              {/* Overview Tab */}
-              <TabsContent value="overview">
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Plan Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="font-medium mb-1">Description</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {plan.description || 'No description provided.'}
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <h3 className="font-medium mb-1">Status</h3>
-                          <div>
-                            {getStatusBadge(plan.status)}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h3 className="font-medium mb-1">Timeline</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDate(plan.startDate)} to {formatDate(plan.endDate)}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Progress Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="font-medium mb-1">Goals Progress</h3>
-                          <div className="text-sm text-muted-foreground flex items-center">
-                            <Progress 
-                              value={calculateCompletionPercentage(plan)} 
-                              className="h-2 flex-1 mr-2"
-                            />
-                            <span>{calculateCompletionPercentage(plan)}%</span>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h3 className="font-medium mb-1">Goals Breakdown</h3>
-                          <div className="grid grid-cols-3 gap-2 text-sm">
-                            <div className="flex flex-col items-center justify-center p-2 bg-green-50 rounded-md">
-                              <span className="font-medium text-green-700">
-                                {plan.goals?.filter(g => g.status === GoalStatus.ACHIEVED).length || 0}
-                              </span>
-                              <span className="text-xs text-muted-foreground">Achieved</span>
-                            </div>
-                            <div className="flex flex-col items-center justify-center p-2 bg-blue-50 rounded-md">
-                              <span className="font-medium text-blue-700">
-                                {plan.goals?.filter(g => g.status === GoalStatus.IN_PROGRESS).length || 0}
-                              </span>
-                              <span className="text-xs text-muted-foreground">In Progress</span>
-                            </div>
-                            <div className="flex flex-col items-center justify-center p-2 bg-yellow-50 rounded-md">
-                              <span className="font-medium text-yellow-700">
-                                {plan.goals?.filter(g => g.status === GoalStatus.NOT_STARTED).length || 0}
-                              </span>
-                              <span className="text-xs text-muted-foreground">Not Started</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h3 className="font-medium mb-1">Recent Activity</h3>
-                          <p className="text-sm text-muted-foreground">
-                            No recent activity recorded.
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-              
-              {/* Diagnosis Tab */}
-              <TabsContent value="diagnosis">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Diagnosis & Assessment</CardTitle>
-                    <CardDescription>
-                      Client diagnosis information and assessment findings
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {plan.diagnosisInfo ? (
-                      <div className="space-y-6">
-                        {/* Diagnosis Codes */}
-                        <div>
-                          <h3 className="text-md font-medium mb-2">Diagnosis Codes</h3>
-                          {plan.diagnosisInfo.diagnosisCodes && plan.diagnosisInfo.diagnosisCodes.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {plan.diagnosisInfo.diagnosisCodes.map((code, index) => (
-                                <Badge key={index} variant="outline" className="bg-blue-50 border-blue-200">
-                                  {code}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">No diagnosis codes provided.</p>
-                          )}
-                        </div>
-                        
-                        {/* Presenting Problems */}
-                        <div>
-                          <h3 className="text-md font-medium mb-2">Presenting Problems</h3>
-                          {plan.diagnosisInfo.presentingProblems && plan.diagnosisInfo.presentingProblems.length > 0 ? (
-                            <ul className="list-disc pl-5 space-y-1">
-                              {plan.diagnosisInfo.presentingProblems.map((problem, index) => (
-                                <li key={index} className="text-sm">
-                                  {problem}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">No presenting problems provided.</p>
-                          )}
-                        </div>
-                        
-                        {/* Mental Status Evaluation */}
-                        <div>
-                          <h3 className="text-md font-medium mb-2">Mental Status Evaluation</h3>
-                          <p className="text-sm">
-                            {plan.diagnosisInfo.mentalStatusEvaluation || 'No mental status evaluation provided.'}
-                          </p>
-                        </div>
-                        
-                        {/* Diagnostic Formulation */}
-                        <div>
-                          <h3 className="text-md font-medium mb-2">Diagnostic Formulation</h3>
-                          <p className="text-sm">
-                            {plan.diagnosisInfo.diagnosticFormulation || 'No diagnostic formulation provided.'}
-                          </p>
-                        </div>
-                        
-                        {/* Risk Assessments */}
-                        {plan.riskAssessments && plan.riskAssessments.length > 0 && (
-                          <div>
-                            <h3 className="text-md font-medium mb-2">Risk Assessment</h3>
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Risk Type</TableHead>
-                                  <TableHead>Level</TableHead>
-                                  <TableHead>Date Assessed</TableHead>
-                                  <TableHead>Notes</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {plan.riskAssessments.map((assessment, index) => (
-                                  <TableRow key={index}>
-                                    <TableCell className="font-medium">{assessment.riskType}</TableCell>
-                                    <TableCell>
-                                      <Badge variant="outline" className={
-                                        assessment.level === 'none' ? 'bg-green-50 text-green-700 border-green-200' : 
-                                        assessment.level === 'low' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                        assessment.level === 'moderate' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                                        assessment.level === 'high' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                                        'bg-red-50 text-red-700 border-red-200'
-                                      }>
-                                        {assessment.level.charAt(0).toUpperCase() + assessment.level.slice(1)}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>{formatDate(assessment.assessmentDate)}</TableCell>
-                                    <TableCell>{assessment.notes || 'No notes'}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center">
-                        <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No diagnosis information available.</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              {/* Goals Tab */}
-              <TabsContent value="goals">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Treatment Goals</CardTitle>
-                    <CardDescription>
-                      SMART goals for this treatment plan
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {plan.goals && plan.goals.length > 0 ? (
-                      <div className="space-y-4">
-                        {plan.goals.map((goal, index) => (
-                          <Card key={index} className="overflow-hidden">
-                            <div className={`h-1 w-full ${
-                              goal.status === GoalStatus.ACHIEVED ? 'bg-green-500' :
-                              goal.status === GoalStatus.IN_PROGRESS ? 'bg-blue-500' :
-                              'bg-yellow-500'
-                            }`}></div>
-                            <CardContent className="p-4">
-                              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                                <div className="space-y-2 flex-1">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                      <Target className="h-5 w-5 text-primary mr-2" />
-                                      <h3 className="font-medium">{goal.description}</h3>
-                                    </div>
-                                    <div>
-                                      {getGoalStatusBadge(goal.status)}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="pl-7 space-y-3">
-                                    <div>
-                                      <h4 className="text-sm font-medium text-muted-foreground">Specific Measure</h4>
-                                      <p className="text-sm">{goal.specificMeasure || 'Not specified'}</p>
-                                    </div>
-                                    
-                                    <div>
-                                      <h4 className="text-sm font-medium text-muted-foreground">Achievement Criteria</h4>
-                                      <p className="text-sm">{goal.achievementCriteria || 'Not specified'}</p>
-                                    </div>
-                                    
-                                    {goal.notes && (
-                                      <div>
-                                        <h4 className="text-sm font-medium text-muted-foreground">Notes</h4>
-                                        <p className="text-sm">{goal.notes}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                <div className="md:min-w-[180px] flex flex-row md:flex-col gap-4 md:gap-2">
-                                  <div>
-                                    <h4 className="text-sm font-medium text-muted-foreground">Target Date</h4>
-                                    <div className="flex items-center">
-                                      <Calendar className="h-4 w-4 text-muted-foreground mr-1" />
-                                      <span className="text-sm">{formatDate(goal.targetDate)}</span>
-                                    </div>
-                                  </div>
-                                  
-                                  <div>
-                                    <h4 className="text-sm font-medium text-muted-foreground">Time Frame</h4>
-                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                      {goal.timeFrame === 'short_term' ? 'Short-term' : 'Long-term'}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center">
-                        <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No goals have been set for this treatment plan.</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              {/* Interventions Tab */}
-              <TabsContent value="interventions">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Interventions & Methods</CardTitle>
-                    <CardDescription>
-                      Therapeutic interventions and methods used in treatment
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {plan.interventions && plan.interventions.length > 0 ? (
-                      <div className="space-y-4">
-                        {plan.interventions.map((intervention, index) => (
-                          <Card key={index}>
-                            <CardContent className="p-4">
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-start">
-                                  <div className="flex items-center">
-                                    <Lightbulb className="h-5 w-5 text-primary mr-2" />
-                                    <h3 className="font-medium">{intervention.name}</h3>
-                                  </div>
-                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                    {intervention.frequency || 'As needed'}
-                                  </Badge>
-                                </div>
-                                
-                                {intervention.description && (
-                                  <div className="pl-7">
-                                    <h4 className="text-sm font-medium text-muted-foreground">Description</h4>
-                                    <p className="text-sm">{intervention.description}</p>
-                                  </div>
-                                )}
-                                
-                                {intervention.notes && (
-                                  <div className="pl-7">
-                                    <h4 className="text-sm font-medium text-muted-foreground">Notes</h4>
-                                    <p className="text-sm">{intervention.notes}</p>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center">
-                        <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No interventions have been defined for this treatment plan.</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              {/* Progress Tab */}
-              <TabsContent value="progress">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Progress Tracking</CardTitle>
-                    <CardDescription>
-                      Monitor client progress over time
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {plan.progressTracking && plan.progressTracking.length > 0 ? (
-                      <div className="space-y-6">
-                        {plan.progressTracking.map((progress, index) => (
-                          <Card key={index}>
-                            <CardHeader className="pb-2">
-                              <div className="flex justify-between items-center">
-                                <CardTitle className="text-lg">Progress Entry #{index + 1}</CardTitle>
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                  {formatDate(progress.date)}
-                                </Badge>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              {/* Progress Rating */}
-                              <div>
-                                <h3 className="text-sm font-medium mb-1">Progress Rating</h3>
-                                <div className="flex items-center">
-                                  <div className="relative w-full max-w-[200px] h-2 bg-gray-100 rounded-full overflow-hidden mr-2">
-                                    <div 
-                                      className="absolute inset-y-0 left-0 bg-primary" 
-                                      style={{ width: `${(progress.progressRating / 10) * 100}%` }} 
-                                    />
-                                  </div>
-                                  <span className="text-sm font-medium">{progress.progressRating}/10</span>
-                                </div>
-                              </div>
-                              
-                              {/* Goals Addressed */}
-                              {progress.goalsAddressed && progress.goalsAddressed.length > 0 && (
-                                <div>
-                                  <h3 className="text-sm font-medium mb-1">Goals Addressed</h3>
-                                  <div className="flex flex-wrap gap-1">
-                                    {progress.goalsAddressed.map((goal, idx) => (
-                                      <Badge key={idx} variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                                        {goal}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Interventions Used */}
-                              {progress.interventionsUsed && progress.interventionsUsed.length > 0 && (
-                                <div>
-                                  <h3 className="text-sm font-medium mb-1">Interventions Used</h3>
-                                  <div className="flex flex-wrap gap-1">
-                                    {progress.interventionsUsed.map((intervention, idx) => (
-                                      <Badge key={idx} variant="outline" className="bg-secondary text-secondary-foreground border-secondary/20">
-                                        {intervention}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Barriers */}
-                              {progress.barriers && progress.barriers.length > 0 && (
-                                <div>
-                                  <h3 className="text-sm font-medium mb-1">Barriers to Progress</h3>
-                                  <div className="flex flex-wrap gap-1">
-                                    {progress.barriers.map((barrier, idx) => (
-                                      <Badge key={idx} variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-                                        {barrier}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Client Feedback */}
-                              {progress.clientFeedback && (
-                                <div>
-                                  <h3 className="text-sm font-medium mb-1">Client Feedback</h3>
-                                  <p className="text-sm text-muted-foreground">{progress.clientFeedback}</p>
-                                </div>
-                              )}
-                              
-                              {/* Plan Adjustments */}
-                              {progress.planAdjustments && (
-                                <div>
-                                  <h3 className="text-sm font-medium mb-1">Plan Adjustments</h3>
-                                  <p className="text-sm text-muted-foreground">{progress.planAdjustments}</p>
-                                </div>
-                              )}
-                              
-                              {/* Notes */}
-                              {progress.notes && (
-                                <div>
-                                  <h3 className="text-sm font-medium mb-1">Additional Notes</h3>
-                                  <p className="text-sm text-muted-foreground">{progress.notes}</p>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center">
-                        <ClipboardCheck className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No progress tracking entries have been recorded yet.</p>
-                        <Button
-                          variant="outline"
-                          className="mt-4"
-                          onClick={handleEditPlan}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Progress Entry
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-          
-          {/* Delete Confirmation Dialog */}
-          <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleEdit}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Edit Plan
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete Treatment Plan</AlertDialogTitle>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete this treatment plan? This action cannot be undone and all plan data will be permanently removed.
+                  This will permanently delete the treatment plan "{plan.title}".
+                  This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDeletePlan}
-                  className="bg-red-600 hover:bg-red-700"
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={isDeleting}
                 >
                   {isDeleting ? 'Deleting...' : 'Delete'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </>
-      ) : (
-        <Card className="mb-6">
-          <CardContent className="py-8 text-center">
-            <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Treatment plan not found.</p>
-            <Button
-              variant="outline"
-              onClick={handleBackToPlans}
-              className="mt-4"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" /> Back to Treatment Plans
-            </Button>
-          </CardContent>
-        </Card>
+        </div>
+      </div>
+      
+      {/* Client info */}
+      <div className="mb-6 p-6 border rounded-lg shadow-sm">
+        <h2 className="text-xl font-semibold mb-2">Client Information</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">
+              <span className="font-medium">Client:</span> {client?.fullName || client?.username}
+            </p>
+            {client?.email && (
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium">Email:</span> {client.email}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">
+              <span className="font-medium">Start Date:</span> {formatDate(plan.startDate)}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium">End Date:</span> {formatDate(plan.endDate)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">
+              <span className="font-medium">Created:</span> {formatDate(plan.createdAt)}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium">Last Updated:</span> {formatDate(plan.updatedAt)}
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Plan description */}
+      {plan.description && (
+        <div className="mb-6 p-6 border rounded-lg shadow-sm">
+          <h2 className="text-xl font-semibold mb-2">Overview</h2>
+          <p className="text-sm">{plan.description}</p>
+        </div>
       )}
+      
+      {/* Tabs for different sections */}
+      <Tabs defaultValue="diagnosis" className="mb-6">
+        <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-4">
+          <TabsTrigger value="diagnosis" className="flex items-center">
+            <Stethoscope className="h-4 w-4 mr-2" />
+            <span className="hidden md:inline">Assessment & Diagnosis</span>
+            <span className="md:hidden">Diagnosis</span>
+          </TabsTrigger>
+          <TabsTrigger value="risk" className="flex items-center">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            <span className="hidden md:inline">Risk Assessment</span>
+            <span className="md:hidden">Risk</span>
+          </TabsTrigger>
+          <TabsTrigger value="goals" className="flex items-center">
+            <Goal className="h-4 w-4 mr-2" />
+            <span>Goals</span>
+          </TabsTrigger>
+          <TabsTrigger value="interventions" className="flex items-center">
+            <Activity className="h-4 w-4 mr-2" />
+            <span className="hidden md:inline">Interventions</span>
+            <span className="md:hidden">Methods</span>
+          </TabsTrigger>
+          <TabsTrigger value="progress" className="flex items-center">
+            <ListChecks className="h-4 w-4 mr-2" />
+            <span className="hidden md:inline">Progress & Discharge</span>
+            <span className="md:hidden">Progress</span>
+          </TabsTrigger>
+        </TabsList>
+        
+        {/* Assessment & Diagnosis */}
+        <TabsContent value="diagnosis">
+          <div className="border rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Assessment & Diagnosis</h2>
+            
+            {plan.diagnosisInfo ? (
+              <div className="space-y-4">
+                {/* Diagnosis Codes */}
+                {plan.diagnosisInfo.diagnosisCodes && plan.diagnosisInfo.diagnosisCodes.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Diagnosis Codes</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {plan.diagnosisInfo.diagnosisCodes.map((code, idx) => (
+                        <Badge key={idx} variant="outline">{code}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Presenting Problems */}
+                {plan.diagnosisInfo.presentingProblems && plan.diagnosisInfo.presentingProblems.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Presenting Problems</h3>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {plan.diagnosisInfo.presentingProblems.map((problem, idx) => (
+                        <li key={idx}>{problem}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Mental Status Evaluation */}
+                {plan.diagnosisInfo.mentalStatusEvaluation && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Mental Status Evaluation</h3>
+                    <p className="text-sm">{plan.diagnosisInfo.mentalStatusEvaluation}</p>
+                  </div>
+                )}
+                
+                {/* Diagnostic Formulation */}
+                {plan.diagnosisInfo.diagnosticFormulation && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Diagnostic Formulation</h3>
+                    <p className="text-sm">{plan.diagnosisInfo.diagnosticFormulation}</p>
+                  </div>
+                )}
+                
+                {/* Diagnosis Date */}
+                {plan.diagnosisInfo.diagnosisDate && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Diagnosis Date</h3>
+                    <p className="flex items-center text-sm">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {formatDate(plan.diagnosisInfo.diagnosisDate)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center p-6 border border-dashed rounded-md">
+                <p className="text-muted-foreground">No diagnosis information available</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        {/* Risk Assessment */}
+        <TabsContent value="risk">
+          <div className="border rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Risk Assessment</h2>
+            
+            {plan.riskAssessment ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Suicide Risk */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-md flex justify-between items-center">
+                        <span>Suicide Risk</span>
+                        <Badge 
+                          className={getRiskLevelColor(plan.riskAssessment.suicideRisk)}
+                          variant="outline"
+                        >
+                          {plan.riskAssessment.suicideRisk || 'Not Assessed'}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">
+                        {plan.riskAssessment.suicideAssessment || 'No assessment details provided'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Self-Harm Risk */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-md flex justify-between items-center">
+                        <span>Self-Harm Risk</span>
+                        <Badge 
+                          className={getRiskLevelColor(plan.riskAssessment.selfHarmRisk)}
+                          variant="outline"
+                        >
+                          {plan.riskAssessment.selfHarmRisk || 'Not Assessed'}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">
+                        {plan.riskAssessment.selfHarmAssessment || 'No assessment details provided'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Violence Risk */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-md flex justify-between items-center">
+                        <span>Violence Risk</span>
+                        <Badge 
+                          className={getRiskLevelColor(plan.riskAssessment.violenceRisk)}
+                          variant="outline"
+                        >
+                          {plan.riskAssessment.violenceRisk || 'Not Assessed'}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">
+                        {plan.riskAssessment.violenceAssessment || 'No assessment details provided'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Substance Use Risk */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-md flex justify-between items-center">
+                        <span>Substance Use Risk</span>
+                        <Badge 
+                          className={getRiskLevelColor(plan.riskAssessment.substanceUseRisk)}
+                          variant="outline"
+                        >
+                          {plan.riskAssessment.substanceUseRisk || 'Not Assessed'}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">
+                        {plan.riskAssessment.substanceUseAssessment || 'No assessment details provided'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {/* Additional Risk Assessment Notes */}
+                {plan.riskAssessment.notes && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Additional Notes</h3>
+                    <p className="text-sm">{plan.riskAssessment.notes}</p>
+                  </div>
+                )}
+                
+                {/* Safety Plan */}
+                {plan.riskAssessment.safetyPlan && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Safety Plan</h3>
+                    <p className="text-sm">{plan.riskAssessment.safetyPlan}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center p-6 border border-dashed rounded-md">
+                <p className="text-muted-foreground">No risk assessment information available</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        {/* Treatment Goals */}
+        <TabsContent value="goals">
+          <div className="border rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Treatment Goals</h2>
+            
+            {plan.goals && plan.goals.length > 0 ? (
+              <div className="space-y-4">
+                {plan.goals.map((goal, idx) => (
+                  <Card key={idx}>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-md">Goal {idx + 1}</CardTitle>
+                        <div className="flex items-center space-x-2">
+                          <Badge 
+                            className={getGoalStatusColor(goal.status as GoalStatus)}
+                            variant="outline"
+                          >
+                            {goal.status === GoalStatus.NOT_STARTED ? 'Not Started' : 
+                             goal.status === GoalStatus.IN_PROGRESS ? 'In Progress' : 
+                             goal.status === GoalStatus.ACHIEVED ? 'Achieved' : goal.status}
+                          </Badge>
+                          <Badge variant="outline">
+                            {getTimeFrameLabel(goal.timeFrame as TimeFrame)}
+                          </Badge>
+                        </div>
+                      </div>
+                      <CardDescription>{goal.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">Specific Measure</h4>
+                          <p className="text-sm">{goal.specificMeasure}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">Achievement Criteria</h4>
+                          <p className="text-sm">{goal.achievementCriteria}</p>
+                        </div>
+                        {goal.targetDate && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-1">Target Date</h4>
+                            <p className="text-sm flex items-center">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {formatDate(goal.targetDate)}
+                            </p>
+                          </div>
+                        )}
+                        {goal.objective && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-1">Objective</h4>
+                            <p className="text-sm">{goal.objective}</p>
+                          </div>
+                        )}
+                        {goal.intervention && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-1">Intervention</h4>
+                            <p className="text-sm">{goal.intervention}</p>
+                          </div>
+                        )}
+                        {goal.relevance && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-1">Relevance</h4>
+                            <p className="text-sm">{goal.relevance}</p>
+                          </div>
+                        )}
+                      </div>
+                      {goal.notes && (
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium mb-1">Notes</h4>
+                          <p className="text-sm">{goal.notes}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-6 border border-dashed rounded-md">
+                <p className="text-muted-foreground">No treatment goals defined</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        {/* Interventions */}
+        <TabsContent value="interventions">
+          <div className="border rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Treatment Interventions & Methods</h2>
+            
+            {plan.interventions && plan.interventions.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {plan.interventions.map((intervention, idx) => (
+                  <Card key={idx}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-md">{intervention.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {intervention.description && (
+                        <div className="mb-2">
+                          <h4 className="text-sm font-medium mb-1">Description</h4>
+                          <p className="text-sm">{intervention.description}</p>
+                        </div>
+                      )}
+                      {intervention.frequency && (
+                        <div className="mb-2">
+                          <h4 className="text-sm font-medium mb-1">Frequency</h4>
+                          <p className="text-sm">{intervention.frequency}</p>
+                        </div>
+                      )}
+                      {intervention.notes && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">Notes</h4>
+                          <p className="text-sm">{intervention.notes}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-6 border border-dashed rounded-md">
+                <p className="text-muted-foreground">No treatment interventions defined</p>
+              </div>
+            )}
+            
+            {/* Assessments */}
+            {plan.assessments && plan.assessments.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-4">Assessments</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {plan.assessments.map((assessment, idx) => (
+                    <Card key={idx}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-md">{assessment.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-2">
+                          {assessment.date && (
+                            <div>
+                              <h4 className="text-sm font-medium mb-1">Date</h4>
+                              <p className="text-sm flex items-center">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                {formatDate(assessment.date)}
+                              </p>
+                            </div>
+                          )}
+                          {assessment.score && (
+                            <div>
+                              <h4 className="text-sm font-medium mb-1">Score</h4>
+                              <p className="text-sm">{assessment.score}</p>
+                            </div>
+                          )}
+                        </div>
+                        {assessment.notes && (
+                          <div className="mt-2">
+                            <h4 className="text-sm font-medium mb-1">Notes</h4>
+                            <p className="text-sm">{assessment.notes}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        {/* Progress & Discharge */}
+        <TabsContent value="progress">
+          <div className="border rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Progress Tracking & Discharge Planning</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Progress Tracking */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Progress Tracking</h3>
+                
+                {plan.progressTracking ? (
+                  <div className="space-y-4">
+                    {plan.progressTracking.measurementTools && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Measurement Tools</h4>
+                        <p className="text-sm">{plan.progressTracking.measurementTools}</p>
+                      </div>
+                    )}
+                    {plan.progressTracking.progressMetrics && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Progress Metrics</h4>
+                        <p className="text-sm">{plan.progressTracking.progressMetrics}</p>
+                      </div>
+                    )}
+                    {plan.progressTracking.progressNotes && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Progress Notes</h4>
+                        <p className="text-sm">{plan.progressTracking.progressNotes}</p>
+                      </div>
+                    )}
+                    {plan.progressTracking.treatmentBarriers && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Treatment Barriers</h4>
+                        <p className="text-sm">{plan.progressTracking.treatmentBarriers}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center p-6 border border-dashed rounded-md">
+                    <p className="text-muted-foreground">No progress tracking information available</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Discharge Plan */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Discharge Planning</h3>
+                
+                {plan.dischargePlan ? (
+                  <div className="space-y-4">
+                    {plan.dischargePlan.completionCriteria && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Completion Criteria</h4>
+                        <p className="text-sm">{plan.dischargePlan.completionCriteria}</p>
+                      </div>
+                    )}
+                    {plan.dischargePlan.expectedOutcomes && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Expected Outcomes</h4>
+                        <p className="text-sm">{plan.dischargePlan.expectedOutcomes}</p>
+                      </div>
+                    )}
+                    {plan.dischargePlan.relapsePrevention && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Relapse Prevention</h4>
+                        <p className="text-sm">{plan.dischargePlan.relapsePrevention}</p>
+                      </div>
+                    )}
+                    {plan.dischargePlan.followUpPlan && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Follow-up Plan</h4>
+                        <p className="text-sm">{plan.dischargePlan.followUpPlan}</p>
+                      </div>
+                    )}
+                    {plan.dischargePlan.transitionOfCare && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Transition of Care</h4>
+                        <p className="text-sm">{plan.dischargePlan.transitionOfCare}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center p-6 border border-dashed rounded-md">
+                    <p className="text-muted-foreground">No discharge planning information available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
-};
-
-export default TreatmentPlanDetail;
+}

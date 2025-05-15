@@ -26,11 +26,14 @@ import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { CrisisTrackerPage } from "@/features/crisis-tracker";
-import { TherapistDashboard, ClientDetails } from "@/features/therapist/presentation/pages";
+import { 
+  TherapistDashboard, 
+  ClientDetails, 
+  TreatmentPlans,
+  TreatmentPlanDetail,
+  TreatmentPlanForm
+} from "@/features/therapist/presentation/pages";
 import ClientTimeDetail from "@/features/therapist/presentation/pages/ClientTimeDetail";
-import TreatmentPlans from "@/features/therapist/presentation/pages/TreatmentPlans";
-import TreatmentPlanDetail from "@/features/therapist/presentation/pages/TreatmentPlanDetail";
-import TreatmentPlanForm from "@/features/therapist/presentation/pages/TreatmentPlanForm";
 import { TherapistProvider } from "@/features/therapist/presentation/hooks/useTherapistContext";
 
 function Router() {

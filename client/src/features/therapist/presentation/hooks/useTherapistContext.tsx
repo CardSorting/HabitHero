@@ -1,50 +1,43 @@
 /**
- * Context and provider for therapist feature
+ * Context provider for therapist related data
+ * Following SOLID principles, DDD, and Clean Architecture
  */
-import React, { createContext, useContext, ReactNode } from 'react';
-import { TherapistService } from '../../application/services/TherapistService';
-import { 
-  ApiTherapistRepository, 
-  ApiTherapistNoteRepository, 
-  ApiTreatmentPlanRepository 
-} from '../../infrastructure/repositories';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { ID } from '../../domain/entities';
 
-// Create the repositories
-const therapistRepository = new ApiTherapistRepository();
-const therapistNoteRepository = new ApiTherapistNoteRepository();
-const treatmentPlanRepository = new ApiTreatmentPlanRepository();
+interface TherapistContextType {
+  therapistId: ID;
+  setTherapistId: (id: ID) => void;
+  // Add other therapist related context properties as needed
+}
 
-// Create the service with the repositories
-const therapistService = new TherapistService(
-  therapistRepository,
-  therapistNoteRepository,
-  treatmentPlanRepository
-);
+const TherapistContext = createContext<TherapistContextType | undefined>(undefined);
 
-// Create the context
-const TherapistContext = createContext<TherapistService | undefined>(undefined);
-
-/**
- * Provider component for the therapist context
- */
-export const TherapistProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export function TherapistProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const [therapistId, setTherapistId] = useState<ID>(0);
+  
+  // Initialize therapist ID based on authenticated user
+  useEffect(() => {
+    if (user?.id && user.role === 'therapist') {
+      setTherapistId(user.id);
+    }
+  }, [user]);
+  
   return (
-    <TherapistContext.Provider value={therapistService}>
+    <TherapistContext.Provider value={{ therapistId, setTherapistId }}>
       {children}
     </TherapistContext.Provider>
   );
-};
+}
 
-/**
- * Hook to access the therapist service
- * @returns The therapist service
- */
-export const useTherapistService = (): TherapistService => {
+export function useTherapistContext() {
   const context = useContext(TherapistContext);
   
   if (context === undefined) {
-    throw new Error('useTherapistService must be used within a TherapistProvider');
+    throw new Error('useTherapistContext must be used within a TherapistProvider');
   }
   
   return context;
-};
+}

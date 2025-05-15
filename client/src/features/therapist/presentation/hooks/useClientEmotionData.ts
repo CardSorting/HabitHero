@@ -193,6 +193,11 @@ export const useClientEmotionData = (clientId: ID) => {
   const isLoading = isTrendsLoading || isFrequentLoading || isIntensityLoading || isEntriesLoading;
   const error = trendsError || frequentError || intensityError || entriesError;
 
+  // Function to get all emotion entries
+  const getAllEmotionEntries = () => {
+    return entries || [];
+  };
+
   return {
     // Raw data
     trends: trendsData,
@@ -211,6 +216,7 @@ export const useClientEmotionData = (clientId: ID) => {
     // Processed data getters
     getEmotionIntensityTrend,
     getTopEmotionsByFrequency,
-    getEmotionsByIntensity
+    getEmotionsByIntensity,
+    getAllEmotionEntries
   };
 };

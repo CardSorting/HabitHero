@@ -1,0 +1,52 @@
+  // Get most frequent emotions
+  app.get('/api/emotions/analytics/frequent', isAuthenticated, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const fromDate = req.query.from as string;
+      const toDate = req.query.to as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      
+      if (!fromDate || !toDate) {
+        return res.status(400).json({ error: 'Missing from or to date parameters' });
+      }
+      
+      // Get userId from request (allows therapist to view client data)
+      const userId = getUserIdFromRequest(req);
+      
+      console.log(`Frequent emotions API - Fetching for userId: ${userId}, from: ${fromDate}, to: ${toDate}`);
+      
+      // Get entries from the database
+      const entries = await db.query.emotionTrackingEntries.findMany({
+        where: (entries, { eq, and, gte, lte }) => 
+          and(
+            gte(entries.date, fromDate),
+            lte(entries.date, toDate),
+            eq(entries.userId, userId)
+          )
+      });
+
+      // Count each emotion
+      const emotionCounts: Record<string, number> = {};
+      for (const entry of entries) {
+        emotionCounts[entry.emotionName] = (emotionCounts[entry.emotionName] || 0) + 1;
+      }
+
+      // Convert to array for sorting
+      const emotionCountArray = Object.entries(emotionCounts).map(([emotion, count]) => ({
+        emotion,
+        count
+      }));
+
+      // Sort by count descending and limit
+      emotionCountArray.sort((a, b) => b.count - a.count);
+      const topEmotions = emotionCountArray.slice(0, limit);
+
+      res.json(topEmotions);
+    } catch (error) {
+      console.error('Error in frequent emotions endpoint:', error);
+      res.status(500).json({ error: 'Failed to fetch frequent emotions' });
+    }
+  });

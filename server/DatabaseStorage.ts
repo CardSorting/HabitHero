@@ -1675,9 +1675,33 @@ export class DatabaseStorage implements IStorage {
       clientId,
       emotionTrends,
       crisisEvents: {
-        count: crisisAnalytics.totalEvents,
-        byType: crisisAnalytics.byType,
-        byIntensity: crisisAnalytics.byIntensity,
+        count: allCrisisEvents ? allCrisisEvents.length : crisisAnalytics.totalEvents,
+        byType: (function() {
+          // Manually calculate byType if we have events
+          if (allCrisisEvents && allCrisisEvents.length > 0) {
+            const byType: Record<string, number> = {};
+            allCrisisEvents.forEach(event => {
+              if (event.type) {
+                byType[event.type] = (byType[event.type] || 0) + 1;
+              }
+            });
+            return byType;
+          }
+          return crisisAnalytics.byType || {};
+        })(),
+        byIntensity: (function() {
+          // Manually calculate byIntensity if we have events
+          if (allCrisisEvents && allCrisisEvents.length > 0) {
+            const byIntensity: Record<string, number> = {};
+            allCrisisEvents.forEach(event => {
+              if (event.intensity) {
+                byIntensity[event.intensity] = (byIntensity[event.intensity] || 0) + 1;
+              }
+            });
+            return byIntensity;
+          }
+          return crisisAnalytics.byIntensity || {};
+        })(),
         recentEvents,
         events: allCrisisEvents, // Include all events
         trend

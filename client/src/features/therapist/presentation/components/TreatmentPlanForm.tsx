@@ -203,7 +203,17 @@ const TreatmentPlanForm: React.FC<TreatmentPlanFormProps> = ({
           ...assessment,
           date: new Date(assessment.date)
         })) || [],
-        interventions: initialData.interventions || []
+        interventions: initialData.interventions || [],
+        diagnosisInfo: initialData.diagnosisInfo || undefined,
+        riskAssessments: initialData.riskAssessments?.map(risk => ({
+          ...risk,
+          assessmentDate: new Date(risk.assessmentDate)
+        })) || [],
+        progressTracking: initialData.progressTracking?.map(progress => ({
+          ...progress,
+          date: new Date(progress.date)
+        })) || [],
+        dischargePlan: initialData.dischargePlan || undefined
       }
     : {
         title: '',
@@ -212,7 +222,26 @@ const TreatmentPlanForm: React.FC<TreatmentPlanFormProps> = ({
         status: 'active' as TreatmentPlanStatus,
         goals: [],
         assessments: [],
-        interventions: []
+        interventions: [],
+        diagnosisInfo: {
+          diagnosisCodes: [],
+          presentingProblems: [],
+          mentalStatusEvaluation: '',
+          diagnosticFormulation: '',
+          diagnosisDate: new Date()
+        },
+        riskAssessments: [],
+        progressTracking: [],
+        dischargePlan: {
+          criteria: [],
+          anticipatedDate: undefined,
+          aftercarePlan: '',
+          referrals: [],
+          relapsePrevention: '',
+          warningSignsRecognition: [],
+          supportResources: [],
+          followUpSchedule: ''
+        }
       };
   
   // Initialize the form
@@ -249,11 +278,34 @@ const TreatmentPlanForm: React.FC<TreatmentPlanFormProps> = ({
     name: 'interventions',
   });
   
+  const { 
+    fields: riskAssessmentFields, 
+    append: appendRiskAssessment, 
+    remove: removeRiskAssessment 
+  } = useFieldArray({
+    control: form.control,
+    name: 'riskAssessments',
+  });
+  
+  const { 
+    fields: progressTrackingFields, 
+    append: appendProgressTracking, 
+    remove: removeProgressTracking 
+  } = useFieldArray({
+    control: form.control,
+    name: 'progressTracking',
+  });
+  
   // Add a new goal
   const handleAddGoal = () => {
     appendGoal({
       description: '',
+      specificMeasure: '',
+      achievementCriteria: '',
+      timeFrame: TimeFrame.SHORT_TERM,
       status: GoalStatus.PENDING,
+      progressMetrics: [],
+      relevance: '',
       notes: '',
     });
   };
@@ -262,7 +314,11 @@ const TreatmentPlanForm: React.FC<TreatmentPlanFormProps> = ({
   const handleAddAssessment = () => {
     appendAssessment({
       name: '',
+      type: 'clinical_interview',
       date: new Date(),
+      interpretation: '',
+      findings: [],
+      recommendationsFromAssessment: [],
       notes: '',
     });
   };
@@ -272,7 +328,39 @@ const TreatmentPlanForm: React.FC<TreatmentPlanFormProps> = ({
     appendIntervention({
       name: '',
       description: '',
-      frequency: 'daily',
+      evidenceBase: '',
+      modality: 'individual',
+      frequency: 'weekly',
+      duration: '50 minutes',
+      techniques: [],
+      resources: [],
+      notes: '',
+    });
+  };
+  
+  // Add a new risk assessment
+  const handleAddRiskAssessment = () => {
+    appendRiskAssessment({
+      assessmentDate: new Date(),
+      suicideRisk: RiskLevel.NONE,
+      violenceRisk: RiskLevel.NONE,
+      selfHarmRisk: RiskLevel.NONE,
+      substanceAbuseRisk: RiskLevel.NONE,
+      safetyPlan: '',
+      notes: '',
+    });
+  };
+  
+  // Add a new progress tracking entry
+  const handleAddProgressTracking = () => {
+    appendProgressTracking({
+      date: new Date(),
+      goalsAddressed: [],
+      interventionsUsed: [],
+      progressRating: 5,
+      barriers: [],
+      clientFeedback: '',
+      planAdjustments: '',
       notes: '',
     });
   };
@@ -303,11 +391,14 @@ const TreatmentPlanForm: React.FC<TreatmentPlanFormProps> = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="details">Basic Details</TabsTrigger>
-            <TabsTrigger value="goals">Goals</TabsTrigger>
-            <TabsTrigger value="assessments">Assessments</TabsTrigger>
+            <TabsTrigger value="diagnosis">Assessment & Diagnosis</TabsTrigger>
+            <TabsTrigger value="goals">SMART Goals</TabsTrigger>
             <TabsTrigger value="interventions">Interventions</TabsTrigger>
+            <TabsTrigger value="assessments">Assessments</TabsTrigger>
+            <TabsTrigger value="progress">Progress Tracking</TabsTrigger>
+            <TabsTrigger value="discharge">Discharge Plan</TabsTrigger>
           </TabsList>
           
           {/* Basic Details Tab */}

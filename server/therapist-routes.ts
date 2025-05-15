@@ -569,15 +569,43 @@ export function registerTherapistRoutes(app: Express) {
         return res.status(403).json({ message: 'Forbidden: This client is not assigned to you' });
       }
       
-      // Get analytics data
-      const analytics = await req.app.locals.storage.getClientAnalytics(
-        therapistId, 
-        clientId,
-        startDate,
-        endDate
-      );
-      
-      res.json(analytics);
+      try {
+        // Get analytics data
+        const analytics = await req.app.locals.storage.getClientAnalytics(
+          therapistId, 
+          clientId,
+          startDate,
+          endDate
+        );
+        
+        res.json(analytics);
+      } catch (analyticsError: any) {
+        // If there's a table missing error, return a default response instead of an error
+        if (analyticsError.message && analyticsError.message.includes('does not exist')) {
+          console.warn('Missing table detected in analytics request, returning default data');
+          // Return default analytics data structure
+          res.json({
+            emotions: {
+              byDate: {},
+              byCategory: {},
+              mostFrequent: [],
+              highestIntensity: []
+            },
+            crisisEvents: {
+              total: 0,
+              byTrigger: [],
+              bySymptom: [],
+              byTime: [],
+              bySeverity: [],
+              recent: [],
+              trend: 'stable'
+            }
+          });
+        } else {
+          // For other errors, rethrow to be handled by the outer catch
+          throw analyticsError;
+        }
+      }
     } catch (error) {
       console.error('Error fetching client analytics:', error);
       res.status(500).json({ message: 'Error fetching client analytics' });

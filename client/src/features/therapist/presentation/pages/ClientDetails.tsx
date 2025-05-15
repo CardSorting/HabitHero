@@ -233,7 +233,17 @@ const ClientDetails: React.FC = () => {
                   <Button size="sm" variant="outline">
                     <FileEdit className="mr-2 h-4 w-4" /> Edit Relationship
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      // Switch to the treatment plans tab
+                      const treatmentTab = document.querySelector('[data-value="treatment"]');
+                      if (treatmentTab) {
+                        (treatmentTab as HTMLElement).click();
+                      }
+                    }}
+                  >
                     <ClipboardList className="mr-2 h-4 w-4" /> Add Treatment Plan
                   </Button>
                 </div>

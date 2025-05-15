@@ -11,6 +11,7 @@ import {
   GoalStatus
 } from '../../domain/entities';
 import { useTreatmentPlans } from '../hooks/useTreatmentPlans';
+// Import the TreatmentPlanForm directly
 import TreatmentPlanForm from './TreatmentPlanForm';
 
 // UI Components

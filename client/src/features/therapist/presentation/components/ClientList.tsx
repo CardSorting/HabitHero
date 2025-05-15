@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useTherapistClients } from '../hooks';
-import { ClientStatus, ID } from '../../domain/entities';
+import { ClientStatus, ID, Client } from '../../domain/entities';
 
 // UI Components
 import {
@@ -93,6 +93,26 @@ export const ClientList: React.FC = () => {
   const [newClientNotes, setNewClientNotes] = useState('');
   const [addClientDialogOpen, setAddClientDialogOpen] = useState(false);
   const [clientToRemove, setClientToRemove] = useState<ID | null>(null);
+  const [selectedSearchResult, setSelectedSearchResult] = useState<Client | null>(null);
+
+  // Handle client input change
+  const handleClientInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewClientUsername(e.target.value);
+    
+    // Clear selected client when input changes
+    if (selectedSearchResult && selectedSearchResult.username !== e.target.value) {
+      setSelectedSearchResult(null);
+    }
+    
+    // Set search query to find matching clients
+    setSearchQuery(e.target.value);
+  };
+  
+  // Handle selecting a client from search results
+  const selectSearchResult = (client: Client) => {
+    setSelectedSearchResult(client);
+    setNewClientUsername(client.username);
+  };
 
   // Handle adding a new client
   const handleAddClient = () => {
@@ -107,17 +127,18 @@ export const ClientList: React.FC = () => {
 
     assignClient(
       {
-        clientUsername: newClientUsername,
+        clientUsername: selectedSearchResult?.username || newClientUsername,
         notes: newClientNotes
       },
       {
         onSuccess: () => {
           toast({
             title: 'Success',
-            description: `Client ${newClientUsername} has been added to your client list.`
+            description: `Client ${selectedSearchResult?.username || newClientUsername} has been added to your client list.`
           });
           setNewClientUsername('');
           setNewClientNotes('');
+          setSelectedSearchResult(null);
           setAddClientDialogOpen(false);
         },
         onError: (error) => {
@@ -215,8 +236,46 @@ export const ClientList: React.FC = () => {
                     id="username"
                     placeholder="Enter client username"
                     value={newClientUsername}
-                    onChange={(e) => setNewClientUsername(e.target.value)}
+                    onChange={handleClientInputChange}
                   />
+                  {searchResults && searchResults.length > 0 && !selectedSearchResult && (
+                    <div className="mt-2 max-h-40 overflow-y-auto border rounded-md">
+                      <div className="p-2 bg-muted text-sm font-medium">
+                        Search Results
+                      </div>
+                      <ul className="py-1">
+                        {searchResults.map(client => (
+                          <li 
+                            key={client.id}
+                            className="px-2 py-1.5 hover:bg-accent cursor-pointer flex items-center"
+                            onClick={() => selectSearchResult(client)}
+                          >
+                            <span className="font-medium">{client.username}</span>
+                            {client.fullName && (
+                              <span className="ml-2 text-muted-foreground"> ({client.fullName})</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {selectedSearchResult && (
+                    <div className="mt-2 p-2 border rounded-md bg-green-50 flex items-center justify-between">
+                      <div>
+                        <span className="font-medium">{selectedSearchResult.username}</span>
+                        {selectedSearchResult.fullName && (
+                          <span className="ml-2 text-muted-foreground">({selectedSearchResult.fullName})</span>
+                        )}
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setSelectedSearchResult(null)}
+                      >
+                        Change
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="notes">Notes (optional)</Label>

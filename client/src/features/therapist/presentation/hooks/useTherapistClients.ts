@@ -40,7 +40,13 @@ export const useTherapistClients = () => {
   } = useQuery({
     queryKey: ['/api/therapist/clients/search', searchQuery],
     queryFn: () => therapistService.searchClients(searchQuery),
-    enabled: !!searchQuery && searchQuery.length >= 2
+    enabled: !!searchQuery && (
+      searchQuery.length >= 2 || 
+      // Allow searches with just a number (likely an ID)
+      (!isNaN(Number(searchQuery)) && Number.isInteger(Number(searchQuery)))
+    ),
+    // Don't keep stale search data when query changes
+    staleTime: 0
   });
 
   // Mutation for assigning a client to the therapist

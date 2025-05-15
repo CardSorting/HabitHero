@@ -12,6 +12,7 @@ type AuthRequest = Request & {
   user?: {
     id: number;
     username: string;
+    role?: "client" | "therapist" | "admin";
   }
 }
 
@@ -31,8 +32,33 @@ export function registerCrisisRoutes(app: Express) {
   // Get all crisis events for authenticated user
   app.get('/api/crisis-events', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const events = await req.app.locals.storage.getCrisisEvents(userId);
+      const authenticatedUserId = req.user!.id;
+      const queryUserId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      
+      // If querying for another user's data (therapist querying client data)
+      if (queryUserId && queryUserId !== authenticatedUserId) {
+        // Check if user is a therapist or admin
+        if (req.user?.role !== 'therapist' && req.user?.role !== 'admin') {
+          return res.status(403).json({ message: 'Unauthorized to access other users\' data' });
+        }
+        
+        // Verify therapist has access to this client
+        const hasAccess = await req.app.locals.storage.isTherapistForClient(
+          authenticatedUserId, 
+          queryUserId
+        );
+        
+        if (!hasAccess) {
+          return res.status(403).json({ message: 'Unauthorized to access this client\'s data' });
+        }
+        
+        // Therapist is authorized to access client data
+        const events = await req.app.locals.storage.getCrisisEvents(queryUserId);
+        return res.json(events);
+      }
+      
+      // Regular user accessing their own data
+      const events = await req.app.locals.storage.getCrisisEvents(authenticatedUserId);
       res.json(events);
     } catch (error) {
       console.error('Error fetching crisis events:', error);
@@ -43,15 +69,44 @@ export function registerCrisisRoutes(app: Express) {
   // Get crisis events in a date range
   app.get('/api/crisis-events/range', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const { startDate, endDate } = req.query;
+      const { startDate, endDate, userId: queryUserId } = req.query;
+      const authenticatedUserId = req.user!.id;
       
       if (!startDate || !endDate) {
         return res.status(400).json({ message: 'Missing startDate or endDate' });
       }
       
+      // If querying for another user's data (therapist querying client data)
+      if (queryUserId && parseInt(queryUserId as string) !== authenticatedUserId) {
+        // Check if user is a therapist or admin
+        if (req.user?.role !== 'therapist' && req.user?.role !== 'admin') {
+          return res.status(403).json({ message: 'Unauthorized to access other users\' data' });
+        }
+        
+        const targetUserId = parseInt(queryUserId as string);
+        
+        // Verify therapist has access to this client
+        const hasAccess = await req.app.locals.storage.isTherapistForClient(
+          authenticatedUserId, 
+          targetUserId
+        );
+        
+        if (!hasAccess) {
+          return res.status(403).json({ message: 'Unauthorized to access this client\'s data' });
+        }
+        
+        // Therapist is authorized to access client data
+        const events = await req.app.locals.storage.getCrisisEventsByDateRange(
+          targetUserId, 
+          startDate as string, 
+          endDate as string
+        );
+        return res.json(events);
+      }
+      
+      // Regular user accessing their own data
       const events = await req.app.locals.storage.getCrisisEventsByDateRange(
-        userId, 
+        authenticatedUserId, 
         startDate as string, 
         endDate as string
       );
@@ -75,12 +130,26 @@ export function registerCrisisRoutes(app: Express) {
         return res.status(404).json({ message: 'Crisis event not found' });
       }
       
-      // Ensure the event belongs to the authenticated user
-      if (event.userId !== req.user!.id) {
-        return res.status(403).json({ message: 'Unauthorized access to this event' });
+      // If event belongs to the authenticated user, return it
+      if (event.userId === req.user!.id) {
+        return res.json(event);
       }
       
-      res.json(event);
+      // If user is trying to access someone else's event, check if they're a therapist
+      if (req.user?.role === 'therapist' || req.user?.role === 'admin') {
+        // Verify therapist has access to this client
+        const hasAccess = await req.app.locals.storage.isTherapistForClient(
+          req.user!.id, 
+          event.userId
+        );
+        
+        if (hasAccess) {
+          return res.json(event);
+        }
+      }
+      
+      // If we get here, user is not authorized to access this event
+      return res.status(403).json({ message: 'Unauthorized access to this event' });
     } catch (error) {
       console.error('Error fetching crisis event:', error);
       res.status(500).json({ message: 'Error fetching crisis event' });
@@ -215,11 +284,31 @@ export function registerCrisisRoutes(app: Express) {
   // Get analytics summary for crisis events
   app.get('/api/crisis-events/analytics/summary', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const { startDate, endDate } = req.query;
+      const authenticatedUserId = req.user!.id;
+      const { startDate, endDate, userId: queryUserId } = req.query;
+      const targetUserId = queryUserId ? parseInt(queryUserId as string) : authenticatedUserId;
       
+      // If querying for another user's data (therapist querying client data)
+      if (targetUserId !== authenticatedUserId) {
+        // Check if user is a therapist or admin
+        if (req.user?.role !== 'therapist' && req.user?.role !== 'admin') {
+          return res.status(403).json({ message: 'Unauthorized to access other users\' data' });
+        }
+        
+        // Verify therapist has access to this client
+        const hasAccess = await req.app.locals.storage.isTherapistForClient(
+          authenticatedUserId, 
+          targetUserId
+        );
+        
+        if (!hasAccess) {
+          return res.status(403).json({ message: 'Unauthorized to access this client\'s data' });
+        }
+      }
+      
+      // Get analytics data for the target user
       const analytics = await req.app.locals.storage.getCrisisAnalytics(
-        userId,
+        targetUserId,
         startDate as string | undefined,
         endDate as string | undefined
       );
@@ -234,14 +323,34 @@ export function registerCrisisRoutes(app: Express) {
   // Get period-based summary (day/week/month/year)
   app.get('/api/crisis-events/analytics/period/:period', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const authenticatedUserId = req.user!.id;
       const period = req.params.period as 'day' | 'week' | 'month' | 'year';
+      const queryUserId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      const targetUserId = queryUserId || authenticatedUserId;
       
       if (!['day', 'week', 'month', 'year'].includes(period)) {
         return res.status(400).json({ message: 'Invalid period. Must be day, week, month, or year' });
       }
       
-      const summary = await req.app.locals.storage.getCrisisTimePeriodSummary(userId, period);
+      // If querying for another user's data (therapist querying client data)
+      if (targetUserId !== authenticatedUserId) {
+        // Check if user is a therapist or admin
+        if (req.user?.role !== 'therapist' && req.user?.role !== 'admin') {
+          return res.status(403).json({ message: 'Unauthorized to access other users\' data' });
+        }
+        
+        // Verify therapist has access to this client
+        const hasAccess = await req.app.locals.storage.isTherapistForClient(
+          authenticatedUserId, 
+          targetUserId
+        );
+        
+        if (!hasAccess) {
+          return res.status(403).json({ message: 'Unauthorized to access this client\'s data' });
+        }
+      }
+      
+      const summary = await req.app.locals.storage.getCrisisTimePeriodSummary(targetUserId, period);
       res.json(summary);
     } catch (error) {
       console.error('Error fetching crisis period summary:', error);

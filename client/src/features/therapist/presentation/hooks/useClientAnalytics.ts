@@ -65,13 +65,8 @@ export const useClientAnalytics = ({ clientId }: UseClientAnalyticsProps) => {
         throw new Error('Unauthorized to view client data');
       }
       
-      return apiRequest('/api/crisis-events/range', {
-        params: { 
-          userId: clientId,
-          startDate: dateRange.startDate, 
-          endDate: dateRange.endDate 
-        }
-      });
+      const url = `/api/crisis-events/range?userId=${clientId}&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
+      return apiRequest(url);
     },
     enabled: !!therapistId && !!clientId
   });

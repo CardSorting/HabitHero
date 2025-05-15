@@ -345,7 +345,7 @@ export const CrisisAnalytics: React.FC<CrisisAnalyticsProps> = ({ clientId }) =>
                 <div className="py-6 text-center text-muted-foreground">
                   Loading crisis events...
                 </div>
-              ) : !analytics || !analytics.crisisEvents || !analytics.crisisEvents.events || analytics.crisisEvents.events.length === 0 ? (
+              ) : !analytics || !analytics.crisisEvents || !Array.isArray(analytics.crisisEvents.events) || analytics.crisisEvents.events.length === 0 ? (
                 <div className="py-6 text-center text-muted-foreground">
                   No crisis events have been recorded for this client.
                 </div>
@@ -362,7 +362,7 @@ export const CrisisAnalytics: React.FC<CrisisAnalyticsProps> = ({ clientId }) =>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {analytics.crisisEvents.events.map((event: any) => (
+                    {(analytics.crisisEvents.events as any[]).map((event: any) => (
                       <TableRow key={event.id}>
                         <TableCell>
                           <div className="flex flex-col">

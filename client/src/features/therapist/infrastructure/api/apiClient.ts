@@ -103,10 +103,7 @@ export const therapistApiClient = {
    * Remove a client from a therapist
    */
   async removeClient(clientId: ID): Promise<boolean> {
-    await apiRequest({
-      url: therapistEndpoints.removeClient(clientId),
-      method: 'DELETE'
-    });
+    await apiRequest('DELETE', therapistEndpoints.removeClient(clientId));
     return true;
   },
   
@@ -114,30 +111,27 @@ export const therapistApiClient = {
    * Search for clients by username
    */
   async searchClients(usernameQuery: string): Promise<Client[]> {
-    return apiRequest({
-      url: `${therapistEndpoints.searchClients}?query=${encodeURIComponent(usernameQuery)}`,
-      method: 'GET'
-    });
+    const response = await apiRequest(
+      'GET', 
+      `${therapistEndpoints.searchClients}?query=${encodeURIComponent(usernameQuery)}`
+    );
+    return getResponseData<Client[]>(response);
   },
   
   /**
    * Get notes for a client
    */
   async getClientNotes(clientId: ID): Promise<TherapistNote[]> {
-    return apiRequest({
-      url: therapistEndpoints.getClientNotes(clientId),
-      method: 'GET'
-    });
+    const response = await apiRequest('GET', therapistEndpoints.getClientNotes(clientId));
+    return getResponseData<TherapistNote[]>(response);
   },
   
   /**
    * Get a specific note by ID
    */
   async getNoteById(noteId: ID): Promise<TherapistNote> {
-    return apiRequest({
-      url: therapistEndpoints.getNoteById(noteId),
-      method: 'GET'
-    });
+    const response = await apiRequest('GET', therapistEndpoints.getNoteById(noteId));
+    return getResponseData<TherapistNote>(response);
   },
   
   /**
@@ -154,19 +148,16 @@ export const therapistApiClient = {
       isPrivate?: boolean;
     }
   ): Promise<TherapistNote> {
-    return apiRequest({
-      url: therapistEndpoints.createNote,
-      method: 'POST',
-      data: {
-        clientId,
-        sessionDate,
-        content,
-        mood: options?.mood,
-        progress: options?.progress,
-        goalCompletion: options?.goalCompletion,
-        isPrivate: options?.isPrivate ?? true
-      }
+    const response = await apiRequest('POST', therapistEndpoints.createNote, {
+      clientId,
+      sessionDate,
+      content,
+      mood: options?.mood,
+      progress: options?.progress,
+      goalCompletion: options?.goalCompletion,
+      isPrivate: options?.isPrivate ?? true
     });
+    return getResponseData<TherapistNote>(response);
   },
   
   /**
@@ -176,11 +167,8 @@ export const therapistApiClient = {
     noteId: ID, 
     updates: Partial<TherapistNote>
   ): Promise<TherapistNote> {
-    return apiRequest({
-      url: therapistEndpoints.updateNote(noteId),
-      method: 'PUT',
-      data: updates
-    });
+    const response = await apiRequest('PUT', therapistEndpoints.updateNote(noteId), updates);
+    return getResponseData<TherapistNote>(response);
   },
   
   /**

@@ -79,6 +79,15 @@ function Router() {
             )}
             requiredRole="therapist"
           />
+          <ProtectedRoute 
+            path="/therapist/clients/:clientId/time/:periodId" 
+            component={(props) => (
+              <TherapistProvider>
+                <ClientTimeDetail {...props} />
+              </TherapistProvider>
+            )}
+            requiredRole="therapist"
+          />
           <Route component={NotFound} />
         </Switch>
       </ResponsiveLayout>

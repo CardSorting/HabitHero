@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTherapistService } from './useTherapistContext';
 import { useAuth } from '@/hooks/use-auth';
 import { ID, DateString, ClientAnalytics } from '../../domain/entities';
+import { apiRequest } from '@/lib/queryClient';
 
 interface UseClientAnalyticsProps {
   clientId: ID;
@@ -46,6 +47,43 @@ export const useClientAnalytics = ({ clientId }: UseClientAnalyticsProps) => {
     ),
     enabled: !!therapistId && !!clientId
   });
+
+  // Query for fetching crisis events specifically for the client
+  const {
+    data: crisisEvents,
+    isLoading: isLoadingCrisisEvents,
+  } = useQuery({
+    queryKey: ['/api/crisis-events', 'client', clientId, dateRange.startDate, dateRange.endDate],
+    queryFn: async () => {
+      // Make sure we have permission to view this client's data
+      const isAuthorized = await therapistService.isAuthorizedForClient(
+        therapistId,
+        clientId
+      );
+      
+      if (!isAuthorized) {
+        throw new Error('Unauthorized to view client data');
+      }
+      
+      return apiRequest('/api/crisis-events/range', {
+        params: { 
+          userId: clientId,
+          startDate: dateRange.startDate, 
+          endDate: dateRange.endDate 
+        }
+      });
+    },
+    enabled: !!therapistId && !!clientId
+  });
+
+  // Combine analytics with crisis events data
+  const combinedAnalytics = analytics ? {
+    ...analytics,
+    crisisEvents: {
+      ...analytics.crisisEvents,
+      events: crisisEvents || []
+    }
+  } : undefined;
 
   // Function to set a new date range
   const setAnalyticsDateRange = (startDate: DateString, endDate: DateString) => {
@@ -103,8 +141,8 @@ export const useClientAnalytics = ({ clientId }: UseClientAnalyticsProps) => {
 
   return {
     // Raw data
-    analytics,
-    isLoadingAnalytics,
+    analytics: combinedAnalytics,
+    isLoadingAnalytics: isLoadingAnalytics || isLoadingCrisisEvents,
     analyticsError,
     refetchAnalytics,
     

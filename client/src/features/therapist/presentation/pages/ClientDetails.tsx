@@ -37,8 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   EmotionAnalytics, 
   CrisisAnalytics, 
-  TherapistNotes,
-  TreatmentPlanList
+  TherapistNotes
 } from '../components';
 
 // Icons
@@ -237,14 +236,11 @@ const ClientDetails: React.FC = () => {
                     size="sm" 
                     variant="outline"
                     onClick={() => {
-                      // Switch to the treatment plans tab
-                      const treatmentTab = document.querySelector('[data-value="treatment"]');
-                      if (treatmentTab) {
-                        (treatmentTab as HTMLElement).click();
-                      }
+                      // Navigate to treatment plans page
+                      navigate(`/therapist/clients/${clientId}/treatment-plans`);
                     }}
                   >
-                    <ClipboardList className="mr-2 h-4 w-4" /> Add Treatment Plan
+                    <ClipboardList className="mr-2 h-4 w-4" /> View Treatment Plans
                   </Button>
                 </div>
               </CardFooter>
@@ -323,9 +319,7 @@ const ClientDetails: React.FC = () => {
               <TabsTrigger value="crisis">
                 <Activity className="h-4 w-4 mr-2" /> Crisis Events
               </TabsTrigger>
-              <TabsTrigger value="treatment">
-                <Brain className="h-4 w-4 mr-2" /> Treatment Plans
-              </TabsTrigger>
+
             </TabsList>
             
             {/* Session Notes Tab */}
@@ -366,24 +360,7 @@ const ClientDetails: React.FC = () => {
               </Card>
             </TabsContent>
             
-            {/* Treatment Plans Tab */}
-            <TabsContent value="treatment" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Treatment Plans</CardTitle>
-                  <CardDescription>
-                    Manage treatment plans and goals for {clientDetails.fullName || clientDetails.username}.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TreatmentPlanList 
-                    clientId={clientId} 
-                    clientName={clientDetails.fullName || clientDetails.username}
-                    therapistId={user?.id || 0}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
+
           </Tabs>
         </>
       ) : (

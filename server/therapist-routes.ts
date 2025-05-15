@@ -583,22 +583,29 @@ export function registerTherapistRoutes(app: Express) {
         // If there's a table missing error, return a default response instead of an error
         if (analyticsError.message && analyticsError.message.includes('does not exist')) {
           console.warn('Missing table detected in analytics request, returning default data');
-          // Return default analytics data structure
+          // Return default analytics data structure that matches what the client expects
           res.json({
-            emotions: {
-              byDate: {},
-              byCategory: {},
-              mostFrequent: [],
-              highestIntensity: []
+            emotionTrends: [], // This field is expected by the client component
+            emotionCategories: {
+              positive: [],
+              negative: [],
+              neutral: []
             },
+            mostFrequentEmotions: [],
+            highestIntensityEmotions: [],
             crisisEvents: {
-              total: 0,
-              byTrigger: [],
-              bySymptom: [],
-              byTime: [],
-              bySeverity: [],
-              recent: [],
-              trend: 'stable'
+              totalEvents: 0,
+              byType: {},
+              byIntensity: {},
+              commonTriggers: [],
+              commonSymptoms: [],
+              effectiveCopingStrategies: [],
+              averageDuration: 0
+            },
+            recentCrisisEvents: [],
+            treatmentProgress: {
+              goalsAchieved: 0,
+              totalGoals: 0
             }
           });
         } else {

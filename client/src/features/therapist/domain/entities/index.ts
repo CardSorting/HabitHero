@@ -167,13 +167,35 @@ export interface EmotionTrend {
 }
 
 /**
+ * CrisisEvent entity representing a crisis event
+ */
+export interface CrisisEvent {
+  id: ID;
+  userId: ID;
+  date: DateString;
+  time?: TimeString;
+  type: string;
+  intensity: string;
+  duration?: number;
+  location?: string;
+  triggers?: string[];
+  symptoms?: string[];
+  copingStrategiesUsed?: string[];
+  copingStrategyEffectiveness?: number;
+  notes?: string;
+  createdAt?: DateString;
+  updatedAt?: DateString;
+}
+
+/**
  * CrisisEventSummary entity providing a summary of crisis events
  */
 export interface CrisisEventSummary {
   count: number;
   byType: Record<string, number>;
   byIntensity: Record<string, number>;
-  recentEvents: any[]; // Replace with actual CrisisEvent type when needed
+  recentEvents: CrisisEvent[];
+  events?: CrisisEvent[]; // All crisis events, not just recent ones
   trend: 'increasing' | 'decreasing' | 'stable';
 }
 

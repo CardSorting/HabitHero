@@ -82,15 +82,16 @@ export const useClientAnalytics = ({ clientId }: UseClientAnalyticsProps) => {
     ...analytics,
     crisisEvents: {
       ...analytics.crisisEvents,
-      events: crisisEvents || [],
-      count: crisisEvents?.length || (analytics.crisisEvents?.count || 0),
+      // Use either the events from analytics (if available) or from separate crisis events query
+      events: analytics.crisisEvents?.events || (Array.isArray(crisisEvents) ? crisisEvents : []),
+      count: (analytics.crisisEvents?.events?.length || 0) || (Array.isArray(crisisEvents) ? crisisEvents.length : 0) || analytics.crisisEvents?.count || 0,
     }
   } : undefined;
   
   console.log('Combined analytics:', combinedAnalytics);
   
   // If analytics already contains events, we don't need to use the separate crisis events query
-  if (analytics?.crisisEvents?.events && analytics.crisisEvents.events.length > 0) {
+  if (analytics?.crisisEvents?.events && Array.isArray(analytics.crisisEvents.events) && analytics.crisisEvents.events.length > 0) {
     console.log('Using events from analytics:', analytics.crisisEvents.events);
   }
 

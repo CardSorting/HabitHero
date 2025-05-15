@@ -1589,8 +1589,28 @@ export class DatabaseStorage implements IStorage {
         orderBy: desc(crisisEvents.date)
       });
       
+      // Parse JSON fields in crisis events
+      const formattedEvents = allCrisisEvents.map(event => {
+        // Parse JSON fields if they exist and are strings
+        const triggers = typeof event.triggers === 'string' ? JSON.parse(event.triggers) : event.triggers;
+        const symptoms = typeof event.symptoms === 'string' ? JSON.parse(event.symptoms) : event.symptoms;
+        const copingStrategiesUsed = typeof event.copingStrategiesUsed === 'string' 
+          ? JSON.parse(event.copingStrategiesUsed) 
+          : event.copingStrategiesUsed;
+        
+        return {
+          ...event,
+          triggers,
+          symptoms,
+          copingStrategiesUsed
+        };
+      });
+      
       // Get recent events (top 5)
-      recentEvents = allCrisisEvents.slice(0, 5);
+      recentEvents = formattedEvents.slice(0, 5);
+      
+      // Replace the allCrisisEvents with formatted version
+      allCrisisEvents = formattedEvents;
       
       console.log(`Found ${allCrisisEvents.length} crisis events for client ${clientId}`);
     } catch (error) {

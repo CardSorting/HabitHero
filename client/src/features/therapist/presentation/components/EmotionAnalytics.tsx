@@ -1,8 +1,9 @@
 /**
  * Component for displaying emotion analytics for a client
+ * Uses direct client emotion endpoints for data access
  */
 import React from 'react';
-import { useClientAnalytics } from '../hooks';
+import { useClientEmotionData } from '../hooks/useClientEmotionData';
 import { ID } from '../../domain/entities';
 
 // UI Components
@@ -13,21 +14,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
 // Recharts components for data visualization
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -48,15 +42,20 @@ const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F'
 
 /**
  * Component for displaying emotion analytics for a client
+ * Now uses direct client emotion endpoints
  */
 export const EmotionAnalytics: React.FC<EmotionAnalyticsProps> = ({ clientId }) => {
   const {
-    analytics,
-    isLoadingAnalytics,
+    isLoading,
     dateRange,
     setLastNDays,
-    getEmotionIntensityTrend
-  } = useClientAnalytics({ clientId });
+    getEmotionIntensityTrend,
+    getTopEmotionsByFrequency,
+    getEmotionsByIntensity,
+    trends,
+    frequentEmotions,
+    highIntensityEmotions
+  } = useClientEmotionData(clientId);
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -68,33 +67,17 @@ export const EmotionAnalytics: React.FC<EmotionAnalyticsProps> = ({ clientId }) 
   };
 
   // Get emotion intensity trend data
-  const emotionIntensityData = getEmotionIntensityTrend(analytics)
+  const emotionIntensityData = getEmotionIntensityTrend()
     .map(item => ({
       date: formatDate(item.date),
       intensity: item.intensity
     }));
 
-  // Get top emotions by frequency
-  const getTopEmotions = () => {
-    if (!analytics?.emotionTrends) return [];
-
-    // Count emotion occurrences across all dates
-    const emotionCounts: Record<string, number> = {};
-    analytics.emotionTrends.forEach(day => {
-      day.emotions.forEach(emotion => {
-        if (!emotionCounts[emotion.name]) {
-          emotionCounts[emotion.name] = 0;
-        }
-        emotionCounts[emotion.name]++;
-      });
-    });
-
-    // Convert to array and sort by count
-    return Object.entries(emotionCounts)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
-  };
+  // Get top emotions data
+  const topEmotionsData = getTopEmotionsByFrequency();
+  
+  // Get intensity emotions data
+  const intensityEmotionsData = getEmotionsByIntensity();
 
   return (
     <div className="space-y-6">
@@ -125,11 +108,11 @@ export const EmotionAnalytics: React.FC<EmotionAnalyticsProps> = ({ clientId }) 
         </div>
       </div>
 
-      {isLoadingAnalytics ? (
+      {isLoading ? (
         <div className="py-6 text-center text-muted-foreground">
           Loading analytics...
         </div>
-      ) : !analytics ? (
+      ) : !trends || trends.length === 0 ? (
         <div className="py-6 text-center text-muted-foreground">
           No emotion data available for this client.
         </div>
@@ -172,32 +155,99 @@ export const EmotionAnalytics: React.FC<EmotionAnalyticsProps> = ({ clientId }) 
             <CardHeader>
               <CardTitle>Most Frequent Emotions</CardTitle>
               <CardDescription>
-                Most frequently recorded emotions in this period
+                Top 5 emotions experienced most frequently
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] flex items-center justify-center">
+                {topEmotionsData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={topEmotionsData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        fill="#8884d8"
+                        label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {topEmotionsData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    No emotion data to display
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Highest Intensity Emotions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Highest Intensity Emotions</CardTitle>
+              <CardDescription>
+                Emotions experienced with the highest intensity
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={getTopEmotions()}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, value, percent }) => 
-                        `${name}: ${(percent * 100).toFixed(0)}%`
-                      }
+                {intensityEmotionsData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={intensityEmotionsData}
+                      layout="vertical"
+                      margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
                     >
-                      {getTopEmotions().map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                      <XAxis type="number" domain={[0, 5]} />
+                      <YAxis dataKey="name" type="category" width={100} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#8884d8" name="Intensity" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    No intensity data to display
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Emotion Entry Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Emotion Summary</CardTitle>
+              <CardDescription>
+                Overview of recorded emotions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-muted p-3">
+                    <p className="text-sm font-medium">Total Entries</p>
+                    <p className="text-2xl font-bold">{topEmotionsData.reduce((sum, item) => sum + item.value, 0)}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted p-3">
+                    <p className="text-sm font-medium">Unique Emotions</p>
+                    <p className="text-2xl font-bold">{frequentEmotions?.length || 0}</p>
+                  </div>
+                </div>
+                
+                <div className="rounded-lg bg-muted p-3">
+                  <p className="text-sm font-medium">Date Range</p>
+                  <p className="text-base">{formatDate(dateRange.startDate)} - {formatDate(dateRange.endDate)}</p>
+                </div>
               </div>
             </CardContent>
           </Card>

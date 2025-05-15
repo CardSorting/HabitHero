@@ -61,13 +61,15 @@ export function useTreatmentPlans({ clientId, therapistId }: UseTreatmentPlansOp
       therapistId || 0,
       clientId,
       planData.title,
-      planData.description,
-      planData.startDate,
-      planData.endDate,
-      planData.status,
-      planData.goals,
-      planData.assessments,
-      planData.interventions
+      {
+        description: planData.description,
+        startDate: planData.startDate,
+        endDate: planData.endDate,
+        status: planData.status,
+        goals: planData.goals,
+        assessments: planData.assessments,
+        interventions: planData.interventions
+      }
     ),
     onSuccess: () => {
       toast({

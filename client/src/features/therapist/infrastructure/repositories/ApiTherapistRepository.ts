@@ -63,9 +63,18 @@ export class ApiTherapistRepository implements ITherapistRepository {
     });
     
     try {
-      // For demo purposes, we're constructing a username from the client ID
-      // In a real app, we would pass the client ID directly
-      const clientUsername = `client${clientId}`;
+      // First, get the user information to get the real username
+      const clients = await this.searchClientsByUsername(clientId.toString());
+      let clientUsername = '';
+      
+      if (clients && clients.length > 0) {
+        // Use the actual username from the search results
+        clientUsername = clients[0].username;
+      } else {
+        // If no match found, try the direct client ID as username as fallback
+        clientUsername = clientId.toString();
+      }
+      
       console.log('Using client username:', clientUsername);
       
       const result = await therapistApiClient.assignClient(

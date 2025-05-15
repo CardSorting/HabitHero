@@ -5,6 +5,21 @@ import { getCopingStrategy } from './anthropicService';
 import * as schema from '../shared/schema';
 import { format } from 'date-fns';
 
+/**
+ * Gets the userId from the request, prioritizing query parameter if it exists
+ * This allows therapists to view client emotion data
+ */
+function getUserIdFromRequest(req: Request): number {
+  if (req.query.userId) {
+    const userId = parseInt(req.query.userId as string);
+    console.log(`Using userId from query parameter: ${userId}`);
+    return userId;
+  }
+  
+  console.log(`Using authenticated user ID: ${(req as any).user?.id}`);
+  return (req as any).user!.id;
+}
+
 // Define a type for authenticated requests
 type AuthRequest = Request & {
   user?: {
@@ -55,7 +70,7 @@ export function registerEmotionsRoutes(app: Express) {
 
       // Get entries from the database
       const entries = await db.query.emotionTrackingEntries.findMany({
-        where: (entries, { eq }) => eq(entries.userId, req.user!.id)
+        where: (entries, { eq }) => eq(entries.userId, getUserIdFromRequest(req))
       });
 
       res.json(entries);

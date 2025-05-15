@@ -88,19 +88,10 @@ export function setupAuth(app: Express) {
       // Hash the password
       const hashedPassword = await hashPassword(req.body.password);
 
-      // Get the role from the request body or default to 'client'
-      const role = req.body.role || 'client';
-      
-      // Ensure only valid roles are allowed
-      if (!['client', 'therapist', 'admin'].includes(role)) {
-        return res.status(400).json({ message: "Invalid role specified" });
-      }
-
-      // Create the user
+      // Create the user - role will be set by the Zod schema default value if not explicitly provided
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
-        role: role,
       });
 
       req.login(user, (err) => {

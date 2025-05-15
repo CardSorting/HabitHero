@@ -461,6 +461,7 @@ export const insertHabitCompletionSchema = createInsertSchema(habitCompletions).
 export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email().nullable().optional(),
   fullName: z.string().nullable().optional(),
+  role: z.enum(['client', 'therapist', 'admin']).optional().default('client'),
 }).omit({
   id: true,
   createdAt: true,

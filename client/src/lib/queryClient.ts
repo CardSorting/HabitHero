@@ -13,11 +13,11 @@ export interface ApiRequestOptions {
   data?: unknown;
 }
 
-export async function apiRequest({
-  url,
-  method,
-  data,
-}: ApiRequestOptions): Promise<any> {
+export async function apiRequest(
+  method: string, 
+  url: string, 
+  data?: unknown
+): Promise<Response> {
   console.log(`Making ${method} request to ${url}`, data);
   
   try {
@@ -46,7 +46,7 @@ export async function apiRequest({
     }
     
     await throwIfResNotOk(res);
-    return res.json().catch(() => res);
+    return res;
   } catch (error) {
     console.error("API request error:", error);
     throw error;

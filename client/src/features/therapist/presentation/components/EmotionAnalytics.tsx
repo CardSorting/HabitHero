@@ -5,6 +5,7 @@
 import React from 'react';
 import { useClientEmotionData } from '../hooks/useClientEmotionData';
 import { ID } from '../../domain/entities';
+import TimeDistributionChart from './TimeDistributionChart';
 
 // UI Components
 import {
@@ -117,141 +118,151 @@ export const EmotionAnalytics: React.FC<EmotionAnalyticsProps> = ({ clientId }) 
           No emotion data available for this client.
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Emotion Intensity Trend */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Emotion Intensity Trend</CardTitle>
-              <CardDescription>
-                Average emotion intensity over time
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={emotionIntensityData}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                    <XAxis dataKey="date" />
-                    <YAxis domain={[0, 5]} />
-                    <Tooltip />
-                    <Area
-                      type="monotone"
-                      dataKey="intensity"
-                      stroke="#8884d8"
-                      fill="#8884d8"
-                      fillOpacity={0.3}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Top Emotions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Most Frequent Emotions</CardTitle>
-              <CardDescription>
-                Top 5 emotions experienced most frequently
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] flex items-center justify-center">
-                {topEmotionsData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={topEmotionsData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
-                        label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {topEmotionsData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center text-muted-foreground">
-                    No emotion data to display
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        <>
+          {/* Time Distribution Chart */}
+          <div className="mb-6">
+            <TimeDistributionChart 
+              clientId={clientId} 
+              title="When Your Client Records Emotions" 
+            />
+          </div>
           
-          {/* Highest Intensity Emotions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Highest Intensity Emotions</CardTitle>
-              <CardDescription>
-                Emotions experienced with the highest intensity
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                {intensityEmotionsData.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Emotion Intensity Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Emotion Intensity Trend</CardTitle>
+                <CardDescription>
+                  Average emotion intensity over time
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={intensityEmotionsData}
-                      layout="vertical"
-                      margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                    <AreaChart
+                      data={emotionIntensityData}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                      <XAxis type="number" domain={[0, 5]} />
-                      <YAxis dataKey="name" type="category" width={100} />
+                      <XAxis dataKey="date" />
+                      <YAxis domain={[0, 5]} />
                       <Tooltip />
-                      <Bar dataKey="value" fill="#8884d8" name="Intensity" />
-                    </BarChart>
+                      <Area
+                        type="monotone"
+                        dataKey="intensity"
+                        stroke="#8884d8"
+                        fill="#8884d8"
+                        fillOpacity={0.3}
+                      />
+                    </AreaChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="text-center text-muted-foreground">
-                    No intensity data to display
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Emotion Entry Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Emotion Summary</CardTitle>
-              <CardDescription>
-                Overview of recorded emotions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-muted p-3">
-                    <p className="text-sm font-medium">Total Entries</p>
-                    <p className="text-2xl font-bold">{topEmotionsData.reduce((sum, item) => sum + item.value, 0)}</p>
+            {/* Top Emotions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Most Frequent Emotions</CardTitle>
+                <CardDescription>
+                  Top 5 emotions experienced most frequently
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] flex items-center justify-center">
+                  {topEmotionsData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={topEmotionsData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          fill="#8884d8"
+                          label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {topEmotionsData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="text-center text-muted-foreground">
+                      No emotion data to display
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Highest Intensity Emotions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Highest Intensity Emotions</CardTitle>
+                <CardDescription>
+                  Emotions experienced with the highest intensity
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  {intensityEmotionsData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={intensityEmotionsData}
+                        layout="vertical"
+                        margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                        <XAxis type="number" domain={[0, 5]} />
+                        <YAxis dataKey="name" type="category" width={100} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#8884d8" name="Intensity" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="text-center text-muted-foreground">
+                      No intensity data to display
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Emotion Entry Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Emotion Summary</CardTitle>
+                <CardDescription>
+                  Overview of recorded emotions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-lg bg-muted p-3">
+                      <p className="text-sm font-medium">Total Entries</p>
+                      <p className="text-2xl font-bold">{topEmotionsData.reduce((sum, item) => sum + item.value, 0)}</p>
+                    </div>
+                    <div className="rounded-lg bg-muted p-3">
+                      <p className="text-sm font-medium">Unique Emotions</p>
+                      <p className="text-2xl font-bold">{frequentEmotions?.length || 0}</p>
+                    </div>
                   </div>
+                  
                   <div className="rounded-lg bg-muted p-3">
-                    <p className="text-sm font-medium">Unique Emotions</p>
-                    <p className="text-2xl font-bold">{frequentEmotions?.length || 0}</p>
+                    <p className="text-sm font-medium">Date Range</p>
+                    <p className="text-base">{formatDate(dateRange.startDate)} - {formatDate(dateRange.endDate)}</p>
                   </div>
                 </div>
-                
-                <div className="rounded-lg bg-muted p-3">
-                  <p className="text-sm font-medium">Date Range</p>
-                  <p className="text-base">{formatDate(dateRange.startDate)} - {formatDate(dateRange.endDate)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
       )}
     </div>
   );

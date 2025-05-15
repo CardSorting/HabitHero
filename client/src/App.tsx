@@ -27,6 +27,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { CrisisTrackerPage } from "@/features/crisis-tracker";
 import { TherapistDashboard, ClientDetails } from "@/features/therapist/presentation/pages";
+import ClientTimeDetail from "@/features/therapist/presentation/pages/ClientTimeDetail";
 import { TherapistProvider } from "@/features/therapist/presentation/hooks/useTherapistContext";
 
 function Router() {

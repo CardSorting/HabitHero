@@ -104,6 +104,7 @@ export interface ClientAnalytics {
     byType: { [key: string]: number };
     byIntensity: { [key: string]: number };
     recentEvents: CrisisEvent[];
+    events?: CrisisEvent[]; // Add all events array
     trend: 'increasing' | 'decreasing' | 'stable';
   };
   treatmentProgress: {

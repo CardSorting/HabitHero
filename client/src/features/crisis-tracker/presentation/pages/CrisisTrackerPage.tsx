@@ -18,13 +18,26 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import { 
   AlertCircle, 
   Calendar, 
   Clock, 
   AlertTriangle, 
   PlusCircle,
   ChevronRight,
-  FileText
+  FileText,
+  X,
+  CheckCircle,
+  Info,
+  Tag,
+  Activity
 } from 'lucide-react';
 
 import { CrisisEvent, CrisisIntensity, CrisisType } from '../../domain/models';
@@ -35,6 +48,8 @@ interface CrisisTrackerPageProps {
 
 export function CrisisTrackerPage({ userId }: CrisisTrackerPageProps) {
   const [activeTab, setActiveTab] = useState<string>('form');
+  const [selectedEvent, setSelectedEvent] = useState<CrisisEvent | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const { crisisEvents, isLoadingEvents, eventsError } = useCrisisTracker(userId);
 
   // Get intensity badge color
@@ -203,7 +218,14 @@ export function CrisisTrackerPage({ userId }: CrisisTrackerPageProps) {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedEvent(event);
+                                setIsDetailModalOpen(true);
+                              }}
+                            >
                               <ChevronRight className="h-4 w-4" />
                             </Button>
                           </TableCell>
@@ -217,6 +239,145 @@ export function CrisisTrackerPage({ userId }: CrisisTrackerPageProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Crisis Event Detail Modal */}
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2 text-orange-500" />
+              Crisis Event Details
+            </DialogTitle>
+            <DialogDescription>
+              Detailed information about the selected crisis event.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEvent && (
+            <div className="space-y-4 py-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 opacity-70" />
+                  <span className="font-medium">
+                    {format(parseISO(selectedEvent.date as string), 'MMMM d, yyyy')}
+                  </span>
+                  {selectedEvent.time && (
+                    <span className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5 mr-1" />
+                      {selectedEvent.time}
+                    </span>
+                  )}
+                </div>
+                <Badge className={cn(getIntensityColor(selectedEvent.intensity))}>
+                  {selectedEvent.intensity.charAt(0).toUpperCase() + selectedEvent.intensity.slice(1)} Intensity
+                </Badge>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium flex items-center mb-1">
+                    <Activity className="h-4 w-4 mr-1 opacity-70" />
+                    Crisis Type
+                  </h4>
+                  <Badge className={cn(getCrisisTypeColor(selectedEvent.type))}>
+                    {formatCrisisType(selectedEvent.type)}
+                  </Badge>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium flex items-center mb-1">
+                    <Clock className="h-4 w-4 mr-1 opacity-70" />
+                    Duration
+                  </h4>
+                  <p>{selectedEvent.duration ? `${selectedEvent.duration} minutes` : 'Not recorded'}</p>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h4 className="text-sm font-medium flex items-center mb-2">
+                  <FileText className="h-4 w-4 mr-1 opacity-70" />
+                  Notes
+                </h4>
+                <p className="text-sm rounded-md bg-secondary p-3">
+                  {selectedEvent.notes || 'No notes recorded for this event.'}
+                </p>
+              </div>
+              
+              {selectedEvent.symptoms && Array.isArray(selectedEvent.symptoms) && selectedEvent.symptoms.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium flex items-center mb-2">
+                    <AlertCircle className="h-4 w-4 mr-1 opacity-70" />
+                    Symptoms
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedEvent.symptoms.map((symptom: string, i: number) => (
+                      <Badge key={i} variant="outline" className="bg-red-50">
+                        {symptom}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {selectedEvent.triggers && Array.isArray(selectedEvent.triggers) && selectedEvent.triggers.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium flex items-center mb-2">
+                    <Tag className="h-4 w-4 mr-1 opacity-70" />
+                    Triggers
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedEvent.triggers.map((trigger: string, i: number) => (
+                      <Badge key={i} variant="outline" className="bg-yellow-50">
+                        {trigger}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {selectedEvent.copingStrategiesUsed && Array.isArray(selectedEvent.copingStrategiesUsed) && selectedEvent.copingStrategiesUsed.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium flex items-center mb-2">
+                    <CheckCircle className="h-4 w-4 mr-1 opacity-70" />
+                    Coping Strategies Used
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedEvent.copingStrategiesUsed.map((strategy: string, i: number) => (
+                      <Badge key={i} variant="outline" className="bg-green-50">
+                        {strategy}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium flex items-center mb-1">
+                    <Info className="h-4 w-4 mr-1 opacity-70" />
+                    Professional Help
+                  </h4>
+                  <p>{selectedEvent.helpSought ? 'Yes' : 'No'}</p>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium flex items-center mb-1">
+                    <AlertCircle className="h-4 w-4 mr-1 opacity-70" />
+                    Medication Used
+                  </h4>
+                  <p>{selectedEvent.medication ? 'Yes' : 'No'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setIsDetailModalOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

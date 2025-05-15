@@ -175,10 +175,7 @@ export const therapistApiClient = {
    * Delete a note
    */
   async deleteNote(noteId: ID): Promise<boolean> {
-    await apiRequest({
-      url: therapistEndpoints.deleteNote(noteId),
-      method: 'DELETE'
-    });
+    await apiRequest('DELETE', therapistEndpoints.deleteNote(noteId));
     return true;
   },
   
@@ -186,31 +183,24 @@ export const therapistApiClient = {
    * Get treatment plans for a client
    */
   async getClientTreatmentPlans(clientId: ID): Promise<TreatmentPlan[]> {
-    return apiRequest({
-      url: therapistEndpoints.getClientTreatmentPlans(clientId),
-      method: 'GET'
-    });
+    const response = await apiRequest('GET', therapistEndpoints.getClientTreatmentPlans(clientId));
+    return getResponseData<TreatmentPlan[]>(response);
   },
   
   /**
    * Get a specific treatment plan by ID
    */
   async getTreatmentPlanById(planId: ID): Promise<TreatmentPlan> {
-    return apiRequest({
-      url: therapistEndpoints.getTreatmentPlanById(planId),
-      method: 'GET'
-    });
+    const response = await apiRequest('GET', therapistEndpoints.getTreatmentPlanById(planId));
+    return getResponseData<TreatmentPlan>(response);
   },
   
   /**
    * Create a treatment plan for a client
    */
   async createTreatmentPlan(plan: Omit<TreatmentPlan, 'id' | 'createdAt' | 'updatedAt'>): Promise<TreatmentPlan> {
-    return apiRequest({
-      url: therapistEndpoints.createTreatmentPlan,
-      method: 'POST',
-      data: plan
-    });
+    const response = await apiRequest('POST', therapistEndpoints.createTreatmentPlan, plan);
+    return getResponseData<TreatmentPlan>(response);
   },
   
   /**
@@ -220,21 +210,15 @@ export const therapistApiClient = {
     planId: ID, 
     updates: Partial<TreatmentPlan>
   ): Promise<TreatmentPlan> {
-    return apiRequest({
-      url: therapistEndpoints.updateTreatmentPlan(planId),
-      method: 'PUT',
-      data: updates
-    });
+    const response = await apiRequest('PUT', therapistEndpoints.updateTreatmentPlan(planId), updates);
+    return getResponseData<TreatmentPlan>(response);
   },
   
   /**
    * Delete a treatment plan
    */
   async deleteTreatmentPlan(planId: ID): Promise<boolean> {
-    await apiRequest({
-      url: therapistEndpoints.deleteTreatmentPlan(planId),
-      method: 'DELETE'
-    });
+    await apiRequest('DELETE', therapistEndpoints.deleteTreatmentPlan(planId));
     return true;
   },
   

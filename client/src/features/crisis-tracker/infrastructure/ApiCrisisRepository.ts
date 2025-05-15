@@ -5,7 +5,7 @@
 
 import { CrisisEvent, CrisisAnalytics, CrisisTimePeriodSummary } from '../domain/models';
 import { ICrisisRepository, ID, DateString, TimeString } from '../domain/CrisisRepository';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, getResponseData } from '@/lib/queryClient';
 
 /**
  * Implementation of ICrisisRepository that communicates with the backend API
@@ -15,21 +15,33 @@ export class ApiCrisisRepository implements ICrisisRepository {
    * Get all crisis events for a user
    */
   async getAll(userId: ID): Promise<CrisisEvent[]> {
-    return await apiRequest({
-      url: '/api/crisis-events',
-      method: 'GET',
-    });
+    try {
+      const response = await apiRequest('GET', '/api/crisis-events');
+      const data = await getResponseData<CrisisEvent[]>(response);
+      
+      // Ensure we're always returning an array
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error fetching crisis events:', error);
+      return []; // Return empty array on error
+    }
   }
 
   /**
    * Get crisis events for a specific date range
    */
   async getByDateRange(userId: ID, startDate: DateString, endDate: DateString): Promise<CrisisEvent[]> {
-    return await apiRequest({
-      url: '/api/crisis-events/range',
-      method: 'GET',
-      params: { startDate, endDate },
-    });
+    try {
+      const url = `/api/crisis-events/range?startDate=${startDate}&endDate=${endDate}`;
+      const response = await apiRequest('GET', url);
+      const data = await getResponseData<CrisisEvent[]>(response);
+      
+      // Ensure we're always returning an array
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error fetching crisis events by date range:', error);
+      return []; // Return empty array on error
+    }
   }
 
   /**
@@ -37,10 +49,8 @@ export class ApiCrisisRepository implements ICrisisRepository {
    */
   async getById(id: ID): Promise<CrisisEvent | null> {
     try {
-      return await apiRequest({
-        url: `/api/crisis-events/${id}`,
-        method: 'GET',
-      });
+      const response = await apiRequest('GET', `/api/crisis-events/${id}`);
+      return await getResponseData<CrisisEvent>(response);
     } catch (error) {
       if ((error as any)?.status === 404) {
         return null;
@@ -53,32 +63,23 @@ export class ApiCrisisRepository implements ICrisisRepository {
    * Create a new crisis event
    */
   async create(event: Omit<CrisisEvent, 'id' | 'createdAt' | 'updatedAt'>): Promise<CrisisEvent> {
-    return await apiRequest({
-      url: '/api/crisis-events',
-      method: 'POST',
-      data: event,
-    });
+    const response = await apiRequest('POST', '/api/crisis-events', event);
+    return await getResponseData<CrisisEvent>(response);
   }
 
   /**
    * Update an existing crisis event
    */
   async update(id: ID, event: Partial<CrisisEvent>): Promise<CrisisEvent> {
-    return await apiRequest({
-      url: `/api/crisis-events/${id}`,
-      method: 'PUT',
-      data: event,
-    });
+    const response = await apiRequest('PUT', `/api/crisis-events/${id}`, event);
+    return await getResponseData<CrisisEvent>(response);
   }
 
   /**
    * Delete a crisis event
    */
   async delete(id: ID): Promise<boolean> {
-    await apiRequest({
-      url: `/api/crisis-events/${id}`,
-      method: 'DELETE',
-    });
+    await apiRequest('DELETE', `/api/crisis-events/${id}`);
     return true;
   }
 
@@ -86,20 +87,20 @@ export class ApiCrisisRepository implements ICrisisRepository {
    * Get analytics data for crisis events
    */
   async getAnalytics(userId: ID, startDate?: DateString, endDate?: DateString): Promise<CrisisAnalytics> {
-    return await apiRequest({
-      url: '/api/crisis-events/analytics/summary',
-      method: 'GET',
-      params: startDate && endDate ? { startDate, endDate } : undefined,
-    });
+    let url = '/api/crisis-events/analytics/summary';
+    if (startDate && endDate) {
+      url += `?startDate=${startDate}&endDate=${endDate}`;
+    }
+    
+    const response = await apiRequest('GET', url);
+    return await getResponseData<CrisisAnalytics>(response);
   }
 
   /**
    * Get summary data for a specific time period
    */
   async getTimePeriodSummary(userId: ID, period: 'day' | 'week' | 'month' | 'year'): Promise<CrisisTimePeriodSummary> {
-    return await apiRequest({
-      url: `/api/crisis-events/analytics/period/${period}`,
-      method: 'GET',
-    });
+    const response = await apiRequest('GET', `/api/crisis-events/analytics/period/${period}`);
+    return await getResponseData<CrisisTimePeriodSummary>(response);
   }
 }

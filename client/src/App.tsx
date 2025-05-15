@@ -26,14 +26,9 @@ import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { CrisisTrackerPage } from "@/features/crisis-tracker";
-import { 
-  TherapistDashboard, 
-  ClientDetails, 
-  TreatmentPlans,
-  TreatmentPlanDetail,
-  TreatmentPlanForm
-} from "@/features/therapist/presentation/pages";
+import { TherapistDashboard, ClientDetails } from "@/features/therapist/presentation/pages";
 import ClientTimeDetail from "@/features/therapist/presentation/pages/ClientTimeDetail";
+import TreatmentPlans from "@/features/therapist/presentation/pages/TreatmentPlans";
 import { TherapistProvider } from "@/features/therapist/presentation/hooks/useTherapistContext";
 
 function Router() {
@@ -99,33 +94,6 @@ function Router() {
             component={(props) => (
               <TherapistProvider>
                 <TreatmentPlans {...props} />
-              </TherapistProvider>
-            )}
-            requiredRole="therapist"
-          />
-          <ProtectedRoute 
-            path="/therapist/clients/:clientId/treatment-plans/:planId" 
-            component={(props) => (
-              <TherapistProvider>
-                <TreatmentPlanDetail {...props} />
-              </TherapistProvider>
-            )}
-            requiredRole="therapist"
-          />
-          <ProtectedRoute 
-            path="/therapist/clients/:clientId/treatment-plans/new" 
-            component={(props) => (
-              <TherapistProvider>
-                <TreatmentPlanForm {...props} />
-              </TherapistProvider>
-            )}
-            requiredRole="therapist"
-          />
-          <ProtectedRoute 
-            path="/therapist/clients/:clientId/treatment-plans/:planId/edit" 
-            component={(props) => (
-              <TherapistProvider>
-                <TreatmentPlanForm {...props} />
               </TherapistProvider>
             )}
             requiredRole="therapist"

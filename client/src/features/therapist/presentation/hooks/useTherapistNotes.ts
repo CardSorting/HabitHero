@@ -2,12 +2,11 @@
  * Hook for managing therapist notes
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTherapistContext } from './useTherapistContext';
-import { apiRequest } from '@/lib/queryClient';
+import { useTherapistService } from './useTherapistContext';
 import { useAuth } from '@/hooks/use-auth';
-import { toast } from '@/hooks/use-toast';
 import { 
   ID, 
+  DateString, 
   TherapistNote 
 } from '../../domain/entities';
 
@@ -20,8 +19,11 @@ interface UseTherapistNotesProps {
  */
 export const useTherapistNotes = ({ clientId }: UseTherapistNotesProps) => {
   const { user } = useAuth();
-  const { therapistId } = useTherapistContext();
+  const therapistService = useTherapistService();
   const queryClient = useQueryClient();
+
+  // Therapist ID from authenticated user
+  const therapistId = user?.id as ID;
 
   // Query for fetching notes for a client
   const {
@@ -31,13 +33,7 @@ export const useTherapistNotes = ({ clientId }: UseTherapistNotesProps) => {
     refetch: refetchNotes
   } = useQuery({
     queryKey: ['/api/therapist/clients', clientId, 'notes'],
-    queryFn: async () => {
-      const response = await apiRequest<TherapistNote[]>({
-        url: `/api/therapist/clients/${clientId}/notes`,
-        method: 'GET',
-      });
-      return response;
-    },
+    queryFn: () => therapistService.getClientNotes(therapistId, clientId),
     enabled: !!therapistId && !!clientId
   });
 
@@ -46,12 +42,12 @@ export const useTherapistNotes = ({ clientId }: UseTherapistNotesProps) => {
     mutate: createNote,
     isPending: isCreating
   } = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       sessionDate,
       content,
       options
     }: {
-      sessionDate: string;
+      sessionDate: DateString;
       content: string;
       options?: {
         mood?: string;
@@ -59,34 +55,16 @@ export const useTherapistNotes = ({ clientId }: UseTherapistNotesProps) => {
         goalCompletion?: number;
         isPrivate?: boolean;
       };
-    }) => {
-      const response = await apiRequest<TherapistNote>({
-        url: `/api/therapist/clients/${clientId}/notes`,
-        method: 'POST',
-        data: {
-          therapistId,
-          sessionDate,
-          content,
-          ...options
-        }
-      });
-      return response;
-    },
+    }) => therapistService.addNote(
+      therapistId,
+      clientId,
+      sessionDate,
+      content,
+      options
+    ),
     onSuccess: () => {
       // Invalidate the notes query to refetch the list
       queryClient.invalidateQueries({ queryKey: ['/api/therapist/clients', clientId, 'notes'] });
-      toast({
-        title: "Success",
-        description: "Note created successfully",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to create note: ${error.message}`,
-        variant: "destructive",
-      });
     }
   });
 
@@ -95,38 +73,16 @@ export const useTherapistNotes = ({ clientId }: UseTherapistNotesProps) => {
     mutate: updateNote,
     isPending: isUpdating
   } = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       updates
     }: {
       id: ID;
       updates: Partial<TherapistNote>;
-    }) => {
-      const response = await apiRequest<TherapistNote>({
-        url: `/api/therapist/notes/${id}`,
-        method: 'PUT',
-        data: {
-          therapistId,
-          ...updates
-        }
-      });
-      return response;
-    },
+    }) => therapistService.updateNote(id, therapistId, updates),
     onSuccess: () => {
       // Invalidate the notes query to refetch the list
       queryClient.invalidateQueries({ queryKey: ['/api/therapist/clients', clientId, 'notes'] });
-      toast({
-        title: "Success",
-        description: "Note updated successfully",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update note: ${error.message}`,
-        variant: "destructive",
-      });
     }
   });
 
@@ -135,29 +91,10 @@ export const useTherapistNotes = ({ clientId }: UseTherapistNotesProps) => {
     mutate: deleteNote,
     isPending: isDeleting
   } = useMutation({
-    mutationFn: async (id: ID) => {
-      const response = await apiRequest({
-        url: `/api/therapist/notes/${id}`,
-        method: 'DELETE',
-        data: { therapistId }
-      });
-      return response;
-    },
+    mutationFn: (id: ID) => therapistService.deleteNote(id, therapistId),
     onSuccess: () => {
       // Invalidate the notes query to refetch the list
       queryClient.invalidateQueries({ queryKey: ['/api/therapist/clients', clientId, 'notes'] });
-      toast({
-        title: "Success",
-        description: "Note deleted successfully",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to delete note: ${error.message}`,
-        variant: "destructive",
-      });
     }
   });
 

@@ -1,171 +1,136 @@
 /**
- * Custom hook for treatment plan CRUD operations
- * Following SOLID principles, DDD, Clean Architecture, and CQRS pattern
+ * Hook for managing treatment plans
+ * Provides query and mutation functions for treatment plans
+ * Following SOLID principles, Clean Architecture, DDD, and CQRS
  */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { TreatmentPlan, ID } from '../../domain/entities';
-import { toast } from '@/hooks/use-toast';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { useTherapistService } from './useTherapistContext';
+import {
+  ID,
+  DateString,
+  TreatmentPlan,
+  TreatmentGoal,
+  Assessment,
+  Intervention,
+  TreatmentPlanStatus
+} from '../../domain/entities';
 
-interface UseTreatmentPlansProps {
+interface UseTreatmentPlansOptions {
   clientId: ID;
-  therapistId: ID;
-}
-
-// Type for creating treatment plan
-export interface CreateTreatmentPlanDto {
-  title: string;
-  description?: string;
-  status: 'active' | 'completed' | 'abandoned';
-  startDate: string;
-  endDate?: string;
-  clientId: ID;
-  therapistId: ID;
-  goals?: any[];
-  interventions?: any[];
-  assessments?: any[];
-  diagnosisInfo?: any;
-  progressTracking?: any;
-  dischargePlan?: any;
-}
-
-// Type for updating treatment plan
-export interface UpdateTreatmentPlanDto {
-  title?: string;
-  description?: string;
-  status?: 'active' | 'completed' | 'abandoned';
-  startDate?: string;
-  endDate?: string;
-  goals?: any[];
-  interventions?: any[];
-  assessments?: any[];
-  diagnosisInfo?: any;
-  progressTracking?: any;
-  dischargePlan?: any;
+  therapistId?: ID;
 }
 
 /**
- * Custom hook for treatment plan management following CQRS pattern
+ * Hook for managing treatment plans
  */
-export function useTreatmentPlans({ clientId, therapistId }: UseTreatmentPlansProps) {
-  const queryClient = useQueryClient();
-  const plansQueryKey = [`/api/therapist/clients/${clientId}/treatment-plans`];
+export function useTreatmentPlans({ clientId, therapistId }: UseTreatmentPlansOptions) {
+  const therapistService = useTherapistService();
+  const { toast } = useToast();
   
-  // Query: Fetch treatment plans
+  // Query to fetch treatment plans for a client
   const {
     data: plans,
     isLoading: isLoadingPlans,
     isError: isPlansError,
     error: plansError,
-    refetch: refetchPlans,
+    refetch: refetchPlans
   } = useQuery({
-    queryKey: plansQueryKey,
-    queryFn: async () => {
-      const response = await apiRequest({
-        url: `/api/therapist/clients/${clientId}/treatment-plans`,
-        method: 'GET',
-      });
-      return response as TreatmentPlan[];
-    },
-    enabled: Boolean(clientId && therapistId),
+    queryKey: ['/api/therapist/clients', clientId, 'treatment-plans'],
+    queryFn: () => therapistService.getClientTreatmentPlans(therapistId || 0, clientId),
+    enabled: !!clientId && !!therapistId
   });
   
-  // Helper function to get a specific plan by ID
-  const getPlanById = (planId: ID): TreatmentPlan | undefined => {
-    if (!plans) return undefined;
-    return plans.find((plan: TreatmentPlan) => plan.id === planId);
-  };
-  
-  // Command: Create a new treatment plan
+  // Mutation to create a new treatment plan
   const {
     mutate: createTreatmentPlan,
-    isPending: isCreating,
+    isPending: isCreating
   } = useMutation({
-    mutationFn: async (data: CreateTreatmentPlanDto) => {
-      const response = await apiRequest({
-        url: `/api/therapist/clients/${clientId}/treatment-plans`,
-        method: 'POST',
-        data: {
-          ...data,
-          clientId,
-          therapistId
-        },
-      });
-      return response as TreatmentPlan;
-    },
+    mutationFn: (planData: {
+      title: string;
+      description?: string;
+      startDate: DateString;
+      endDate?: DateString;
+      status?: TreatmentPlanStatus;
+      goals?: TreatmentGoal[];
+      assessments?: Assessment[];
+      interventions?: Intervention[];
+    }) => therapistService.createTreatmentPlan(
+      therapistId || 0,
+      clientId,
+      planData.title,
+      {
+        description: planData.description,
+        startDate: planData.startDate,
+        endDate: planData.endDate,
+        status: planData.status,
+        goals: planData.goals,
+        assessments: planData.assessments,
+        interventions: planData.interventions
+      }
+    ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: plansQueryKey });
       toast({
-        title: "Success",
-        description: "Treatment plan created successfully",
-        variant: "default",
+        title: "Treatment plan created",
+        description: "The treatment plan has been created successfully.",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/therapist/clients', clientId, 'treatment-plans'] });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      console.error('Error creating treatment plan:', error);
       toast({
-        title: "Error",
-        description: `Failed to create treatment plan: ${error.message}`,
-        variant: "destructive",
+        title: "Error creating treatment plan",
+        description: error.message || "An error occurred while creating the treatment plan.",
+        variant: "destructive"
       });
     }
   });
   
-  // Command: Update a treatment plan
+  // Mutation to update a treatment plan
   const {
     mutate: updateTreatmentPlan,
-    isPending: isUpdating,
+    isPending: isUpdating
   } = useMutation({
-    mutationFn: async ({ id, updates }: { id: ID, updates: UpdateTreatmentPlanDto }) => {
-      const response = await apiRequest({
-        url: `/api/therapist/clients/${clientId}/treatment-plans/${id}`,
-        method: 'PUT',
-        data: updates,
-      });
-      return response as TreatmentPlan;
-    },
+    mutationFn: ({ id, updates }: { id: ID, updates: Partial<TreatmentPlan> }) =>
+      therapistService.updateTreatmentPlan(id, therapistId || 0, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: plansQueryKey });
       toast({
-        title: "Success",
-        description: "Treatment plan updated successfully",
-        variant: "default",
+        title: "Treatment plan updated",
+        description: "The treatment plan has been updated successfully.",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/therapist/clients', clientId, 'treatment-plans'] });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      console.error('Error updating treatment plan:', error);
       toast({
-        title: "Error",
-        description: `Failed to update treatment plan: ${error.message}`,
-        variant: "destructive",
+        title: "Error updating treatment plan",
+        description: error.message || "An error occurred while updating the treatment plan.",
+        variant: "destructive"
       });
     }
   });
   
-  // Command: Delete a treatment plan
+  // Mutation to delete a treatment plan
   const {
     mutate: deleteTreatmentPlan,
-    isPending: isDeleting,
+    isPending: isDeleting
   } = useMutation({
-    mutationFn: async (id: ID) => {
-      const response = await apiRequest({
-        url: `/api/therapist/clients/${clientId}/treatment-plans/${id}`,
-        method: 'DELETE',
-      });
-      return response as { success: boolean };
-    },
+    mutationFn: (id: ID) => therapistService.deleteTreatmentPlan(id, therapistId || 0),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: plansQueryKey });
       toast({
-        title: "Success",
-        description: "Treatment plan deleted successfully",
-        variant: "default",
+        title: "Treatment plan deleted",
+        description: "The treatment plan has been deleted successfully.",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/therapist/clients', clientId, 'treatment-plans'] });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      console.error('Error deleting treatment plan:', error);
       toast({
-        title: "Error",
-        description: `Failed to delete treatment plan: ${error.message}`,
-        variant: "destructive",
+        title: "Error deleting treatment plan",
+        description: error.message || "An error occurred while deleting the treatment plan.",
+        variant: "destructive"
       });
     }
   });
@@ -176,12 +141,11 @@ export function useTreatmentPlans({ clientId, therapistId }: UseTreatmentPlansPr
     isPlansError,
     plansError,
     refetchPlans,
-    getPlanById,
     createTreatmentPlan,
     isCreating,
     updateTreatmentPlan,
     isUpdating,
     deleteTreatmentPlan,
-    isDeleting,
+    isDeleting
   };
 }

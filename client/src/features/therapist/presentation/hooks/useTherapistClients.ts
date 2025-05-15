@@ -3,20 +3,21 @@
  */
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTherapistContext } from './useTherapistContext';
-import { apiRequest } from '@/lib/queryClient';
+import { useTherapistService } from './useTherapistContext';
 import { useAuth } from '@/hooks/use-auth';
-import { ID, ClientSummary } from '../../domain/entities';
-import { toast } from '@/hooks/use-toast';
+import { ID, DateString, ClientSummary, Client, ClientStatus } from '../../domain/entities';
 
 /**
  * Hook for managing therapist clients
  */
 export const useTherapistClients = () => {
   const { user } = useAuth();
-  const { therapistId } = useTherapistContext();
+  const therapistService = useTherapistService();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Therapist ID from authenticated user
+  const therapistId = user?.id as ID;
 
   // Query for fetching all clients
   const {
@@ -26,13 +27,7 @@ export const useTherapistClients = () => {
     refetch: refetchClients
   } = useQuery({
     queryKey: ['/api/therapist/clients'],
-    queryFn: async () => {
-      const response = await apiRequest<ClientSummary[]>({
-        url: '/api/therapist/clients',
-        method: 'GET',
-      });
-      return response;
-    },
+    queryFn: () => therapistService.getClients(therapistId),
     enabled: !!therapistId
   });
 
@@ -44,13 +39,7 @@ export const useTherapistClients = () => {
     refetch: refetchSearch
   } = useQuery({
     queryKey: ['/api/therapist/clients/search', searchQuery],
-    queryFn: async () => {
-      const response = await apiRequest<ClientSummary[]>({
-        url: `/api/therapist/clients/search?query=${encodeURIComponent(searchQuery)}`,
-        method: 'GET',
-      });
-      return response;
-    },
+    queryFn: () => therapistService.searchClients(searchQuery),
     enabled: !!searchQuery && (
       searchQuery.length >= 2 || 
       // Allow searches with just a number (likely an ID)
@@ -66,42 +55,18 @@ export const useTherapistClients = () => {
     isPending: isAssigning,
     error: assignError
   } = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       clientUsername,
       startDate = new Date().toISOString().split('T')[0],
       notes
     }: {
       clientUsername: string;
-      startDate?: string;
+      startDate?: DateString;
       notes?: string;
-    }) => {
-      const response = await apiRequest({
-        url: `/api/therapist/clients/assign`,
-        method: 'POST',
-        data: {
-          therapistId,
-          clientUsername,
-          startDate,
-          notes
-        }
-      });
-      return response;
-    },
+    }) => therapistService.assignClient(therapistId, clientUsername, startDate, notes),
     onSuccess: () => {
       // Invalidate the clients query to refetch the list
       queryClient.invalidateQueries({ queryKey: ['/api/therapist/clients'] });
-      toast({
-        title: "Success",
-        description: "Client assigned successfully",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to assign client: ${error.message}`,
-        variant: "destructive",
-      });
     }
   });
 
@@ -110,29 +75,10 @@ export const useTherapistClients = () => {
     mutate: removeClient,
     isPending: isRemoving
   } = useMutation({
-    mutationFn: async (clientId: ID) => {
-      const response = await apiRequest({
-        url: `/api/therapist/clients/${clientId}/remove`,
-        method: 'DELETE',
-        data: { therapistId }
-      });
-      return response;
-    },
+    mutationFn: (clientId: ID) => therapistService.removeClient(therapistId, clientId),
     onSuccess: () => {
       // Invalidate the clients query to refetch the list
       queryClient.invalidateQueries({ queryKey: ['/api/therapist/clients'] });
-      toast({
-        title: "Success",
-        description: "Client removed successfully",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to remove client: ${error.message}`,
-        variant: "destructive",
-      });
     }
   });
 
@@ -141,73 +87,35 @@ export const useTherapistClients = () => {
     mutate: updateClientRelationship,
     isPending: isUpdating
   } = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       status,
       endDate,
       notes
     }: {
       id: ID;
-      status?: string;
-      endDate?: string;
+      status?: ClientStatus;
+      endDate?: DateString;
       notes?: string;
-    }) => {
-      const response = await apiRequest({
-        url: `/api/therapist/clients/${id}/relationship`,
-        method: 'PUT',
-        data: {
-          therapistId,
-          status,
-          endDate,
-          notes
-        }
-      });
-      return response;
-    },
+    }) => therapistService.updateClientTherapistRelationship(id, therapistId, {
+      status,
+      endDate,
+      notes
+    }),
     onSuccess: () => {
       // Invalidate the clients query to refetch the list
       queryClient.invalidateQueries({ queryKey: ['/api/therapist/clients'] });
-      toast({
-        title: "Success",
-        description: "Client relationship updated successfully",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update client relationship: ${error.message}`,
-        variant: "destructive",
-      });
     }
   });
 
   // Function to get a client by ID
-  const getClientById = async (clientId: ID): Promise<ClientSummary | undefined> => {
-    try {
-      const response = await apiRequest<ClientSummary>({
-        url: `/api/therapist/clients/${clientId}`,
-        method: 'GET'
-      });
-      return response;
-    } catch (error) {
-      console.error("Error fetching client:", error);
-      return undefined;
-    }
+  const getClientById = async (clientId: ID): Promise<Client | undefined> => {
+    return therapistService.getClientById(therapistId, clientId);
   };
 
   // Function to check if a therapist is authorized for a client
   const isAuthorizedForClient = async (clientId: ID): Promise<boolean> => {
-    try {
-      const response = await apiRequest<{authorized: boolean}>({
-        url: `/api/therapist/clients/${clientId}/authorized`,
-        method: 'GET'
-      });
-      return response?.authorized || false;
-    } catch (error) {
-      console.error("Error checking authorization:", error);
-      return false;
-    }
+    return therapistService.isAuthorizedForClient(therapistId, clientId);
   };
 
   // Function to handle search input change

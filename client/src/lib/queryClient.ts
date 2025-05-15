@@ -60,16 +60,17 @@ export async function getResponseData<T>(response: Response): Promise<T> {
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
+export const getQueryFn = <T,>(options: {
   on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
+}): QueryFunction<T> => {
+  const { on401: unauthorizedBehavior } = options;
+  
+  return async ({ queryKey }) => {
     try {
       const res = await apiRequest("GET", queryKey[0] as string);
       
       if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-        return null;
+        return null as unknown as T;
       }
       
       // Parse the response as JSON using our helper
@@ -80,11 +81,12 @@ export const getQueryFn: <T>(options: {
         e.message.startsWith("401") &&
         unauthorizedBehavior === "returnNull"
       ) {
-        return null as T;
+        return null as unknown as T;
       }
       throw e;
     }
   };
+};
 
 export const queryClient = new QueryClient({
   defaultOptions: {

@@ -1,7 +1,7 @@
 /**
  * API client for therapist-related endpoints
  */
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, getResponseData } from '@/lib/queryClient';
 import { 
   ID, 
   DateString, 
@@ -66,26 +66,20 @@ export const therapistApiClient = {
     startDate: DateString, 
     notes?: string
   ): Promise<TherapistClient> {
-    const result = await apiRequest({
-      url: therapistEndpoints.assignClient,
-      method: 'POST',
-      data: {
-        clientUsername,
-        startDate,
-        notes
-      }
+    const response = await apiRequest('POST', therapistEndpoints.assignClient, {
+      clientUsername,
+      startDate,
+      notes
     });
-    return result;
+    return getResponseData<TherapistClient>(response);
   },
   
   /**
    * Get a specific client by ID
    */
   async getClientById(clientId: ID): Promise<Client> {
-    return apiRequest({
-      url: therapistEndpoints.getClientById(clientId),
-      method: 'GET'
-    });
+    const response = await apiRequest('GET', therapistEndpoints.getClientById(clientId));
+    return getResponseData<Client>(response);
   },
   
   /**
@@ -97,15 +91,12 @@ export const therapistApiClient = {
     endDate?: DateString, 
     notes?: string
   ): Promise<TherapistClient> {
-    return apiRequest({
-      url: therapistEndpoints.updateClientRelationship(id),
-      method: 'PUT',
-      data: {
-        status,
-        endDate,
-        notes
-      }
+    const response = await apiRequest('PUT', therapistEndpoints.updateClientRelationship(id), {
+      status,
+      endDate,
+      notes
     });
+    return getResponseData<TherapistClient>(response);
   },
   
   /**

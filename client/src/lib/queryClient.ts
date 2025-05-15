@@ -13,12 +13,37 @@ export interface ApiRequestOptions {
   data?: unknown;
 }
 
-export async function apiRequest(
-  method: string, 
-  url: string, 
+// Utility function to get JSON data from response
+export async function getResponseData<T>(response: Response): Promise<T> {
+  return await response.json() as T;
+}
+
+// Support both function signatures for backward compatibility
+// 1. apiRequest(method, url, data)
+// 2. apiRequest({ url, method, data })
+export async function apiRequest<T = Response>(
+  methodOrOptions: string | ApiRequestOptions, 
+  urlOrNothing?: string, 
   data?: unknown
-): Promise<Response> {
-  console.log(`Making ${method} request to ${url}`, data);
+): Promise<T> {
+  let method: string;
+  let url: string;
+  let requestData: unknown = undefined;
+  
+  // Handle both calling styles
+  if (typeof methodOrOptions === 'string') {
+    // Called as apiRequest(method, url, data)
+    method = methodOrOptions;
+    url = urlOrNothing || '';
+    requestData = data;
+  } else {
+    // Called as apiRequest({ url, method, data })
+    method = methodOrOptions.method;
+    url = methodOrOptions.url;
+    requestData = methodOrOptions.data;
+  }
+  
+  console.log(`Making ${method} request to ${url}`, requestData);
   
   try {
     // Validate HTTP method
@@ -27,8 +52,8 @@ export async function apiRequest(
     
     const res = await fetch(url, {
       method: validMethod,
-      headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
+      headers: requestData ? { "Content-Type": "application/json" } : {},
+      body: requestData ? JSON.stringify(requestData) : undefined,
       credentials: "include",
     });
     

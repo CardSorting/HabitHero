@@ -1,7 +1,7 @@
 /**
  * API client for therapist-related endpoints
  */
-import { apiRequest, ApiRequestOptions } from '@/lib/queryClient';
+import { apiRequest } from '@/lib/queryClient';
 import { 
   ID, 
   DateString, 
@@ -54,10 +54,8 @@ export const therapistApiClient = {
    * Get all clients for a therapist
    */
   async getClients(): Promise<ClientSummary[]> {
-    return apiRequest({
-      url: therapistEndpoints.getClients,
-      method: 'GET'
-    });
+    const response = await apiRequest('GET', therapistEndpoints.getClients);
+    return response.json();
   },
   
   /**

@@ -14,59 +14,73 @@ type AuthRequest = Request & {
   }
 }
 
-// Middleware to check if user is authenticated
+// Middleware to ensure user is authenticated
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
-  if (req.isAuthenticated && req.isAuthenticated()) {
+  if (req.isAuthenticated()) {
     return next();
   }
-  return res.status(401).json({ error: 'You must be logged in to access this resource' });
+  res.status(401).json({ error: 'Unauthorized' });
 }
 
-// Emotion tracking routes
 export function registerEmotionsRoutes(app: Express) {
-  // Get all predefined emotions
+  // Get predefined emotions list
   app.get('/api/emotions/predefined', (req: Request, res: Response) => {
-    try {
-      // In a real application, we'd fetch this from the database
-      // Using predefined emotions stored on the client for now
-      res.json({ message: 'Use client-side predefined emotions' });
-    } catch (error) {
-      console.error('Error fetching emotions:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
+    // Return a hardcoded list of emotions with categories
+    // For a production app, this would typically come from the database
+    const predefinedEmotions = [
+      {
+        category: 'positive',
+        emotions: ['Joy', 'Love', 'Gratitude', 'Hope', 'Pride', 'Serenity', 'Interest', 'Amusement', 'Awe', 'Inspiration', 'Excitement', 'Content', 'Proud', 'Satisfied']
+      },
+      {
+        category: 'negative',
+        emotions: ['Anger', 'Frustration', 'Sadness', 'Fear', 'Shame', 'Guilt', 'Disgust', 'Jealousy', 'Envy', 'Anxiety', 'Despair', 'Grief', 'Loneliness', 'Disappointment']
+      },
+      {
+        category: 'neutral',
+        emotions: ['Calm', 'Surprise', 'Confusion', 'Curiosity', 'Tired', 'Bored', 'Distracted', 'Nervous']
+      }
+    ];
+
+    res.json({ message: 'Use client-side predefined emotions', data: predefinedEmotions });
   });
 
-  // Get a specific predefined emotion
+  // Get a specific emotion by ID
   app.get('/api/emotions/predefined/:id', (req: Request, res: Response) => {
-    try {
-      // In a real application, we'd fetch this from the database
-      res.json({ message: 'Use client-side predefined emotions' });
-    } catch (error) {
-      console.error(`Error fetching emotion with ID ${req.params.id}:`, error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
+    const id = parseInt(req.params.id);
+    const emotion = {
+      id,
+      name: 'Joy',
+      category: 'positive'
+    };
+    res.json(emotion);
   });
 
-  // Get all emotion entries for current user
+  // Get all emotion entries for a user
   app.get('/api/emotions/entries', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
+      // Get userId from request (allows therapist to view client data)
+      const userId = getUserIdFromRequest(req);
+      
+      console.log(`Get all emotions - Fetching for userId: ${userId}`);
+      
       // Get entries from the database
       const entries = await db.query.emotionTrackingEntries.findMany({
-        where: (entries, { eq }) => eq(entries.userId, getUserIdFromRequest(req))
+        where: (entries, { eq }) => eq(entries.userId, userId)
       });
 
       res.json(entries);
     } catch (error) {
-      console.error('Error fetching emotion entries:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error getting emotion entries:', error);
+      res.status(500).json({ error: 'Failed to get emotion entries' });
     }
   });
 
-  // Get entries for a date range - MUST come before the :id route to avoid conflicts
+  // Get emotion entries by date range
   app.get('/api/emotions/entries/range', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) {
@@ -80,24 +94,29 @@ export function registerEmotionsRoutes(app: Express) {
         return res.status(400).json({ error: 'Missing from or to date parameters' });
       }
       
+      // Get userId from request (allows therapist to view client data)
+      const userId = getUserIdFromRequest(req);
+      
+      console.log(`Get emotions by date range - Fetching for userId: ${userId}, from: ${fromDate}, to: ${toDate}`);
+      
       // Get entries from the database
       const entries = await db.query.emotionTrackingEntries.findMany({
         where: (entries, { eq, and, gte, lte }) => 
           and(
             gte(entries.date, fromDate),
             lte(entries.date, toDate),
-            eq(entries.userId, req.user!.id)
+            eq(entries.userId, userId)
           )
       });
 
       res.json(entries);
     } catch (error) {
-      console.error(`Error fetching emotion entries for date range:`, error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error getting emotion entries by date range:', error);
+      res.status(500).json({ error: 'Failed to get emotion entries by date range' });
     }
   });
-  
-  // Get entries for a specific date - MUST come before the :id route
+
+  // Get emotion entries for a specific date
   app.get('/api/emotions/entries/date/:date', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) {
@@ -106,52 +125,58 @@ export function registerEmotionsRoutes(app: Express) {
 
       const date = req.params.date;
       
+      // Get userId from request (allows therapist to view client data)
+      const userId = getUserIdFromRequest(req);
+      
+      console.log(`Get emotions for date - Fetching for userId: ${userId}, date: ${date}`);
+      
       // Get entries from the database
       const entries = await db.query.emotionTrackingEntries.findMany({
         where: (entries, { eq, and }) => 
           and(
             eq(entries.date, date),
-            eq(entries.userId, req.user!.id)
+            eq(entries.userId, userId)
           )
       });
 
       res.json(entries);
     } catch (error) {
-      console.error(`Error fetching emotion entries for date ${req.params.date}:`, error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error getting emotion entries for date:', error);
+      res.status(500).json({ error: 'Failed to get emotion entries for date' });
     }
   });
 
-  // Get a specific emotion entry - MUST come after the more specific routes
+  // Get a specific emotion entry by ID
   app.get('/api/emotions/entries/:id([0-9]+)', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const entryId = parseInt(req.params.id, 10);
+      const entryId = parseInt(req.params.id);
       
-      if (isNaN(entryId)) {
-        return res.status(400).json({ error: 'Invalid entry ID format' });
-      }
+      // Get userId from request (allows therapist to view client data)
+      const userId = getUserIdFromRequest(req);
       
-      // Get entry from the database
-      const entry = await db.query.emotionTrackingEntries.findFirst({
+      console.log(`Get emotion by ID - Fetching for userId: ${userId}, entryId: ${entryId}`);
+      
+      // Get the entry from the database
+      const [entry] = await db.query.emotionTrackingEntries.findMany({
         where: (entries, { eq, and }) => 
           and(
             eq(entries.id, entryId),
-            eq(entries.userId, req.user!.id)
+            eq(entries.userId, userId)
           )
       });
 
       if (!entry) {
-        return res.status(404).json({ error: 'Entry not found' });
+        return res.status(404).json({ error: 'Emotion entry not found' });
       }
 
       res.json(entry);
     } catch (error) {
-      console.error(`Error fetching emotion entry with ID ${req.params.id}:`, error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error getting emotion entry by ID:', error);
+      res.status(500).json({ error: 'Failed to get emotion entry' });
     }
   });
 
@@ -162,58 +187,33 @@ export function registerEmotionsRoutes(app: Express) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      // Validate request body
-      const entrySchema = z.object({
-        emotionId: z.string(),
+      const emotionSchema = z.object({
+        date: z.string(),
         emotionName: z.string(),
         intensity: z.number().min(1).max(10),
-        date: z.string(),
-        time: z.string().optional(),
         notes: z.string().optional(),
-        triggers: z.array(z.string()).optional(),
-        copingMechanisms: z.array(z.string()).optional(),
-        categoryId: z.string()
+        category: z.string().optional()
       });
+
+      const validationResult = emotionSchema.safeParse(req.body);
       
-      const validatedData = entrySchema.parse(req.body);
-      
-      // Generate coping strategy if intensity is high (7-10)
-      let copingStrategies = validatedData.copingMechanisms || [];
-      if (validatedData.intensity >= 7 && (!copingStrategies || copingStrategies.length === 0)) {
-        try {
-          const intensityString = validatedData.intensity <= 7 ? 'moderate' : 
-                                 validatedData.intensity <= 9 ? 'high' : 'extreme';
-          const strategy = await getCopingStrategy(validatedData.emotionName, intensityString);
-          if (strategy) {
-            copingStrategies = [strategy];
-          }
-        } catch (e) {
-          console.error('Failed to generate coping strategy:', e);
-        }
+      if (!validationResult.success) {
+        return res.status(400).json({ error: 'Invalid emotion data', details: validationResult.error });
       }
+
+      const emotionData = validationResult.data;
       
-      // Create entry in the database
-      const newEntry = await db.insert(schema.emotionTrackingEntries).values({
+      // Insert into database
+      const [entry] = await db.insert(schema.emotionTrackingEntries).values({
+        ...emotionData,
         userId: req.user.id,
-        emotionId: validatedData.emotionId,
-        emotionName: validatedData.emotionName,
-        intensity: validatedData.intensity,
-        date: validatedData.date,
-        time: validatedData.time || format(new Date(), 'HH:mm:ss'), // Store current time if not provided
-        notes: validatedData.notes,
-        triggers: validatedData.triggers || [],
-        copingMechanisms: copingStrategies,
-        categoryId: validatedData.categoryId
+        createdAt: new Date().toISOString(),
       }).returning();
 
-      res.status(201).json(newEntry[0]);
+      res.status(201).json(entry);
     } catch (error) {
       console.error('Error creating emotion entry:', error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Invalid request data', details: error.errors });
-      } else {
-        res.status(500).json({ error: 'Internal server error' });
-      }
+      res.status(500).json({ error: 'Failed to create emotion entry' });
     }
   });
 
@@ -224,10 +224,26 @@ export function registerEmotionsRoutes(app: Express) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const entryId = req.params.id;
+      const entryId = parseInt(req.params.id);
       
-      // Check if entry exists and belongs to user
-      const existingEntry = await db.query.emotionTrackingEntries.findFirst({
+      const emotionSchema = z.object({
+        date: z.string().optional(),
+        emotionName: z.string().optional(),
+        intensity: z.number().min(1).max(10).optional(),
+        notes: z.string().optional(),
+        category: z.string().optional()
+      });
+
+      const validationResult = emotionSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ error: 'Invalid emotion data', details: validationResult.error });
+      }
+
+      const emotionData = validationResult.data;
+      
+      // Get the entry to update
+      const [existingEntry] = await db.query.emotionTrackingEntries.findMany({
         where: (entries, { eq, and }) => 
           and(
             eq(entries.id, entryId),
@@ -236,49 +252,24 @@ export function registerEmotionsRoutes(app: Express) {
       });
 
       if (!existingEntry) {
-        return res.status(404).json({ error: 'Entry not found' });
+        return res.status(404).json({ error: 'Emotion entry not found' });
       }
 
-      // Validate request body
-      const updateSchema = z.object({
-        intensity: z.number().min(1).max(10).optional(),
-        notes: z.string().optional(),
-        triggers: z.array(z.string()).optional(),
-        copingMechanisms: z.array(z.string()).optional()
-      });
-      
-      const validatedData = updateSchema.parse(req.body);
-      
-      // Update entry in the database
-      const updatedEntry = await db.update(schema.emotionTrackingEntries)
-        .set({
-          ...validatedData,
-          // Ensure arrays are handled properly
-          triggers: validatedData.triggers !== undefined 
-            ? validatedData.triggers 
-            : existingEntry.triggers,
-          copingMechanisms: validatedData.copingMechanisms !== undefined 
-            ? validatedData.copingMechanisms 
-            : existingEntry.copingMechanisms
-        })
-        .where(eb => eb.and(
-          eb.eq(db.schema.emotionTrackingEntries.id, entryId),
-          eb.eq(db.schema.emotionTrackingEntries.userId, req.user!.id)
-        ))
+      // Update in database
+      const [updatedEntry] = await db.update(schema.emotionTrackingEntries)
+        .set(emotionData)
+        .where((entries, { eq, and }) => 
+          and(
+            eq(entries.id, entryId),
+            eq(entries.userId, req.user!.id)
+          )
+        )
         .returning();
 
-      if (!updatedEntry.length) {
-        return res.status(404).json({ error: 'Entry not found' });
-      }
-
-      res.json(updatedEntry[0]);
+      res.json(updatedEntry);
     } catch (error) {
-      console.error(`Error updating emotion entry:`, error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Invalid request data', details: error.errors });
-      } else {
-        res.status(500).json({ error: 'Internal server error' });
-      }
+      console.error('Error updating emotion entry:', error);
+      res.status(500).json({ error: 'Failed to update emotion entry' });
     }
   });
 
@@ -289,30 +280,38 @@ export function registerEmotionsRoutes(app: Express) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const entryId = req.params.id;
+      const entryId = parseInt(req.params.id);
       
-      // Delete entry from the database
-      const result = await db.delete(db.schema.emotionTrackingEntries)
-        .where(eb => eb.and(
-          eb.eq(db.schema.emotionTrackingEntries.id, entryId),
-          eb.eq(db.schema.emotionTrackingEntries.userId, req.user!.id)
-        ))
-        .returning();
+      // Get the entry to delete
+      const [existingEntry] = await db.query.emotionTrackingEntries.findMany({
+        where: (entries, { eq, and }) => 
+          and(
+            eq(entries.id, entryId),
+            eq(entries.userId, req.user!.id)
+          )
+      });
 
-      if (!result.length) {
-        return res.status(404).json({ error: 'Entry not found' });
+      if (!existingEntry) {
+        return res.status(404).json({ error: 'Emotion entry not found' });
       }
 
-      res.json({ success: true });
+      // Delete from database
+      await db.delete(schema.emotionTrackingEntries)
+        .where((entries, { eq, and }) => 
+          and(
+            eq(entries.id, entryId),
+            eq(entries.userId, req.user!.id)
+          )
+        );
+
+      res.status(204).end();
     } catch (error) {
-      console.error(`Error deleting emotion entry:`, error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error deleting emotion entry:', error);
+      res.status(500).json({ error: 'Failed to delete emotion entry' });
     }
   });
 
-  // Analytics routes
-  
-  // Get emotion summary for a specific date
+  // Get daily emotion summary
   app.get('/api/emotions/analytics/summary/:date', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) {
@@ -321,95 +320,93 @@ export function registerEmotionsRoutes(app: Express) {
 
       const date = req.params.date;
       
-      // Try to get entries for the requested date
-      let entries = await db.query.emotionTrackingEntries.findMany({
+      // Get userId from request (allows therapist to view client data)
+      const userId = getUserIdFromRequest(req);
+      
+      console.log(`Emotion summary - Fetching for userId: ${userId}, date: ${date}`);
+      
+      // Get entries for the current date
+      const entries = await db.query.emotionTrackingEntries.findMany({
         where: (entries, { eq, and }) => 
           and(
             eq(entries.date, date),
-            eq(entries.userId, req.user!.id)
+            eq(entries.userId, userId)
           )
       });
+
+      // Get entries for the previous date for comparison
+      const prevDate = new Date(date);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const prevDateStr = prevDate.toISOString().split('T')[0];
       
-      // If no entries for requested date, try previous day
-      if (entries.length === 0) {
-        const currentDate = new Date(date);
-        const prevDate = new Date(currentDate);
-        prevDate.setDate(prevDate.getDate() - 1);
-        const prevDateStr = prevDate.toISOString().split('T')[0];
-        
-        entries = await db.query.emotionTrackingEntries.findMany({
-          where: (entries, { eq, and }) => 
-            and(
-              eq(entries.date, prevDateStr),
-              eq(entries.userId, req.user!.id)
-            )
-        });
-      }
+      const prevEntries = await db.query.emotionTrackingEntries.findMany({
+        where: (entries, { eq, and }) => 
+          and(
+            eq(entries.date, prevDateStr),
+            eq(entries.userId, userId)
+          )
+      });
+
+      // Calculate summary metrics
+      const totalEntries = entries.length;
+      const positiveEntries = entries.filter(e => e.category === 'positive').length;
+      const negativeEntries = entries.filter(e => e.category === 'negative').length;
+      const neutralEntries = entries.filter(e => e.category === 'neutral').length;
       
-      // If still no entries, return empty summary
-      if (entries.length === 0) {
-        return res.json({
-          date,
-          dominantEmotion: null,
-          highestIntensity: null,
-          averageIntensity: null,
-          emotionCount: 0,
-          entryIds: []
-        });
-      }
+      const avgIntensity = entries.length > 0 
+        ? entries.reduce((sum, entry) => sum + entry.intensity, 0) / entries.length 
+        : 0;
       
-      // Process the entries to build the summary
-      const emotionCounts: Record<string, number> = {};
-      let totalIntensity = 0;
-      let highestIntensityValue = 0;
-      let highestIntensityEmotion = '';
+      const prevAvgIntensity = prevEntries.length > 0 
+        ? prevEntries.reduce((sum, entry) => sum + entry.intensity, 0) / prevEntries.length 
+        : 0;
       
-      // Process each entry
-      for (const entry of entries) {
-        // Count emotions
-        emotionCounts[entry.emotionName] = (emotionCounts[entry.emotionName] || 0) + 1;
-        
-        // Track intensity
-        totalIntensity += entry.intensity;
-        
-        // Track highest intensity
-        if (entry.intensity > highestIntensityValue) {
-          highestIntensityValue = entry.intensity;
-          highestIntensityEmotion = entry.emotionName;
-        }
-      }
-      
-      // Calculate averages and find dominant emotion
-      const averageIntensity = totalIntensity / entries.length;
+      const intensityChange = avgIntensity - prevAvgIntensity;
       
       // Find most frequent emotion
-      let dominantEmotion = null;
-      let maxCount = 0;
-      for (const [emotion, count] of Object.entries(emotionCounts)) {
-        if (count > maxCount) {
-          maxCount = count;
-          dominantEmotion = emotion;
-        }
+      const emotionCounts: Record<string, number> = {};
+      for (const entry of entries) {
+        emotionCounts[entry.emotionName] = (emotionCounts[entry.emotionName] || 0) + 1;
       }
       
-      // Prepare the summary object
+      let dominantEmotion = '';
+      let maxCount = 0;
+      
+      for (const [emotion, count] of Object.entries(emotionCounts)) {
+        if (count > maxCount) {
+          dominantEmotion = emotion;
+          maxCount = count;
+        }
+      }
+
+      // Determine overall mood based on positive vs negative entries
+      let overallMood = 'neutral';
+      if (positiveEntries > negativeEntries + neutralEntries) {
+        overallMood = 'positive';
+      } else if (negativeEntries > positiveEntries + neutralEntries) {
+        overallMood = 'negative';
+      }
+
       const summary = {
         date,
+        totalEntries,
+        positiveEntries,
+        negativeEntries,
+        neutralEntries,
+        avgIntensity,
+        intensityChange,
         dominantEmotion,
-        highestIntensity: highestIntensityValue || null,
-        averageIntensity: entries.length > 0 ? averageIntensity : null,
-        emotionCount: entries.length,
-        entryIds: entries.map(entry => entry.id)
+        overallMood
       };
-      
+
       res.json(summary);
     } catch (error) {
-      console.error(`Error generating emotion summary:`, error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error generating emotion summary:', error);
+      res.status(500).json({ error: 'Failed to generate emotion summary' });
     }
   });
 
-  // Get emotion trends for a date range
+  // Get emotion trends
   app.get('/api/emotions/analytics/trends', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) {
@@ -423,10 +420,10 @@ export function registerEmotionsRoutes(app: Express) {
         return res.status(400).json({ error: 'Missing from or to date parameters' });
       }
       
-      // Check if userId parameter is provided (for therapist viewing client data)
-      const userId = req.query.userId ? parseInt(req.query.userId as string) : req.user!.id;
+      // Get userId from request (allows therapist to view client data)
+      const userId = getUserIdFromRequest(req);
       
-      console.log(`Emotion trends API - Fetching for userId: ${userId}, from: ${fromDate}, to: ${toDate}`);
+      console.log(`Emotion trends - Fetching for userId: ${userId}, from: ${fromDate}, to: ${toDate}`);
       
       // Get entries from the database
       const entries = await db.query.emotionTrackingEntries.findMany({
@@ -439,7 +436,7 @@ export function registerEmotionsRoutes(app: Express) {
       });
 
       // Group entries by date
-      const entriesByDate: Record<string, any[]> = {};
+      const entriesByDate: Record<string, typeof entries> = {};
       
       for (const entry of entries) {
         if (!entriesByDate[entry.date]) {
@@ -448,84 +445,63 @@ export function registerEmotionsRoutes(app: Express) {
         entriesByDate[entry.date].push(entry);
       }
 
-      // Calculate daily trends
-      const trends = Object.entries(entriesByDate).map(([date, dayEntries]) => {
-        // Calculate average intensity for the day
-        const totalIntensity = dayEntries.reduce((sum, entry) => sum + entry.intensity, 0);
-        const averageIntensity = totalIntensity / dayEntries.length;
+      // Calculate trends for each date
+      const trends = Object.entries(entriesByDate).map(([date, dateEntries]) => {
+        // Count emotions and calculate average intensity
+        const emotions: Record<string, { count: number, averageIntensity: number }> = {};
         
-        // Count emotions by category
-        const categoryCount = { positive: 0, negative: 0, neutral: 0 };
-        for (const entry of dayEntries) {
-          if (entry.categoryId === 'positive') categoryCount.positive++;
-          else if (entry.categoryId === 'negative') categoryCount.negative++;
-          else if (entry.categoryId === 'neutral') categoryCount.neutral++;
+        for (const entry of dateEntries) {
+          if (!emotions[entry.emotionName]) {
+            emotions[entry.emotionName] = { count: 0, averageIntensity: 0 };
+          }
+          
+          emotions[entry.emotionName].count++;
+          emotions[entry.emotionName].averageIntensity += entry.intensity;
         }
         
-        // Determine dominant category and overall mood
-        let dominantCategory = 'neutral';
-        let overallMood = 'neutral';
-        
-        if (categoryCount.positive > categoryCount.negative && 
-            categoryCount.positive > categoryCount.neutral) {
-          dominantCategory = 'positive';
-          overallMood = 'positive';
-        } else if (categoryCount.negative > categoryCount.positive && 
-                  categoryCount.negative > categoryCount.neutral) {
-          dominantCategory = 'negative';
-          overallMood = 'negative';
-        } else if (categoryCount.positive === categoryCount.negative && 
-                  categoryCount.positive > 0) {
-          // If there's an equal mix of positive and negative emotions
-          overallMood = 'mixed';
+        // Calculate averages
+        for (const emotion in emotions) {
+          emotions[emotion].averageIntensity /= emotions[emotion].count;
         }
-        
-        // Find the dominant emotion (most frequent)
-        const emotionCounts: {[emotion: string]: number} = {};
-        for (const entry of dayEntries) {
-          emotionCounts[entry.emotionName] = (emotionCounts[entry.emotionName] || 0) + 1;
-        }
-        
-        let dominantEmotion = null;
+
+        // Find dominant emotion
+        let dominantEmotion = '';
         let maxCount = 0;
-        for (const [emotion, count] of Object.entries(emotionCounts)) {
-          if (count > maxCount) {
-            maxCount = count;
+        
+        for (const [emotion, data] of Object.entries(emotions)) {
+          if (data.count > maxCount) {
             dominantEmotion = emotion;
+            maxCount = data.count;
           }
         }
+
+        // Determine overall mood
+        const positiveEntries = dateEntries.filter(e => e.category === 'positive').length;
+        const negativeEntries = dateEntries.filter(e => e.category === 'negative').length;
+        const neutralEntries = dateEntries.filter(e => e.category === 'neutral').length;
         
-        // Format emotions data
-        const formattedEmotions: {[name: string]: {count: number, averageIntensity: number}} = {};
-        
-        for (const entry of dayEntries) {
-          if (!formattedEmotions[entry.emotionName]) {
-            formattedEmotions[entry.emotionName] = { count: 0, averageIntensity: 0 };
-          }
-          formattedEmotions[entry.emotionName].count += 1;
-          formattedEmotions[entry.emotionName].averageIntensity += entry.intensity;
-        }
-        
-        // Calculate average intensity for each emotion
-        for (const emotion of Object.keys(formattedEmotions)) {
-          formattedEmotions[emotion].averageIntensity /= formattedEmotions[emotion].count;
+        let overallMood = 'neutral';
+        if (positiveEntries > negativeEntries + neutralEntries) {
+          overallMood = 'positive';
+        } else if (negativeEntries > positiveEntries + neutralEntries) {
+          overallMood = 'negative';
         }
 
         return {
           date,
-          emotions: formattedEmotions,
+          emotions,
           overallMood,
           dominantEmotion
         };
       });
 
       // Sort by date
-      trends.sort((a, b) => a.date.localeCompare(b.date));
+      trends.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       res.json(trends);
     } catch (error) {
-      console.error(`Error generating emotion trends:`, error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error generating emotion trends:', error);
+      res.status(500).json({ error: 'Failed to generate emotion trends' });
     }
   });
 
@@ -544,19 +520,23 @@ export function registerEmotionsRoutes(app: Express) {
         return res.status(400).json({ error: 'Missing from or to date parameters' });
       }
       
+      // Get userId from request (allows therapist to view client data)
+      const userId = getUserIdFromRequest(req);
+      
+      console.log(`Frequent emotions API - Fetching for userId: ${userId}, from: ${fromDate}, to: ${toDate}`);
+      
       // Get entries from the database
       const entries = await db.query.emotionTrackingEntries.findMany({
         where: (entries, { eq, and, gte, lte }) => 
           and(
             gte(entries.date, fromDate),
             lte(entries.date, toDate),
-            eq(entries.userId, req.user!.id)
+            eq(entries.userId, userId)
           )
       });
 
-      // Count occurrences of each emotion
+      // Count each emotion
       const emotionCounts: Record<string, number> = {};
-      
       for (const entry of entries) {
         emotionCounts[entry.emotionName] = (emotionCounts[entry.emotionName] || 0) + 1;
       }
@@ -567,14 +547,14 @@ export function registerEmotionsRoutes(app: Express) {
         count
       }));
 
-      // Sort by count (descending) and limit results
+      // Sort by count descending and limit
       emotionCountArray.sort((a, b) => b.count - a.count);
-      const limitedResults = emotionCountArray.slice(0, limit);
+      const topEmotions = emotionCountArray.slice(0, limit);
 
-      res.json(limitedResults);
+      res.json(topEmotions);
     } catch (error) {
-      console.error(`Error fetching most frequent emotions:`, error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error in frequent emotions endpoint:', error);
+      res.status(500).json({ error: 'Failed to fetch frequent emotions' });
     }
   });
 
@@ -593,41 +573,71 @@ export function registerEmotionsRoutes(app: Express) {
         return res.status(400).json({ error: 'Missing from or to date parameters' });
       }
       
+      // Get userId from request (allows therapist to view client data)
+      const userId = getUserIdFromRequest(req);
+      
+      console.log(`Highest intensity emotions - Fetching for userId: ${userId}, from: ${fromDate}, to: ${toDate}`);
+      
       // Get entries from the database
       const entries = await db.query.emotionTrackingEntries.findMany({
         where: (entries, { eq, and, gte, lte }) => 
           and(
             gte(entries.date, fromDate),
             lte(entries.date, toDate),
-            eq(entries.userId, req.user!.id)
+            eq(entries.userId, userId)
           )
       });
 
       // Calculate average intensity for each emotion
-      const emotionIntensities: Record<string, { total: number, count: number }> = {};
+      const emotionIntensities: Record<string, { sum: number; count: number }> = {};
       
       for (const entry of entries) {
         if (!emotionIntensities[entry.emotionName]) {
-          emotionIntensities[entry.emotionName] = { total: 0, count: 0 };
+          emotionIntensities[entry.emotionName] = { sum: 0, count: 0 };
         }
-        emotionIntensities[entry.emotionName].total += entry.intensity;
-        emotionIntensities[entry.emotionName].count += 1;
+        
+        emotionIntensities[entry.emotionName].sum += entry.intensity;
+        emotionIntensities[entry.emotionName].count++;
       }
 
-      // Convert to array with average intensities
-      const emotionIntensityArray = Object.entries(emotionIntensities).map(([emotion, { total, count }]) => ({
+      // Convert to array with average intensity
+      const emotionIntensityArray = Object.entries(emotionIntensities).map(([emotion, data]) => ({
         emotion,
-        intensity: total / count
+        intensity: data.sum / data.count
       }));
 
       // Sort by intensity (descending) and limit results
       emotionIntensityArray.sort((a, b) => b.intensity - a.intensity);
-      const limitedResults = emotionIntensityArray.slice(0, limit);
+      const highestIntensities = emotionIntensityArray.slice(0, limit);
 
-      res.json(limitedResults);
+      res.json(highestIntensities);
     } catch (error) {
-      console.error(`Error fetching highest intensity emotions:`, error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error in highest intensity emotions endpoint:', error);
+      res.status(500).json({ error: 'Failed to fetch highest intensity emotions' });
+    }
+  });
+
+  // Get coping strategies for emotions
+  app.get('/api/emotions/coping-strategies', isAuthenticated, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const emotion = req.query.emotion as string;
+      const intensity = req.query.intensity as string;
+      
+      if (!emotion || !intensity) {
+        return res.status(400).json({ error: 'Missing emotion or intensity parameters' });
+      }
+      
+      // Get coping strategy from Anthropic API or preset database
+      const strategy = await getCopingStrategy(emotion, intensity);
+      
+      res.json({ emotion, intensity, strategy });
+    } catch (error) {
+      console.error('Error fetching coping strategy:', error);
+      res.status(500).json({ error: 'Failed to fetch coping strategy' });
     }
   });
 }

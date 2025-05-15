@@ -241,9 +241,7 @@ export const therapistApiClient = {
       url = `${url}?${queryParams.join('&')}`;
     }
     
-    return apiRequest({
-      url,
-      method: 'GET'
-    });
+    const response = await apiRequest('GET', url);
+    return getResponseData<ClientAnalytics>(response);
   }
 };

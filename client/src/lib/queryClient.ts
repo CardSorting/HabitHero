@@ -15,21 +15,36 @@ export interface ApiRequestOptions {
 
 // Fetch with error handling and basic logging 
 export async function apiRequest(
-  method: string, 
-  url: string, 
+  methodOrOptions: string | ApiRequestOptions, 
+  url?: string, 
   data?: unknown
 ): Promise<Response> {
-  console.log(`Making ${method} request to ${url}`, data);
+  let method: string;
+  let urlToUse: string;
+  let dataToSend: unknown;
+  
+  // Handle both object parameter and individual parameter formats
+  if (typeof methodOrOptions === 'object') {
+    // Object parameter format
+    ({ url: urlToUse, method, data: dataToSend } = methodOrOptions);
+  } else {
+    // Individual parameter format
+    method = methodOrOptions;
+    urlToUse = url!;
+    dataToSend = data;
+  }
+  
+  console.log(`Making ${method} request to ${urlToUse}`, dataToSend);
   
   try {
     // Validate HTTP method
     const validMethod = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase()) ? 
                         method.toUpperCase() : 'GET';
     
-    const res = await fetch(url, {
+    const res = await fetch(urlToUse, {
       method: validMethod,
-      headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
+      headers: dataToSend ? { "Content-Type": "application/json" } : {},
+      body: dataToSend ? JSON.stringify(dataToSend) : undefined,
       credentials: "include",
     });
     

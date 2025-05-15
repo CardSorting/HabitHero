@@ -548,6 +548,432 @@ const TreatmentPlanForm: React.FC<TreatmentPlanFormProps> = ({
             </div>
           </TabsContent>
           
+          {/* Assessment & Diagnosis Tab */}
+          <TabsContent value="diagnosis" className="space-y-6 py-4">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Clinical Diagnosis</h3>
+              
+              <FormField
+                control={form.control}
+                name="diagnosisInfo.diagnosisCodes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>DSM-5 Diagnosis Codes</FormLabel>
+                    <FormDescription>
+                      Enter diagnosis codes from the DSM-5 (e.g., F41.1 Generalized Anxiety Disorder)
+                    </FormDescription>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter a diagnosis code and press Enter"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value) {
+                            e.preventDefault();
+                            const newValue = [...field.value, e.currentTarget.value];
+                            field.onChange(newValue);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    {field.value?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value.map((code, index) => (
+                          <div key={index} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
+                            {code}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 ml-2"
+                              onClick={() => {
+                                const newValue = [...field.value];
+                                newValue.splice(index, 1);
+                                field.onChange(newValue);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="diagnosisInfo.presentingProblems"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Presenting Problems</FormLabel>
+                    <FormDescription>
+                      Enter the client's presenting problems and symptoms
+                    </FormDescription>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter a problem and press Enter"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value) {
+                            e.preventDefault();
+                            const newValue = [...field.value, e.currentTarget.value];
+                            field.onChange(newValue);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    {field.value?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value.map((problem, index) => (
+                          <div key={index} className="flex items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                            {problem}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 ml-2"
+                              onClick={() => {
+                                const newValue = [...field.value];
+                                newValue.splice(index, 1);
+                                field.onChange(newValue);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="diagnosisInfo.mentalStatusEvaluation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mental Status Evaluation</FormLabel>
+                    <FormDescription>
+                      Document observations about appearance, behavior, mood, affect, thought process, etc.
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter mental status evaluation..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="diagnosisInfo.diagnosticFormulation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Diagnostic Formulation</FormLabel>
+                    <FormDescription>
+                      Provide clinical rationale for diagnosis and conceptualization of client's condition
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter diagnostic formulation..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="diagnosisInfo.diagnosisDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Diagnosis Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className="w-full pl-3 text-left font-normal"
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date("1900-01-01")}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <Separator className="my-4" />
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Risk Assessment</h3>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleAddRiskAssessment}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Risk Assessment
+                </Button>
+              </div>
+              
+              {riskAssessmentFields.length === 0 ? (
+                <div className="text-center p-4 border border-dashed rounded-md">
+                  <p className="text-muted-foreground">No risk assessments added yet.</p>
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    size="sm" 
+                    className="mt-2" 
+                    onClick={handleAddRiskAssessment}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add First Risk Assessment
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {riskAssessmentFields.map((field, index) => (
+                    <Card key={field.id} className="relative">
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-base">
+                            Risk Assessment #{index + 1}
+                          </CardTitle>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeRiskAssessment(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name={`riskAssessments.${index}.assessmentDate`}
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Assessment Date</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      className="w-full pl-3 text-left font-normal"
+                                    >
+                                      {field.value ? (
+                                        format(field.value, "PPP")
+                                      ) : (
+                                        <span>Pick a date</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) => date < new Date("1900-01-01")}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name={`riskAssessments.${index}.suicideRisk`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Suicide Risk</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select risk level" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="moderate">Moderate</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="extreme">Extreme</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`riskAssessments.${index}.violenceRisk`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Violence Risk</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select risk level" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="moderate">Moderate</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="extreme">Extreme</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`riskAssessments.${index}.selfHarmRisk`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Self-Harm Risk</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select risk level" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="moderate">Moderate</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="extreme">Extreme</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`riskAssessments.${index}.substanceAbuseRisk`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Substance Abuse Risk</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select risk level" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="moderate">Moderate</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="extreme">Extreme</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <FormField
+                          control={form.control}
+                          name={`riskAssessments.${index}.safetyPlan`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Safety Plan</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Describe safety plan and interventions..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name={`riskAssessments.${index}.notes`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Additional Notes</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Enter any additional risk assessment notes..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          
           {/* Goals Tab */}
           <TabsContent value="goals" className="space-y-4 py-4">
             <div className="flex justify-between items-center">

@@ -37,7 +37,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   EmotionAnalytics, 
   CrisisAnalytics, 
-  TherapistNotes 
+  TherapistNotes,
+  TreatmentPlanList
 } from '../components';
 
 // Icons
@@ -365,12 +366,11 @@ const ClientDetails: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="py-12 text-center text-muted-foreground">
-                    <p>No treatment plans have been created yet.</p>
-                    <Button className="mt-4">
-                      <FileText className="mr-2 h-4 w-4" /> Create Treatment Plan
-                    </Button>
-                  </div>
+                  <TreatmentPlanList 
+                    clientId={clientId} 
+                    clientName={clientDetails.fullName || clientDetails.username}
+                    therapistId={user?.id || 0}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

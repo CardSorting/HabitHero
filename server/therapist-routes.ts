@@ -1,6 +1,7 @@
 /**
  * Routes for Therapist API
  * Implements RBAC for therapist-specific endpoints
+ * Following SOLID principles, DDD, Clean Architecture, and CQRS pattern
  */
 import { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
@@ -10,7 +11,8 @@ import {
   insertTreatmentPlanSchema, 
   userRoleEnum,
   users,
-  therapistClients
+  therapistClients,
+  treatmentPlans
 } from "@shared/schema";
 import { eq, and, desc, sql, like } from "drizzle-orm";
 import { db } from './db';
@@ -724,6 +726,164 @@ export function registerTherapistRoutes(app: Express) {
     } catch (error) {
       console.error('Error fetching client crisis analytics:', error);
       res.status(500).json({ message: 'Error fetching client crisis analytics' });
+    }
+  });
+
+  // =========================================================================
+  // Treatment Plan Routes - Following SOLID, DDD, and Clean Architecture
+  // =========================================================================
+  
+  /**
+   * Get all treatment plans for a specific client
+   * Follows Command Query Responsibility Segregation (CQRS) pattern by
+   * separating read operations (queries) from write operations (commands)
+   */
+  app.get('/api/therapist/clients/:clientId/treatment-plans', isAuthenticated, isTherapist, async (req: AuthRequest, res: Response) => {
+    try {
+      const therapistId = req.user!.id;
+      const clientId = parseInt(req.params.clientId);
+      
+      // Authorization check - domain rule enforcement
+      const isAuthorized = await req.app.locals.storage.isTherapistForClient(therapistId, clientId);
+      
+      if (!isAuthorized) {
+        return res.status(403).json({ message: 'Forbidden: This client is not assigned to you' });
+      }
+      
+      // Get treatment plans for the client
+      const plans = await req.app.locals.storage.getTreatmentPlans(therapistId, clientId);
+      
+      res.json(plans);
+    } catch (error) {
+      console.error('Error fetching treatment plans:', error);
+      res.status(500).json({ message: 'Error fetching treatment plans' });
+    }
+  });
+  
+  /**
+   * Get a specific treatment plan by ID
+   */
+  app.get('/api/therapist/treatment-plans/:id', isAuthenticated, isTherapist, async (req: AuthRequest, res: Response) => {
+    try {
+      const therapistId = req.user!.id;
+      const planId = parseInt(req.params.id);
+      
+      // Get the treatment plan
+      const plan = await req.app.locals.storage.getTreatmentPlanById(planId);
+      
+      if (!plan) {
+        return res.status(404).json({ message: 'Treatment plan not found' });
+      }
+      
+      // Authorization check - only the therapist who created the plan can access it
+      if (plan.therapistId !== therapistId) {
+        return res.status(403).json({ message: 'Forbidden: This treatment plan does not belong to you' });
+      }
+      
+      res.json(plan);
+    } catch (error) {
+      console.error('Error fetching treatment plan:', error);
+      res.status(500).json({ message: 'Error fetching treatment plan' });
+    }
+  });
+  
+  /**
+   * Create a new treatment plan
+   * Follows Command pattern for write operations
+   */
+  app.post('/api/therapist/treatment-plans', isAuthenticated, isTherapist, async (req: AuthRequest, res: Response) => {
+    try {
+      const therapistId = req.user!.id;
+      
+      // Validate the request body against the schema
+      const validationResult = insertTreatmentPlanSchema.safeParse({
+        ...req.body,
+        therapistId
+      });
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: 'Invalid treatment plan data', 
+          errors: validationResult.error.errors 
+        });
+      }
+      
+      const planData = validationResult.data;
+      
+      // Authorization check - only create plans for your own clients
+      const isAuthorized = await req.app.locals.storage.isTherapistForClient(therapistId, planData.clientId);
+      
+      if (!isAuthorized) {
+        return res.status(403).json({ message: 'Forbidden: This client is not assigned to you' });
+      }
+      
+      // Create the treatment plan
+      const plan = await req.app.locals.storage.createTreatmentPlan(planData);
+      
+      res.status(201).json(plan);
+    } catch (error) {
+      console.error('Error creating treatment plan:', error);
+      res.status(500).json({ message: 'Error creating treatment plan' });
+    }
+  });
+  
+  /**
+   * Update a treatment plan
+   */
+  app.put('/api/therapist/treatment-plans/:id', isAuthenticated, isTherapist, async (req: AuthRequest, res: Response) => {
+    try {
+      const therapistId = req.user!.id;
+      const planId = parseInt(req.params.id);
+      
+      // Get the existing plan
+      const existingPlan = await req.app.locals.storage.getTreatmentPlanById(planId);
+      
+      if (!existingPlan) {
+        return res.status(404).json({ message: 'Treatment plan not found' });
+      }
+      
+      // Authorization check - only the therapist who created the plan can update it
+      if (existingPlan.therapistId !== therapistId) {
+        return res.status(403).json({ message: 'Forbidden: This treatment plan does not belong to you' });
+      }
+      
+      // Update the plan
+      const updatedPlan = await req.app.locals.storage.updateTreatmentPlan(planId, req.body);
+      
+      res.json(updatedPlan);
+    } catch (error) {
+      console.error('Error updating treatment plan:', error);
+      res.status(500).json({ message: 'Error updating treatment plan' });
+    }
+  });
+  
+  /**
+   * Delete a treatment plan
+   */
+  app.delete('/api/therapist/treatment-plans/:id', isAuthenticated, isTherapist, async (req: AuthRequest, res: Response) => {
+    try {
+      const therapistId = req.user!.id;
+      const planId = parseInt(req.params.id);
+      
+      // Get the existing plan
+      const existingPlan = await req.app.locals.storage.getTreatmentPlanById(planId);
+      
+      if (!existingPlan) {
+        return res.status(404).json({ message: 'Treatment plan not found' });
+      }
+      
+      // Authorization check - only the therapist who created the plan can delete it
+      if (existingPlan.therapistId !== therapistId) {
+        return res.status(403).json({ message: 'Forbidden: This treatment plan does not belong to you' });
+      }
+      
+      // Delete the plan
+      await req.app.locals.storage.deleteTreatmentPlan(planId);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting treatment plan:', error);
+      res.status(500).json({ message: 'Error deleting treatment plan' });
     }
   });
 }

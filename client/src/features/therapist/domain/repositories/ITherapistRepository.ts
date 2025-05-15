@@ -40,14 +40,14 @@ export interface ITherapistRepository {
   /**
    * Assign a client to a therapist
    * @param therapistId The ID of the therapist
-   * @param clientId The ID of the client
+   * @param clientUsernameOrId The username or ID of the client
    * @param startDate The start date of the relationship
    * @param notes Optional notes about the relationship
    * @returns A promise resolving to the created therapist-client relationship
    */
   assignClientToTherapist(
     therapistId: ID, 
-    clientId: ID, 
+    clientUsernameOrId: string | ID, 
     startDate: DateString, 
     notes?: string
   ): Promise<TherapistClient>;

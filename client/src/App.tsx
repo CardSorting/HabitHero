@@ -21,7 +21,6 @@ import TherapistAuthPage from "@/pages/therapist-auth-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import LandingPage from "@/pages/LandingPage";
 import PricingPage from "@/pages/pricing";
-import PaymentSuccessPage from "@/pages/payment-success";
 import ResponsiveLayout from "@/components/ResponsiveLayout";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -41,7 +40,6 @@ function Router() {
         <Switch location={location} key={location}>
           <Route path="/" component={LandingPage} />
           <Route path="/pricing" component={PricingPage} />
-          <Route path="/payment-success" component={PaymentSuccessPage} />
           <Route path="/onboarding" component={OnboardingPage} />
           <ProtectedRoute path="/today" component={Today} />
           <ProtectedRoute path="/progress" component={Progress} />

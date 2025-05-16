@@ -76,12 +76,18 @@ export default function LandingPage() {
             <Button variant="ghost" size="sm" asChild>
               <a href="#about">About</a>
             </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+              Login
+            </Button>
             <Button size="sm" onClick={() => navigate("/pricing")}>
               Get Started
             </Button>
           </div>
           
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center space-x-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+              Login
+            </Button>
             <Button size="sm" onClick={() => navigate("/pricing")}>
               Get Started
             </Button>

@@ -91,7 +91,7 @@ export async function createPaypalOrder(req: Request, res: Response) {
         .json({ error: "Invalid intent. Intent is required." });
     }
 
-    // Build order request body
+    // Build order request body with application context
     const orderRequestBody: any = {
       intent: intent,
       purchase_units: [
@@ -100,23 +100,18 @@ export async function createPaypalOrder(req: Request, res: Response) {
             currency_code: currency,
             value: amount,
           },
+          description: "MindfulTrack Subscription"
         },
-      ]
-    };
-
-    // Add application context with return URLs if provided
-    if (returnUrl || cancelUrl) {
-      orderRequestBody.application_context = {
-        return_url: returnUrl || 'https://example.com/success',
-        cancel_url: cancelUrl || 'https://example.com/cancel',
+      ],
+      application_context: {
+        return_url: returnUrl || `${req.protocol}://${req.get('host')}/payment-success`,
+        cancel_url: cancelUrl || `${req.protocol}://${req.get('host')}/pricing`,
         brand_name: 'MindfulTrack',
+        landing_page: 'BILLING',
         user_action: 'PAY_NOW',
-        shipping_preference: 'NO_SHIPPING',
-        payment_method: {
-          payee_preferred: 'IMMEDIATE_PAYMENT_REQUIRED'
-        }
-      };
-    }
+        shipping_preference: 'NO_SHIPPING'
+      }
+    };
 
     const collect = {
       body: orderRequestBody,

@@ -69,7 +69,7 @@ export async function getClientToken() {
 
 export async function createPaypalOrder(req: Request, res: Response) {
   try {
-    const { amount, currency, intent } = req.body;
+    const { amount, currency, intent, returnUrl, cancelUrl } = req.body;
 
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       return res
@@ -91,19 +91,36 @@ export async function createPaypalOrder(req: Request, res: Response) {
         .json({ error: "Invalid intent. Intent is required." });
     }
 
-    const collect = {
-      body: {
-        intent: intent,
-        purchaseUnits: [
-          {
-            amount: {
-              currencyCode: currency,
-              value: amount,
-            },
+    // Build order request body
+    const orderRequestBody: any = {
+      intent: intent,
+      purchase_units: [
+        {
+          amount: {
+            currency_code: currency,
+            value: amount,
           },
-        ],
-      },
-      prefer: "return=minimal",
+        },
+      ]
+    };
+
+    // Add application context with return URLs if provided
+    if (returnUrl || cancelUrl) {
+      orderRequestBody.application_context = {
+        return_url: returnUrl || 'https://example.com/success',
+        cancel_url: cancelUrl || 'https://example.com/cancel',
+        brand_name: 'MindfulTrack',
+        user_action: 'PAY_NOW',
+        shipping_preference: 'NO_SHIPPING',
+        payment_method: {
+          payee_preferred: 'IMMEDIATE_PAYMENT_REQUIRED'
+        }
+      };
+    }
+
+    const collect = {
+      body: orderRequestBody,
+      prefer: "return=representation",
     };
 
     const { body, ...httpResponse } =

@@ -35,7 +35,8 @@ export default function PricingPage() {
   const handlePayPalPayment = async (planId: string, amount: string) => {
     setPaymentProcessing(true);
     try {
-      // Create a PayPal order 
+      // Create a PayPal order with return URLs
+      const currentUrl = window.location.origin;
       const response = await fetch("/paypal/order", {
         method: "POST",
         headers: { 
@@ -44,7 +45,9 @@ export default function PricingPage() {
         body: JSON.stringify({
           amount,
           currency: "USD",
-          intent: "CAPTURE"
+          intent: "CAPTURE",
+          returnUrl: `${currentUrl}/payment-success?plan=${planId}`,
+          cancelUrl: `${currentUrl}/pricing`
         })
       });
       
@@ -54,7 +57,16 @@ export default function PricingPage() {
       
       const orderData = await response.json();
       
-      // Redirect to PayPal checkout page
+      // Check if the order has links and find the approval URL
+      if (orderData.links) {
+        const approvalLink = orderData.links.find((link: any) => link.rel === "approve");
+        if (approvalLink) {
+          window.location.href = approvalLink.href;
+          return;
+        }
+      }
+      
+      // Fallback to standard redirect if links aren't available
       window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${orderData.id}`;
     } catch (error) {
       console.error("Payment failed:", error);

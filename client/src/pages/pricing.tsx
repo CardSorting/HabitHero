@@ -394,7 +394,10 @@ export default function PricingPage() {
                     Sign up first
                   </Button>
                   <div className="mt-2">
-                    <div id="paypal-button-professional" className="w-full h-10 rounded-md bg-[#ffc439] flex items-center justify-center cursor-pointer hover:bg-[#f0b72a] transition-colors duration-200">
+                    <div 
+                      onClick={() => handlePayPalPayment("professional", "29.99")}
+                      className="w-full h-10 rounded-md bg-[#ffc439] flex items-center justify-center cursor-pointer hover:bg-[#f0b72a] transition-colors duration-200"
+                    >
                       <span className="font-semibold">PayPal Checkout</span>
                     </div>
                   </div>
@@ -473,7 +476,10 @@ export default function PricingPage() {
                     Sign up first
                   </Button>
                   <div className="mt-2">
-                    <div id="paypal-button-practice" className="w-full h-10 rounded-md bg-[#ffc439] flex items-center justify-center cursor-pointer hover:bg-[#f0b72a] transition-colors duration-200">
+                    <div 
+                      onClick={() => handlePayPalPayment("practice", "79.99")}
+                      className="w-full h-10 rounded-md bg-[#ffc439] flex items-center justify-center cursor-pointer hover:bg-[#f0b72a] transition-colors duration-200"
+                    >
                       <span className="font-semibold">PayPal Checkout</span>
                     </div>
                   </div>

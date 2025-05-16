@@ -8,6 +8,7 @@ import { HabitController } from "./interfaces/controllers/HabitController";
 import { setupAuth } from "./auth";
 import { registerWellnessChallengeRoutes } from "./wellness-challenge-routes";
 import { registerCrisisRoutes } from "./crisis-routes";
+import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 
 // Reuse the AuthRequest type to match the existing User definition
 type AuthRequest = Request & {
@@ -444,6 +445,20 @@ export async function registerRoutes(app: Express): Promise<any> {
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
+  });
+
+  // PayPal Integration Routes
+  app.get("/paypal/setup", async (req, res) => {
+    await loadPaypalDefault(req, res);
+  });
+
+  app.post("/paypal/order", async (req, res) => {
+    // Request body should contain: { intent, amount, currency }
+    await createPaypalOrder(req, res);
+  });
+
+  app.post("/paypal/order/:orderID/capture", async (req, res) => {
+    await capturePaypalOrder(req, res);
   });
 
   return server;

@@ -57,10 +57,6 @@ export default function LandingPage() {
       navigate("/therapist-auth");
     }
   };
-  
-  const handleNavButtonClick = () => {
-    navigate("/pricing");
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -87,7 +83,7 @@ export default function LandingPage() {
             <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
               Login
             </Button>
-            <Button size="sm" onClick={() => navigate("/pricing")}>
+            <Button size="sm" onClick={handleGetStarted}>
               Get Started
             </Button>
           </div>
@@ -96,7 +92,7 @@ export default function LandingPage() {
             <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
               Login
             </Button>
-            <Button size="sm" onClick={() => navigate("/pricing")}>
+            <Button size="sm" onClick={handleGetStarted}>
               Get Started
             </Button>
           </div>
@@ -190,7 +186,7 @@ export default function LandingPage() {
                         Track emotions, build positive habits, and gain valuable insights to improve your mental health journey.
                       </p>
                       <div className="flex justify-center">
-                        <Button size="lg" onClick={() => navigate("/pricing")} className="rounded-full px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all">
+                        <Button size="lg" onClick={handleGetStarted} className="rounded-full px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all">
                           Get Started
                           <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
@@ -228,7 +224,7 @@ export default function LandingPage() {
                         Monitor client progress, analyze emotion patterns, and deliver more effective treatment with detailed analytics.
                       </p>
                       <div className="flex justify-center">
-                        <Button size="lg" onClick={() => navigate("/pricing")} className="rounded-full px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all">
+                        <Button size="lg" onClick={handleGetStarted} className="rounded-full px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all">
                           Get Started
                           <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
@@ -280,7 +276,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 border-b border-border">
+      <section className="py-20 border-b border-border" id="features">
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-16"
@@ -352,19 +348,19 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                 <BarChart2 className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Progress Analytics</h3>
+              <h3 className="text-xl font-bold mb-2">In-depth Analytics</h3>
               <p className="text-muted-foreground">
-                Visualize trends and patterns with detailed charts and insights about your emotional journey.
+                Visualize patterns and trends in emotional and behavioral data with comprehensive charts.
               </p>
             </motion.div>
-            
+
             <motion.div variants={fadeInUp} className="bg-background rounded-lg p-8 border border-border">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <Brain className="h-6 w-6 text-primary" />
+                <Heart className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">DBT Diary Card</h3>
+              <h3 className="text-xl font-bold mb-2">Wellness Challenges</h3>
               <p className="text-muted-foreground">
-                Digital DBT diary card to track skills usage, urges, emotions, and sleep patterns between sessions.
+                Complete personalized challenges designed to improve mental wellbeing and build healthy routines.
               </p>
             </motion.div>
             
@@ -372,9 +368,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                 <MessageSquare className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Therapy Companion</h3>
+              <h3 className="text-xl font-bold mb-2">AI-Powered Insights</h3>
               <p className="text-muted-foreground">
-                AI-powered conversations that provide coping strategies and emotional support between sessions.
+                Receive intelligent suggestions and therapeutic insights based on your emotional patterns.
               </p>
             </motion.div>
             
@@ -382,236 +378,17 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                 <Shield className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Wellness Challenges</h3>
+              <h3 className="text-xl font-bold mb-2">Privacy-Focused</h3>
               <p className="text-muted-foreground">
-                Structured challenges to build resilience and improve overall mental wellbeing day by day.
+                Your data is encrypted and secure, with full control over what you share with healthcare providers.
               </p>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* For Therapists Section */}
-      <section className="py-20 bg-muted/30 border-b border-border">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={fadeIn}
-            >
-              <Badge variant="outline" className="mb-4">For Therapists</Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Enhance your therapeutic practice with data-driven insights
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8">
-                Get a clearer picture of your clients' progress between sessions with comprehensive tracking tools and analytics.
-              </p>
-              
-              <ul className="space-y-4">
-                {[
-                  "Track client emotion patterns and identify triggers",
-                  "Monitor DBT skills usage and effectiveness",
-                  "View habit consistency and wellness challenge progress",
-                  "Receive alerts for concerning emotional spikes",
-                  "Prepare for sessions with comprehensive client data"
-                ].map((item, index) => (
-                  <motion.li 
-                    key={index}
-                    className="flex items-start gap-3"
-                    variants={fadeInUp}
-                  >
-                    <CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </motion.li>
-                ))}
-              </ul>
-              
-              <Button className="mt-8 rounded-full" size="lg">
-                Learn more about therapist features
-              </Button>
-            </motion.div>
-            
-            <motion.div
-              className="rounded-lg bg-background border border-border p-6 shadow-lg"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={fadeIn}
-            >
-              <div className="bg-muted p-4 rounded-lg mb-6">
-                <h3 className="font-semibold mb-2">Client Overview Dashboard</h3>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <Card className="bg-background">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Emotion Tracking</p>
-                          <p className="text-lg font-semibold">14/14 days</p>
-                        </div>
-                        <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Heart className="h-5 w-5 text-primary" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-background">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Habit Completion</p>
-                          <p className="text-lg font-semibold">86%</p>
-                        </div>
-                        <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <CheckCircle className="h-5 w-5 text-primary" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                <div className="rounded-lg bg-background p-4 mb-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-medium">Emotion Intensity Trends</h4>
-                    <Badge variant="outline" className="text-xs">Last 7 days</Badge>
-                  </div>
-                  <div className="h-32 bg-muted/30 rounded-md flex items-center justify-center">
-                    <LineChart className="h-6 w-6 text-muted-foreground" />
-                    <span className="ml-2 text-sm text-muted-foreground">Emotion chart visualization</span>
-                  </div>
-                </div>
-                <div className="rounded-lg bg-background p-4">
-                  <h4 className="font-medium mb-3">Alerts</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 p-2 bg-destructive/10 rounded-md text-sm">
-                      <span className="h-2 w-2 rounded-full bg-destructive"></span>
-                      <span>High anxiety recorded on Tuesday</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-md text-sm">
-                      <span className="h-2 w-2 rounded-full bg-primary"></span>
-                      <span>DBT skills usage decreased this week</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-      
-      {/* For Clients Section */}
-      <section className="py-20 border-b border-border">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div
-              className="order-2 lg:order-1 rounded-lg bg-background border border-border p-6 shadow-lg"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={fadeIn}
-            >
-              <div className="bg-muted p-4 rounded-lg mb-6">
-                <div className="bg-background p-4 rounded-lg mb-4">
-                  <h3 className="font-semibold mb-4">Daily Check-in</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium mb-2">How are you feeling today?</p>
-                      <div className="flex gap-2">
-                        {["😔", "😟", "😐", "🙂", "😊"].map((emoji, i) => (
-                          <div 
-                            key={i} 
-                            className={`h-10 w-10 flex items-center justify-center rounded-full border ${i === 3 ? 'border-primary bg-primary/10' : 'border-border'}`}
-                          >
-                            <span className="text-lg">{emoji}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium mb-2">Habits for today</p>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between p-2 rounded-md border border-border">
-                          <span className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-success" />
-                            <span>Morning meditation</span>
-                          </span>
-                          <Badge variant="outline" className="text-xs">Completed</Badge>
-                        </div>
-                        <div className="flex items-center justify-between p-2 rounded-md border border-border">
-                          <span className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>Read for 20 minutes</span>
-                          </span>
-                          <Badge variant="outline" className="text-xs">Pending</Badge>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button className="w-full">Complete Today's Check-in</Button>
-                  </div>
-                </div>
-                
-                <div className="bg-background p-4 rounded-lg">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-medium">Your Progress</h4>
-                    <Badge className="bg-success text-white">7-day streak</Badge>
-                  </div>
-                  <div className="h-32 bg-muted/30 rounded-md flex items-center justify-center mb-3">
-                    <BarChart2 className="h-6 w-6 text-muted-foreground" />
-                    <span className="ml-2 text-sm text-muted-foreground">Habit statistics visualization</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    You're making great progress on your wellness journey!
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-            
-            <motion.div
-              className="order-1 lg:order-2"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={fadeIn}
-            >
-              <Badge variant="outline" className="mb-4">For Clients</Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Take control of your wellness journey
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8">
-                Track your progress, build healthy habits, and gain insights into your emotional patterns to support your therapy work.
-              </p>
-              
-              <ul className="space-y-4">
-                {[
-                  "Monitor your emotions and identify patterns",
-                  "Build consistent, positive daily habits",
-                  "Track DBT skills usage and effectiveness",
-                  "Get AI-powered coping suggestions when needed",
-                  "Share progress with your therapist for better sessions"
-                ].map((item, index) => (
-                  <motion.li 
-                    key={index}
-                    className="flex items-start gap-3"
-                    variants={fadeInUp}
-                  >
-                    <CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </motion.li>
-                ))}
-              </ul>
-              
-              <Button className="mt-8 rounded-full" size="lg">
-                See how clients benefit
-              </Button>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-20 bg-muted/30 border-b border-border">
+      {/* Testimonials Section */}
+      <section className="py-20 border-b border-border bg-muted/30" id="testimonials">
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-16"
@@ -622,10 +399,10 @@ export default function LandingPage() {
           >
             <Badge variant="outline" className="mb-4">Testimonials</Badge>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Trusted by therapists and clients alike
+              Trusted by patients and therapists
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              See how MindfulTrack is transforming the therapy experience.
+              Hear from our users about how MindfulTrack has transformed their mental health journey.
             </p>
           </motion.div>
 
@@ -636,71 +413,56 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-100px" }}
             variants={staggerChildren}
           >
-            <motion.div variants={fadeInUp} className="bg-background rounded-lg p-6 border border-border">
-              <div className="mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span key={star} className="text-yellow-400 text-lg">★</span>
-                ))}
-              </div>
-              <p className="mb-6 text-muted-foreground">
-                "As a therapist, this app has transformed my practice. I get a complete picture of my clients' emotional states between sessions, making our time together much more productive."
-              </p>
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                  <UserPlus className="h-5 w-5 text-primary" />
+            <motion.div variants={fadeInUp} className="bg-background rounded-lg p-8 border border-border">
+              <div className="mb-4 flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary font-semibold">JD</span>
                 </div>
                 <div>
-                  <p className="font-medium">Dr. Sarah Johnson</p>
-                  <p className="text-sm text-muted-foreground">Clinical Psychologist</p>
+                  <h4 className="font-semibold">Jennifer D.</h4>
+                  <p className="text-sm text-muted-foreground">Patient</p>
                 </div>
               </div>
+              <p className="text-muted-foreground">
+                "The emotion tracking feature has been life-changing. I can now clearly see patterns in my mood and have learned to implement healthier coping strategies."
+              </p>
             </motion.div>
-            
-            <motion.div variants={fadeInUp} className="bg-background rounded-lg p-6 border border-border">
-              <div className="mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span key={star} className="text-yellow-400 text-lg">★</span>
-                ))}
-              </div>
-              <p className="mb-6 text-muted-foreground">
-                "The emotion tracking feature helped me identify triggers I never noticed before. I'm now much more aware of my emotional patterns and my therapist can provide more targeted support."
-              </p>
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                  <UserPlus className="h-5 w-5 text-primary" />
+
+            <motion.div variants={fadeInUp} className="bg-background rounded-lg p-8 border border-border">
+              <div className="mb-4 flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary font-semibold">MT</span>
                 </div>
                 <div>
-                  <p className="font-medium">Michael Rivera</p>
-                  <p className="text-sm text-muted-foreground">Therapy Client</p>
+                  <h4 className="font-semibold">Dr. Michael T.</h4>
+                  <p className="text-sm text-muted-foreground">Therapist</p>
                 </div>
               </div>
+              <p className="text-muted-foreground">
+                "The analytics dashboard gives me invaluable insights into my clients' progress. Treatment planning is now data-driven and much more effective."
+              </p>
             </motion.div>
-            
-            <motion.div variants={fadeInUp} className="bg-background rounded-lg p-6 border border-border">
-              <div className="mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span key={star} className="text-yellow-400 text-lg">★</span>
-                ))}
-              </div>
-              <p className="mb-6 text-muted-foreground">
-                "The habit tracking and DBT diary card features have been instrumental in helping my clients build consistency with their skills practice between sessions."
-              </p>
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-3">
-                  <UserPlus className="h-5 w-5 text-primary" />
+
+            <motion.div variants={fadeInUp} className="bg-background rounded-lg p-8 border border-border">
+              <div className="mb-4 flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary font-semibold">SK</span>
                 </div>
                 <div>
-                  <p className="font-medium">Dr. James Chen</p>
-                  <p className="text-sm text-muted-foreground">DBT Specialist</p>
+                  <h4 className="font-semibold">Sarah K.</h4>
+                  <p className="text-sm text-muted-foreground">Patient</p>
                 </div>
               </div>
+              <p className="text-muted-foreground">
+                "The habit building features helped me establish a consistent meditation practice. I'm more mindful and my anxiety has decreased significantly."
+              </p>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20">
+      {/* About Section */}
+      <section className="py-20 border-b border-border" id="about">
         <div className="container mx-auto px-4">
           <motion.div
             className="max-w-4xl mx-auto text-center"
@@ -709,96 +471,60 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-100px" }}
             variants={fadeIn}
           >
-            <Badge variant="outline" className="mb-5 px-3 py-1 text-sm">
-              Join Today
-            </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-              Ready to transform your therapy experience?
+            <Badge variant="outline" className="mb-4">About Us</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Our mission is to make mental healthcare 
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary ml-2">
+                accessible and data-driven
+              </span>
             </h2>
-            <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Start tracking emotions, building habits, and gaining insights today with our comprehensive wellness platform.
+            <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto">
+              MindfulTrack was created by a team of mental health professionals and technologists with a shared vision: 
+              to transform mental healthcare through innovative technology and data-driven insights.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={handleGetStarted} className="rounded-full px-8">
-                Get started for free
+            
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+              <Button size="lg" onClick={handleGetStarted} className="rounded-full px-6 w-full sm:w-auto bg-gradient-to-r from-primary to-primary/90">
+                Get Started
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-8">
-                Book a demo for your practice
+              <Button size="lg" variant="outline" asChild className="rounded-full px-6 w-full sm:w-auto">
+                <a href="#features">Learn More</a>
               </Button>
             </div>
           </motion.div>
         </div>
       </section>
-
+      
       {/* Footer */}
-      <footer className="py-12 border-t border-border">
+      <footer className="py-12 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div>
-              <div className="flex items-center space-x-2 mb-6">
-                <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-                  <Brain className="h-5 w-5 text-white" />
-                </div>
-                <h1 className="text-xl font-bold text-foreground">MindfulTrack</h1>
+          <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+            <div className="flex items-center space-x-2 mb-4 md:mb-0">
+              <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+                <Brain className="h-5 w-5 text-white" />
               </div>
-              <p className="text-muted-foreground">
-                Building better mental health through consistent tracking and data-driven insights.
-              </p>
+              <h1 className="text-xl font-bold text-foreground">MindfulTrack</h1>
             </div>
             
-            <div>
-              <h3 className="font-bold mb-4">Features</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>Emotion Tracking</li>
-                <li>Habit Building</li>
-                <li>DBT Diary Card</li>
-                <li>Wellness Challenges</li>
-                <li>Analytics Dashboard</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-bold mb-4">Resources</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>For Therapists</li>
-                <li>For Clients</li>
-                <li>Blog</li>
-                <li>Case Studies</li>
-                <li>Documentation</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-bold mb-4">Company</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>About Us</li>
-                <li>Pricing</li>
-                <li>Privacy Policy</li>
-                <li>Terms of Service</li>
-                <li>Contact</li>
-              </ul>
+            <div className="flex items-center space-x-6">
+              <Button variant="ghost" size="sm" onClick={handleGetStarted}>
+                Get Started
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <a href="#features">Features</a>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <a href="#testimonials">Testimonials</a>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <a href="#about">About</a>
+              </Button>
             </div>
           </div>
           
-          <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-muted-foreground mb-4 md:mb-0">
-              © 2023 MindfulTrack. All rights reserved.
-            </p>
-            <div className="flex space-x-6">
-              <a href="#" className="text-muted-foreground hover:text-foreground">
-                Twitter
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground">
-                LinkedIn
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground">
-                Instagram
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground">
-                Facebook
-              </a>
-            </div>
+          <div className="border-t border-border pt-8 text-center text-muted-foreground text-sm">
+            <p>© {new Date().getFullYear()} MindfulTrack. All rights reserved.</p>
           </div>
         </div>
       </footer>

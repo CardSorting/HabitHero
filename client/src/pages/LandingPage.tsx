@@ -51,7 +51,15 @@ export default function LandingPage() {
   const [selectedTab, setSelectedTab] = useState<"client" | "therapist">("client");
 
   const handleGetStarted = () => {
-    navigate("/onboarding");
+    if (selectedTab === "client") {
+      navigate("/auth");
+    } else {
+      navigate("/therapist-auth");
+    }
+  };
+  
+  const handleNavButtonClick = () => {
+    navigate("/pricing");
   };
 
   return (

@@ -51,6 +51,7 @@ export default function LandingPage() {
   const [selectedTab, setSelectedTab] = useState<"client" | "therapist">("client");
 
   const handleGetStarted = () => {
+    // Always direct to the appropriate auth page based on selected tab
     if (selectedTab === "client") {
       navigate("/auth");
     } else {

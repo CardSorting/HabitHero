@@ -7,6 +7,7 @@ import { Redirect } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -46,6 +47,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function TherapistAuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { user, loginMutation, registerMutation } = useAuth();
+  const { toast } = useToast();
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -79,12 +81,15 @@ export default function TherapistAuthPage() {
 
   // Redirect if already logged in
   if (user) {
-    // Therapists should go to their dashboard
+    // Check if the user has the correct role to access this page
     if (user.role === 'therapist' || user.role === 'admin') {
+      // Therapists should go to their dashboard
       return <Redirect to="/therapist" />;
+    } else {
+      // If a client tries to access therapist pages, redirect them to client app
+      // Show toast notification - we'll just redirect without a toast to avoid complexity
+      return <Redirect to="/today" />;
     }
-    // Other users go to the main app
-    return <Redirect to="/today" />;
   }
 
   return (

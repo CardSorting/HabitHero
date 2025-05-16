@@ -30,6 +30,39 @@ const fadeInUp = {
 export default function PricingPage() {
   const [, navigate] = useLocation();
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  
+  // Function to handle PayPal payment for different pricing plans
+  const handlePayPalPayment = async (planId: string, amount: string) => {
+    setPaymentProcessing(true);
+    try {
+      // Create a PayPal order 
+      const response = await fetch("/paypal/order", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          amount,
+          currency: "USD",
+          intent: "CAPTURE"
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to create PayPal order");
+      }
+      
+      const orderData = await response.json();
+      
+      // Redirect to PayPal checkout page
+      window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${orderData.id}`;
+    } catch (error) {
+      console.error("Payment failed:", error);
+      alert("There was an error processing your payment. Please try again.");
+    } finally {
+      setPaymentProcessing(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -199,11 +232,12 @@ export default function PricingPage() {
                     Sign up first
                   </Button>
                   <div className="mt-2">
-                    <PayPalButton 
-                      amount="9.99" 
-                      currency="USD" 
-                      intent="CAPTURE" 
-                    />
+                    <div 
+                      onClick={() => handlePayPalPayment("premium", "9.99")}
+                      className="w-full h-10 rounded-md bg-[#ffc439] flex items-center justify-center cursor-pointer hover:bg-[#f0b72a] transition-colors duration-200"
+                    >
+                      <span className="font-semibold">PayPal Checkout</span>
+                    </div>
                   </div>
                 </CardFooter>
               </Card>
@@ -277,11 +311,12 @@ export default function PricingPage() {
                     Sign up first
                   </Button>
                   <div className="mt-2">
-                    <PayPalButton 
-                      amount="19.99" 
-                      currency="USD" 
-                      intent="CAPTURE" 
-                    />
+                    <div 
+                      onClick={() => handlePayPalPayment("family", "19.99")}
+                      className="w-full h-10 rounded-md bg-[#ffc439] flex items-center justify-center cursor-pointer hover:bg-[#f0b72a] transition-colors duration-200"
+                    >
+                      <span className="font-semibold">PayPal Checkout</span>
+                    </div>
                   </div>
                 </CardFooter>
               </Card>
@@ -359,11 +394,9 @@ export default function PricingPage() {
                     Sign up first
                   </Button>
                   <div className="mt-2">
-                    <PayPalButton 
-                      amount="29.99" 
-                      currency="USD" 
-                      intent="CAPTURE" 
-                    />
+                    <div id="paypal-button-professional" className="w-full h-10 rounded-md bg-[#ffc439] flex items-center justify-center cursor-pointer hover:bg-[#f0b72a] transition-colors duration-200">
+                      <span className="font-semibold">PayPal Checkout</span>
+                    </div>
                   </div>
                 </CardFooter>
               </Card>
@@ -440,11 +473,9 @@ export default function PricingPage() {
                     Sign up first
                   </Button>
                   <div className="mt-2">
-                    <PayPalButton 
-                      amount="79.99" 
-                      currency="USD" 
-                      intent="CAPTURE" 
-                    />
+                    <div id="paypal-button-practice" className="w-full h-10 rounded-md bg-[#ffc439] flex items-center justify-center cursor-pointer hover:bg-[#f0b72a] transition-colors duration-200">
+                      <span className="font-semibold">PayPal Checkout</span>
+                    </div>
                   </div>
                 </CardFooter>
               </Card>

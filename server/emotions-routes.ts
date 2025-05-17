@@ -375,9 +375,9 @@ export function registerEmotionsRoutes(app: Express) {
 
       // Calculate summary metrics
       const totalEntries = entries.length;
-      const positiveEntries = entries.filter(e => e.category === 'positive').length;
-      const negativeEntries = entries.filter(e => e.category === 'negative').length;
-      const neutralEntries = entries.filter(e => e.category === 'neutral').length;
+      const positiveEntries = entries.filter(e => e.categoryId === 'positive').length;
+      const negativeEntries = entries.filter(e => e.categoryId === 'negative').length;
+      const neutralEntries = entries.filter(e => e.categoryId === 'neutral').length;
       
       const avgIntensity = entries.length > 0 
         ? entries.reduce((sum, entry) => sum + entry.intensity, 0) / entries.length 
@@ -502,9 +502,9 @@ export function registerEmotionsRoutes(app: Express) {
         }
 
         // Determine overall mood
-        const positiveEntries = dateEntries.filter(e => e.category === 'positive').length;
-        const negativeEntries = dateEntries.filter(e => e.category === 'negative').length;
-        const neutralEntries = dateEntries.filter(e => e.category === 'neutral').length;
+        const positiveEntries = dateEntries.filter(e => e.categoryId === 'positive').length;
+        const negativeEntries = dateEntries.filter(e => e.categoryId === 'negative').length;
+        const neutralEntries = dateEntries.filter(e => e.categoryId === 'neutral').length;
         
         let overallMood = 'neutral';
         if (positiveEntries > negativeEntries + neutralEntries) {

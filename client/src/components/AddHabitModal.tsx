@@ -53,35 +53,8 @@ const AddHabitModal: React.FC<AddHabitModalProps> = ({
       form.reset();
       onOpenChange(false);
       
-      // Try direct API call if the regular approach isn't working
-      const directApiCall = async () => {
-        try {
-          console.log("Making direct API call to create habit");
-          const response = await fetch('/api/habits', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              name: data.name,
-              description: data.description || "",
-              frequency: data.frequency,
-              reminder: data.reminder
-            })
-          });
-          
-          if (!response.ok) {
-            console.error("Direct API call failed:", await response.text());
-          } else {
-            console.log("Direct API call succeeded:", await response.json());
-          }
-        } catch (err) {
-          console.error("Error in direct API call:", err);
-        }
-      };
+      // The direct API call was removed to prevent duplicate habits
       
-      // Try direct API call since the normal approach isn't working
-      directApiCall();
     } catch (err) {
       console.error("Error in onSubmit handler:", err);
     }

@@ -192,25 +192,47 @@ export function registerEmotionsRoutes(app: Express) {
         emotionName: z.string(),
         intensity: z.number().min(1).max(10),
         notes: z.string().optional(),
-        category: z.string().optional()
+        category: z.string().optional(),
+        // Add the missing fields from client
+        emotionId: z.string().optional(),
+        triggers: z.array(z.string()).optional(),
+        copingMechanisms: z.array(z.string()).optional(),
+        categoryId: z.string().optional(),
+        time: z.string().optional()
       });
 
+      console.log('Received emotion data:', req.body);
       const validationResult = emotionSchema.safeParse(req.body);
       
       if (!validationResult.success) {
+        console.error('Validation error:', validationResult.error);
         return res.status(400).json({ error: 'Invalid emotion data', details: validationResult.error });
       }
 
       const emotionData = validationResult.data;
       
       // Insert into database
-      const [entry] = await db.insert(schema.emotionTrackingEntries).values({
-        ...emotionData,
-        userId: req.user.id,
-        createdAt: new Date().toISOString(),
-      }).returning();
-
-      res.status(201).json(entry);
+      try {
+        const [entry] = await db.insert(schema.emotionTrackingEntries).values({
+          userId: req.user.id,
+          date: emotionData.date,
+          time: emotionData.time,
+          emotionId: emotionData.emotionId || 'unknown',
+          emotionName: emotionData.emotionName,
+          categoryId: emotionData.categoryId || emotionData.category || 'unknown',
+          intensity: emotionData.intensity,
+          notes: emotionData.notes,
+          triggers: emotionData.triggers ? JSON.stringify(emotionData.triggers) : null,
+          copingMechanisms: emotionData.copingMechanisms ? JSON.stringify(emotionData.copingMechanisms) : null,
+          createdAt: new Date().toISOString(),
+        }).returning();
+        
+        console.log('Successfully created emotion entry:', entry);
+        res.status(201).json(entry);
+      } catch (dbError) {
+        console.error('Database error creating emotion entry:', dbError);
+        throw dbError;
+      }
     } catch (error) {
       console.error('Error creating emotion entry:', error);
       res.status(500).json({ error: 'Failed to create emotion entry' });

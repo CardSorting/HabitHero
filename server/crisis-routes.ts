@@ -42,7 +42,13 @@ export function registerCrisisRoutes(app: Express) {
           return res.status(403).json({ message: 'Unauthorized to access other users\' data' });
         }
         
-        // Verify therapist has access to this client
+        // Admin can access any client data without further checks
+        if (req.user?.role === 'admin') {
+          const events = await req.app.locals.storage.getCrisisEvents(queryUserId);
+          return res.json(events);
+        }
+        
+        // For therapists, verify they have access to this client
         const hasAccess = await req.app.locals.storage.isTherapistForClient(
           authenticatedUserId, 
           queryUserId
@@ -85,7 +91,17 @@ export function registerCrisisRoutes(app: Express) {
         
         const targetUserId = parseInt(queryUserId as string);
         
-        // Verify therapist has access to this client
+        // Admin can access any client data without further checks
+        if (req.user?.role === 'admin') {
+          const events = await req.app.locals.storage.getCrisisEventsByDateRange(
+            targetUserId, 
+            startDate as string, 
+            endDate as string
+          );
+          return res.json(events);
+        }
+        
+        // For therapists, verify they have access to this client
         const hasAccess = await req.app.locals.storage.isTherapistForClient(
           authenticatedUserId, 
           targetUserId

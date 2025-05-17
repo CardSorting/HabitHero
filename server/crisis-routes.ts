@@ -311,14 +311,17 @@ export function registerCrisisRoutes(app: Express) {
           return res.status(403).json({ message: 'Unauthorized to access other users\' data' });
         }
         
-        // Verify therapist has access to this client
-        const hasAccess = await req.app.locals.storage.isTherapistForClient(
-          authenticatedUserId, 
-          targetUserId
-        );
-        
-        if (!hasAccess) {
-          return res.status(403).json({ message: 'Unauthorized to access this client\'s data' });
+        // Skip therapist verification for admin users
+        if (req.user?.role !== 'admin') {
+          // Only verify therapist access if user is not an admin
+          const hasAccess = await req.app.locals.storage.isTherapistForClient(
+            authenticatedUserId, 
+            targetUserId
+          );
+          
+          if (!hasAccess) {
+            return res.status(403).json({ message: 'Unauthorized to access this client\'s data' });
+          }
         }
       }
       

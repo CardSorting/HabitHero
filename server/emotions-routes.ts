@@ -213,6 +213,9 @@ export function registerEmotionsRoutes(app: Express) {
       
       // Insert into database
       try {
+        // Create a proper Date object for timestamps
+        const now = new Date();
+        
         const [entry] = await db.insert(schema.emotionTrackingEntries).values({
           userId: req.user.id,
           date: emotionData.date,
@@ -224,7 +227,8 @@ export function registerEmotionsRoutes(app: Express) {
           notes: emotionData.notes,
           triggers: emotionData.triggers ? JSON.stringify(emotionData.triggers) : null,
           copingMechanisms: emotionData.copingMechanisms ? JSON.stringify(emotionData.copingMechanisms) : null,
-          createdAt: new Date().toISOString(),
+          createdAt: now,
+          updatedAt: now
         }).returning();
         
         console.log('Successfully created emotion entry:', entry);

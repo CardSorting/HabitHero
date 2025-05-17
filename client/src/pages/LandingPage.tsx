@@ -68,7 +68,7 @@ export default function LandingPage() {
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
               <Brain className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-foreground">MindfulTrack</h1>
+            <h1 className="text-xl font-bold text-foreground">GALX</h1>
           </div>
           
           <div className="hidden md:flex items-center space-x-4">
@@ -117,7 +117,7 @@ export default function LandingPage() {
               with data-driven insights
             </h1>
             <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              MindfulTrack helps monitor emotions, build healthy habits, and gain insights
+              GALX helps monitor emotions, build healthy habits, and gain insights
               into mental health journeys with advanced analytics.
             </p>
             
@@ -403,7 +403,7 @@ export default function LandingPage() {
               Trusted by patients and therapists
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Hear from our users about how MindfulTrack has transformed their mental health journey.
+              Hear from our users about how GALX has transformed their mental health journey.
             </p>
           </motion.div>
 
@@ -480,7 +480,7 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto">
-              MindfulTrack was created by a team of mental health professionals and technologists with a shared vision: 
+              GALX was created by a team of mental health professionals and technologists with a shared vision: 
               to transform mental healthcare through innovative technology and data-driven insights.
             </p>
             

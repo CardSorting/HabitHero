@@ -537,7 +537,7 @@ export default function PricingPage() {
                   <Button 
                     className="w-full" 
                     variant="outline"
-                    onClick={() => window.location.href = "mailto:sales@mindfultrack.com"}
+                    onClick={() => window.location.href = "mailto:sales@galx.app"}
                   >
                     Contact sales
                   </Button>

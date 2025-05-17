@@ -85,7 +85,7 @@ export default function PricingPage() {
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
               <Brain className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-foreground">MindfulTrack</h1>
+            <h1 className="text-xl font-bold text-foreground">GALX</h1>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -593,11 +593,11 @@ export default function PricingPage() {
               <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
                 <Brain className="h-5 w-5 text-white" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">MindfulTrack</h1>
+              <h1 className="text-xl font-bold text-foreground">GALX</h1>
             </div>
             
             <div className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} MindfulTrack. All rights reserved.
+              © {new Date().getFullYear()} GALX. All rights reserved.
             </div>
           </div>
         </div>

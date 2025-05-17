@@ -100,13 +100,13 @@ export async function createPaypalOrder(req: Request, res: Response) {
             currency_code: currency,
             value: amount,
           },
-          description: "MindfulTrack Subscription"
+          description: "GALX Subscription"
         },
       ],
       application_context: {
         return_url: returnUrl || `${req.protocol}://${req.get('host')}/payment-success`,
         cancel_url: cancelUrl || `${req.protocol}://${req.get('host')}/pricing`,
-        brand_name: 'MindfulTrack',
+        brand_name: 'GALX',
         landing_page: 'BILLING',
         user_action: 'PAY_NOW',
         shipping_preference: 'NO_SHIPPING'

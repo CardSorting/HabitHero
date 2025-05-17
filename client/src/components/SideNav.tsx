@@ -45,7 +45,7 @@ const SideNav: React.FC = () => {
   return (
     <div className="h-full py-6 w-64 border-r border-border bg-background hidden lg:flex flex-col">
       <div className="px-4 mb-8">
-        <h1 className="text-xl font-bold text-primary">MindfulTrack</h1>
+        <h1 className="text-xl font-bold text-primary">GALX</h1>
       </div>
       
       <nav className="flex-1">

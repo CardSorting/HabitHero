@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 const onboardingScreens = [
   {
-    title: "Welcome to MindfulTrack",
+    title: "Welcome to GALX",
     description: "Your comprehensive mental health tracking app that helps you monitor emotions and build positive habits.",
     icon: "👋",
   },

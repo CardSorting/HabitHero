@@ -34,8 +34,7 @@ export async function registerRoutes(app: Express): Promise<any> {
   // Initialize the habit controller
   const habitController = new HabitController();
   
-  // Register wellness challenge routes
-  registerWellnessChallengeRoutes(app);
+  // Wellness challenge routes are registered in index.ts to avoid conflicts
   
   // Register crisis events routes
   registerCrisisRoutes(app);

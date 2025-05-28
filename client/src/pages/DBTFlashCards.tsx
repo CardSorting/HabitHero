@@ -369,7 +369,9 @@ export default function DBTFlashCards() {
                   style={{ borderLeftColor: currentStageConfig?.color.includes('green') ? '#10b981' : 
                                            currentStageConfig?.color.includes('yellow') ? '#f59e0b' : '#ef4444' }}
                   onClick={() => {
-                    setCurrentCardIndex(index);
+                    // Find the actual index of this card in the full flashCards array
+                    const actualIndex = flashCards.findIndex(card => card.id === skill.id);
+                    setCurrentCardIndex(actualIndex !== -1 ? actualIndex : 0);
                     startStudying();
                   }}
                 >

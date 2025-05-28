@@ -32,38 +32,28 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 
 export function registerWellnessChallengeRoutes(app: Express) {
   /**
-   * Get all available challenge templates with user enrollment status
+   * Get all available challenge templates from shared library
    */
   app.get('/api/wellness-challenges', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.user?.id;
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      // Get all challenge templates with user enrollment info
+      // Get all challenge templates from shared library
       const result = await pool.query(`
         SELECT 
-          t.id,
-          t.title,
-          t.description,
-          t.type::text,
-          t.frequency::text,
-          t.target_value,
-          t.difficulty_level,
-          CASE 
-            WHEN e.status IS NULL THEN 'active'
-            ELSE e.status::text
-          END as status,
-          e.start_date,
-          e.end_date,
-          e.created_at,
-          e.updated_at
-        FROM challenge_templates t
-        LEFT JOIN user_challenge_enrollments e ON t.id = e.template_id AND e.user_id = $1
-        ORDER BY t.type, t.title
-      `, [userId]);
+          id,
+          title,
+          description,
+          type,
+          frequency,
+          target_value,
+          difficulty_level,
+          'active' as status,
+          NOW()::date as start_date,
+          (NOW() + INTERVAL '30 days')::date as end_date,
+          created_at,
+          updated_at
+        FROM challenge_templates
+        ORDER BY type, title
+      `);
       
       res.json(result.rows);
     } catch (error) {

@@ -126,7 +126,7 @@ export default function DBTFlashCards() {
           {/* Category Cards */}
           <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-6'}`}>
             {Object.entries(categoryConfig).map(([key, config]) => {
-              const progress = progress.find(p => p.category === key);
+              const categoryProgress = progress.find(p => p.category === key);
               const IconComponent = config.icon;
               
               return (
@@ -150,27 +150,27 @@ export default function DBTFlashCards() {
                   </CardHeader>
                   
                   <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
-                    {progress ? (
+                    {categoryProgress ? (
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <span className={`${isMobile ? 'text-sm' : 'text-base'} font-medium text-gray-700`}>
                             Progress
                           </span>
                           <span className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold ${config.textColor}`}>
-                            {progress.studied_cards}/{progress.total_cards} cards
+                            {categoryProgress.studied_cards}/{categoryProgress.total_cards} cards
                           </span>
                         </div>
                         <Progress 
-                          value={(progress.studied_cards / progress.total_cards) * 100} 
+                          value={(categoryProgress.studied_cards / categoryProgress.total_cards) * 100} 
                           className="h-2"
                         />
                         <div className="flex justify-between text-xs text-gray-500">
                           <span>
-                            {Math.round((progress.studied_cards / progress.total_cards) * 100)}% complete
+                            {Math.round((categoryProgress.studied_cards / categoryProgress.total_cards) * 100)}% complete
                           </span>
-                          {progress.accuracy_percentage && (
+                          {categoryProgress.accuracy_percentage && (
                             <span>
-                              {progress.accuracy_percentage}% accuracy
+                              {categoryProgress.accuracy_percentage}% accuracy
                             </span>
                           )}
                         </div>

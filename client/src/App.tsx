@@ -60,7 +60,7 @@ function Router() {
           <ProtectedRoute path="/wellness-challenges" component={WellnessChallenges} />
           <ProtectedRoute path="/wellness-challenges/categories/:category" component={WellnessChallengeCategory} />
           <ProtectedRoute path="/wellness-challenges/:id" component={WellnessChallengeDetails} />
-          <Route path="/dbt-flashcards" component={DBTFlashCards} />
+          <ProtectedRoute path="/dbt-flashcards" component={DBTFlashCards} />
           <ProtectedRoute path="/settings" component={Settings} />
           <Route path="/auth" component={ClientAuthPage} />
           <Route path="/therapist-auth" component={TherapistAuthPage} />

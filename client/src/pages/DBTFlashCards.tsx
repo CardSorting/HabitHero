@@ -1,237 +1,332 @@
 import React, { useState } from 'react';
-import { PageTransition } from '@/components/PageTransition';
-import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from '@/components/ui/tabs';
-import {
-  Brain,
-  Heart,
-  Users,
-  Shield,
-  Search,
-  Shuffle,
-  RotateCcw,
-  BookOpen,
-  Star
-} from 'lucide-react';
-import { FlashCardDeck } from '@/components/dbt/FlashCardDeck';
-import { FlashCardCategory } from '@/components/dbt/FlashCardCategory';
-import { StudyProgress } from '@/components/dbt/StudyProgress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Brain, Heart, Shield, Users, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-const DBTFlashCards: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [isStudying, setIsStudying] = useState(false);
+interface DBTFlashCard {
+  id: number;
+  category: string;
+  skill_name: string;
+  question: string;
+  answer: string;
+  skill_description: string;
+  skill_purpose: string;
+  when_to_use: string;
+  difficulty_level: string;
+}
 
-  const categories = [
-    {
-      id: 'mindfulness',
-      title: 'Mindfulness',
-      description: 'Core mindfulness skills for present-moment awareness',
-      icon: <Brain className="h-6 w-6" />,
-      color: 'bg-blue-500',
-      cardCount: 24
-    },
-    {
-      id: 'distress_tolerance',
-      title: 'Distress Tolerance',
-      description: 'Skills for surviving crisis situations',
-      icon: <Shield className="h-6 w-6" />,
-      color: 'bg-red-500',
-      cardCount: 28
-    },
-    {
-      id: 'emotion_regulation',
-      title: 'Emotion Regulation',
-      description: 'Skills for managing difficult emotions',
-      icon: <Heart className="h-6 w-6" />,
-      color: 'bg-green-500',
-      cardCount: 32
-    },
-    {
-      id: 'interpersonal_effectiveness',
-      title: 'Interpersonal Effectiveness',
-      description: 'Skills for healthy relationships',
-      icon: <Users className="h-6 w-6" />,
-      color: 'bg-purple-500',
-      cardCount: 26
-    }
-  ];
+interface StudyProgress {
+  category: string;
+  total_cards: number;
+  studied_cards: number;
+  accuracy_percentage: number;
+}
 
-  if (isStudying && selectedCategory) {
+const categoryIcons = {
+  mindfulness: Brain,
+  distress_tolerance: Shield,
+  emotion_regulation: Heart,
+  interpersonal_effectiveness: Users,
+};
+
+const categoryColors = {
+  mindfulness: 'bg-blue-100 text-blue-800 border-blue-200',
+  distress_tolerance: 'bg-green-100 text-green-800 border-green-200',
+  emotion_regulation: 'bg-purple-100 text-purple-800 border-purple-200',
+  interpersonal_effectiveness: 'bg-orange-100 text-orange-800 border-orange-200',
+};
+
+const categoryTitles = {
+  mindfulness: 'Mindfulness',
+  distress_tolerance: 'Distress Tolerance',
+  emotion_regulation: 'Emotion Regulation',
+  interpersonal_effectiveness: 'Interpersonal Effectiveness',
+};
+
+export default function DBTFlashCards() {
+  const isMobile = useIsMobile();
+  const [selectedCategory, setSelectedCategory] = useState<string>('mindfulness');
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [showAnswer, setShowAnswer] = useState(false);
+
+  const { data: flashCards = [], isLoading: cardsLoading } = useQuery<DBTFlashCard[]>({
+    queryKey: ['/api/dbt-flashcards', selectedCategory],
+    queryFn: () => fetch(`/api/dbt-flashcards/category/${selectedCategory}`).then(res => res.json()),
+  });
+
+  const { data: progress = [], isLoading: progressLoading } = useQuery<StudyProgress[]>({
+    queryKey: ['/api/dbt-flashcards/progress'],
+  });
+
+  const currentCard = flashCards[currentCardIndex];
+
+  const nextCard = () => {
+    setCurrentCardIndex((prev) => (prev + 1) % flashCards.length);
+    setShowAnswer(false);
+  };
+
+  const prevCard = () => {
+    setCurrentCardIndex((prev) => (prev - 1 + flashCards.length) % flashCards.length);
+    setShowAnswer(false);
+  };
+
+  const resetCard = () => {
+    setShowAnswer(false);
+  };
+
+  const categoryProgress = progress.find(p => p.category === selectedCategory);
+
+  if (cardsLoading || progressLoading) {
     return (
-      <PageTransition>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-          <FlashCardDeck 
-            category={selectedCategory}
-            onExit={() => {
-              setIsStudying(false);
-              setSelectedCategory(null);
-            }}
-          />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading DBT Flash Cards...</p>
+          </div>
         </div>
-      </PageTransition>
+      </div>
     );
   }
 
   return (
-    <PageTransition>
-      <div className="container mx-auto py-3 sm:py-6 px-2 sm:px-4 min-h-screen">
-        {/* Header Section */}
-        <div className="text-center mb-6 sm:mb-8">
-          <div className="flex justify-center mb-3 sm:mb-4">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-2 sm:p-3 rounded-full">
-              <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-            </div>
-          </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 px-2">
-            DBT Flash Cards Library
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className={`max-w-6xl mx-auto ${isMobile ? 'p-4' : 'p-8'}`}>
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold text-gray-900 mb-4`}>
+            DBT Skills Library
           </h1>
-          <p className="text-gray-600 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto px-2">
-            Master DBT skills with interactive flash cards. Practice, review, and strengthen your emotional regulation toolkit.
+          <p className={`${isMobile ? 'text-sm' : 'text-lg'} text-gray-600 max-w-2xl mx-auto`}>
+            Learn and practice Dialectical Behavior Therapy skills with interactive flash cards. 
+            Each card explains what the skill is, why it works, and when to use it.
           </p>
         </div>
 
-        {/* Search and Quick Actions */}
-        <div className="flex flex-col gap-3 sm:gap-4 mb-6 sm:mb-8 px-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search flash cards..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-11 text-base rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-            <Button variant="outline" className="h-11 text-sm font-medium border-gray-200 hover:border-blue-300 hover:bg-blue-50">
-              <Shuffle className="mr-2 h-4 w-4" />
-              <span className="hidden xs:inline">Random Study</span>
-              <span className="xs:hidden">Random</span>
-            </Button>
-            <Button variant="outline" className="h-11 text-sm font-medium border-gray-200 hover:border-blue-300 hover:bg-blue-50">
-              <RotateCcw className="mr-2 h-4 w-4" />
-              <span className="hidden xs:inline">Review Missed</span>
-              <span className="xs:hidden">Review</span>
-            </Button>
-          </div>
-        </div>
-
-        <Tabs defaultValue="categories" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-12 rounded-lg bg-gray-100 p-1">
-            <TabsTrigger value="categories" className="text-sm font-medium rounded-md">Categories</TabsTrigger>
-            <TabsTrigger value="progress" className="text-sm font-medium rounded-md">Progress</TabsTrigger>
-            <TabsTrigger value="favorites" className="text-sm font-medium rounded-md">Favorites</TabsTrigger>
+        {/* Category Selection */}
+        <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="mb-8">
+          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2 gap-2' : 'grid-cols-4'}`}>
+            {Object.entries(categoryTitles).map(([key, title]) => {
+              const IconComponent = categoryIcons[key as keyof typeof categoryIcons];
+              return (
+                <TabsTrigger 
+                  key={key} 
+                  value={key}
+                  className={`${isMobile ? 'flex-col gap-1 p-3' : 'flex items-center gap-2'}`}
+                >
+                  <IconComponent className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                  <span className={isMobile ? 'text-xs' : 'text-sm'}>{title}</span>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
-          <TabsContent value="categories" className="mt-4 sm:mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 px-1">
-              {categories.map((category) => (
-                <FlashCardCategory
-                  key={category.id}
-                  category={category}
-                  onClick={() => {
-                    setSelectedCategory(category.id);
-                    setIsStudying(true);
-                  }}
-                />
-              ))}
-            </div>
+          {Object.entries(categoryTitles).map(([key, title]) => (
+            <TabsContent key={key} value={key} className="mt-6">
+              {/* Progress Summary */}
+              {categoryProgress && (
+                <Card className="mb-6">
+                  <CardHeader className={isMobile ? 'pb-4' : ''}>
+                    <CardTitle className={`${isMobile ? 'text-lg' : 'text-xl'} flex items-center gap-2`}>
+                      Your Progress in {title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-3 gap-6'}`}>
+                      <div className="text-center">
+                        <div className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-indigo-600`}>
+                          {categoryProgress.studied_cards}/{categoryProgress.total_cards}
+                        </div>
+                        <div className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600`}>Cards Studied</div>
+                      </div>
+                      <div className="text-center">
+                        <div className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-green-600`}>
+                          {Math.round((categoryProgress.studied_cards / categoryProgress.total_cards) * 100)}%
+                        </div>
+                        <div className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600`}>Complete</div>
+                      </div>
+                      <div className="text-center">
+                        <div className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-purple-600`}>
+                          {categoryProgress.accuracy_percentage || 0}%
+                        </div>
+                        <div className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600`}>Accuracy</div>
+                      </div>
+                    </div>
+                    <Progress 
+                      value={(categoryProgress.studied_cards / categoryProgress.total_cards) * 100} 
+                      className="mt-4"
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
-            {/* Quick Study Options */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Star className="mr-2 h-5 w-5 text-yellow-500" />
-                  Quick Study Options
-                </CardTitle>
-                <CardDescription>
-                  Start studying with these curated selections
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Button 
-                    variant="outline" 
-                    className="h-auto p-4 flex flex-col items-center gap-2"
-                    onClick={() => {
-                      setSelectedCategory('daily_essentials');
-                      setIsStudying(true);
-                    }}
-                  >
-                    <Brain className="h-6 w-6 text-blue-500" />
-                    <div className="text-center">
-                      <div className="font-medium">Daily Essentials</div>
-                      <div className="text-xs text-gray-500">Core skills for everyday use</div>
+              {/* Flash Card */}
+              {currentCard && (
+                <div className="mb-6">
+                  <Card className={`${isMobile ? 'min-h-[400px]' : 'min-h-[500px]'} relative overflow-hidden`}>
+                    <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className={`${isMobile ? 'text-lg' : 'text-2xl'} mb-2`}>
+                            {currentCard.skill_name}
+                          </CardTitle>
+                          <Badge 
+                            variant="secondary" 
+                            className={`${categoryColors[selectedCategory as keyof typeof categoryColors]} ${isMobile ? 'text-xs' : ''}`}
+                          >
+                            {categoryTitles[selectedCategory as keyof typeof categoryTitles]}
+                          </Badge>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={`bg-white/20 text-white border-white/30 ${isMobile ? 'text-xs' : ''}`}
+                        >
+                          {currentCardIndex + 1} of {flashCards.length}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className={`${isMobile ? 'p-4' : 'p-6'} flex-1`}>
+                      <div className={`${isMobile ? 'space-y-4' : 'space-y-6'}`}>
+                        {!showAnswer ? (
+                          <>
+                            <div>
+                              <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-gray-900 mb-3`}>
+                                {currentCard.question}
+                              </h3>
+                            </div>
+                            <Button 
+                              onClick={() => setShowAnswer(true)}
+                              className={`w-full ${isMobile ? 'py-3' : 'py-4'} bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700`}
+                            >
+                              Show Answer
+                            </Button>
+                          </>
+                        ) : (
+                          <div className={`space-y-${isMobile ? '4' : '6'}`}>
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                              <h4 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-green-800 mb-2`}>
+                                Answer:
+                              </h4>
+                              <p className={`${isMobile ? 'text-sm' : 'text-base'} text-green-700`}>
+                                {currentCard.answer}
+                              </p>
+                            </div>
+
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                              <h4 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-blue-800 mb-2`}>
+                                What This Skill Does:
+                              </h4>
+                              <p className={`${isMobile ? 'text-sm' : 'text-base'} text-blue-700`}>
+                                {currentCard.skill_description}
+                              </p>
+                            </div>
+
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                              <h4 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-purple-800 mb-2`}>
+                                Why It Works:
+                              </h4>
+                              <p className={`${isMobile ? 'text-sm' : 'text-base'} text-purple-700`}>
+                                {currentCard.skill_purpose}
+                              </p>
+                            </div>
+
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                              <h4 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-orange-800 mb-2`}>
+                                When to Use It:
+                              </h4>
+                              <p className={`${isMobile ? 'text-sm' : 'text-base'} text-orange-700`}>
+                                {currentCard.when_to_use}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+
+                    {/* Navigation Controls */}
+                    <div className={`border-t bg-gray-50 ${isMobile ? 'p-4' : 'p-6'}`}>
+                      <div className="flex justify-between items-center">
+                        <Button
+                          variant="outline"
+                          onClick={prevCard}
+                          disabled={flashCards.length <= 1}
+                          className={isMobile ? 'px-3' : ''}
+                        >
+                          <ChevronLeft className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} mr-1`} />
+                          {isMobile ? '' : 'Previous'}
+                        </Button>
+
+                        {showAnswer && (
+                          <Button
+                            variant="outline"
+                            onClick={resetCard}
+                            className={isMobile ? 'px-3' : ''}
+                          >
+                            <RotateCcw className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} mr-1`} />
+                            {isMobile ? '' : 'Reset'}
+                          </Button>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          onClick={nextCard}
+                          disabled={flashCards.length <= 1}
+                          className={isMobile ? 'px-3' : ''}
+                        >
+                          {isMobile ? '' : 'Next'}
+                          <ChevronRight className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} ml-1`} />
+                        </Button>
+                      </div>
                     </div>
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="h-auto p-4 flex flex-col items-center gap-2"
-                    onClick={() => {
-                      setSelectedCategory('crisis_survival');
-                      setIsStudying(true);
-                    }}
-                  >
-                    <Shield className="h-6 w-6 text-red-500" />
-                    <div className="text-center">
-                      <div className="font-medium">Crisis Survival</div>
-                      <div className="text-xs text-gray-500">Emergency coping skills</div>
-                    </div>
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="h-auto p-4 flex flex-col items-center gap-2"
-                    onClick={() => {
-                      setSelectedCategory('relationship_skills');
-                      setIsStudying(true);
-                    }}
-                  >
-                    <Users className="h-6 w-6 text-purple-500" />
-                    <div className="text-center">
-                      <div className="font-medium">Relationship Skills</div>
-                      <div className="text-xs text-gray-500">Communication & boundaries</div>
-                    </div>
-                  </Button>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              )}
 
-          <TabsContent value="progress" className="mt-6">
-            <StudyProgress />
-          </TabsContent>
-
-          <TabsContent value="favorites" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Favorite Flash Cards</CardTitle>
-                <CardDescription>
-                  Cards you've marked as favorites for quick access
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-gray-500">
-                  <Star className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p>No favorite cards yet</p>
-                  <p className="text-sm">Star cards while studying to save them here</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              {/* Skills List for This Category */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className={`${isMobile ? 'text-lg' : 'text-xl'}`}>
+                    All {title} Skills
+                  </CardTitle>
+                  <CardDescription>
+                    Browse all available skills in this category
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 gap-4'}`}>
+                    {flashCards.map((card, index) => (
+                      <Button
+                        key={card.id}
+                        variant={index === currentCardIndex ? "default" : "outline"}
+                        onClick={() => {
+                          setCurrentCardIndex(index);
+                          setShowAnswer(false);
+                        }}
+                        className={`${isMobile ? 'text-left p-3 h-auto' : 'text-left p-4 h-auto'} justify-start`}
+                      >
+                        <div>
+                          <div className={`font-semibold ${isMobile ? 'text-sm' : 'text-base'}`}>
+                            {card.skill_name}
+                          </div>
+                          <div className={`${isMobile ? 'text-xs' : 'text-sm'} opacity-70`}>
+                            {card.difficulty_level} level
+                          </div>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
         </Tabs>
       </div>
-    </PageTransition>
+    </div>
   );
-};
-
-export default DBTFlashCards;
+}

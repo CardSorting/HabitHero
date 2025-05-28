@@ -126,14 +126,33 @@ export default function WellnessChallenges() {
     return allChallenges.filter(challenge => challenge.status === 'active');
   }, [allChallenges]);
 
-  // Group challenges by category
+  // Group challenges by category (including DBT skill categorization)
   const challengesByCategory = React.useMemo(() => {
     const grouped: Record<string, WellnessChallenge[]> = {};
+    
     allChallenges.forEach(challenge => {
-      if (!grouped[challenge.type]) {
-        grouped[challenge.type] = [];
+      let category = challenge.type;
+      
+      // Categorize custom challenges based on their content for DBT skills
+      if (challenge.type === 'custom') {
+        const title = challenge.title.toLowerCase();
+        const description = challenge.description.toLowerCase();
+        
+        if (title.includes('observe') || title.includes('wise mind') || description.includes('mindful')) {
+          category = 'mindfulness';
+        } else if (title.includes('tipp') || title.includes('distract') || title.includes('accepts') || description.includes('distress')) {
+          category = 'distress-tolerance';
+        } else if (title.includes('opposite') || title.includes('please') || description.includes('emotion')) {
+          category = 'emotion-regulation';
+        } else if (title.includes('dear man') || title.includes('give') || description.includes('relationship')) {
+          category = 'interpersonal-effectiveness';
+        }
       }
-      grouped[challenge.type].push(challenge);
+      
+      if (!grouped[category]) {
+        grouped[category] = [];
+      }
+      grouped[category].push(challenge);
     });
     return grouped;
   }, [allChallenges]);

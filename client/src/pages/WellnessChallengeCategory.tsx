@@ -132,10 +132,11 @@ const WellnessChallengeCategory: React.FC = () => {
   
   const categoryStyles = getCategoryStyles();
   
-  // Fetch challenges from the API for the selected category
+  // Fetch challenges from the API for the selected category using the shared template system
   const { data: apiChallenges = [], isLoading: isLoadingChallenges, error: challengesError } = useQuery<any[]>({
-    queryKey: [`/api/wellness-challenges/type/${category}`],
+    queryKey: [`/api/wellness-challenges`],
     enabled: !!category && !!user,
+    select: (data) => data.filter((challenge: any) => challenge.type === category)
   });
   
   // Get the challenges to display

@@ -366,7 +366,7 @@ export default function WellnessChallenges() {
               <Card 
                 key={challenge.id} 
                 className={`hover:shadow-lg transition-all duration-200 cursor-pointer ${categoryInfo?.borderColor} border hover:scale-105`}
-                onClick={() => setLocation(`/wellness-challenges/${challenge.id}`)}
+                onClick={() => navigate(`/wellness-challenges/${challenge.id}`)}
               >
                 <CardHeader className={`${isMobile ? 'pb-3' : 'pb-4'}`}>
                   <div className="flex justify-between items-start">
@@ -417,7 +417,7 @@ export default function WellnessChallenges() {
                   Start your {categoryInfo?.title.toLowerCase()} journey by creating your first challenge.
                 </p>
                 <Button
-                  onClick={() => setLocation('/wellness-challenges/new')}
+                  onClick={() => navigate('/wellness-challenges/new')}
                   className={`${isMobile ? 'text-sm' : ''}`}
                 >
                   <Plus className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} mr-2`} />

@@ -114,9 +114,9 @@ export function registerDBTFlashCardsRoutes(app: Express) {
   });
 
   /**
-   * Get a specific flash card by ID
+   * Get a specific flash card by ID (numeric only)
    */
-  app.get('/api/dbt-flashcards/:id', isAuthenticated, async (req: AuthRequest, res: Response) => {
+  app.get('/api/dbt-flashcards/:id(\\d+)', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
       

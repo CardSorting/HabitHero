@@ -383,82 +383,86 @@ export const FlashCardDeck: React.FC<FlashCardDeckProps> = ({ category, onExit }
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b px-4 py-3">
+      <div className="bg-white shadow-sm border-b px-3 sm:px-4 py-3 sticky top-0 z-10">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={onExit}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Library
+          <Button variant="ghost" onClick={onExit} className="h-9 px-2 sm:px-3">
+            <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
+            <span className="hidden xs:inline">Back to Library</span>
+            <span className="xs:hidden">Back</span>
           </Button>
-          <div className="text-center">
-            <h2 className="font-semibold capitalize">{category.replace('_', ' ')}</h2>
-            <p className="text-sm text-gray-500">
+          <div className="text-center flex-1 mx-2">
+            <h2 className="font-semibold text-sm sm:text-base capitalize">{category.replace('_', ' ')}</h2>
+            <p className="text-xs sm:text-sm text-gray-500">
               {currentIndex + 1} of {cards.length}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              {studiedCards.size}/{cards.length} studied
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Badge variant="secondary" className="text-xs px-2 py-1">
+              <span className="hidden xs:inline">{studiedCards.size}/{cards.length} studied</span>
+              <span className="xs:hidden">{studiedCards.size}/{cards.length}</span>
             </Badge>
           </div>
         </div>
         <div className="mt-3">
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-2 bg-gray-200" />
         </div>
       </div>
 
       {/* Flash Card */}
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-3 sm:p-4">
         <div className="w-full max-w-2xl">
           <div 
-            className="relative h-80 sm:h-96 cursor-pointer perspective-1000"
+            className="relative h-72 xs:h-80 sm:h-96 cursor-pointer perspective-1000 active:scale-95 transition-transform"
             onClick={handleFlip}
           >
-            <Card className={`absolute inset-0 transition-transform duration-500 transform-style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+            <Card className={`absolute inset-0 transition-transform duration-500 transform-style-preserve-3d shadow-lg hover:shadow-xl ${isFlipped ? 'rotate-y-180' : ''}`}>
               {/* Front of card */}
               <div className="absolute inset-0 backface-hidden">
-                <CardContent className="h-full flex flex-col justify-between p-6">
-                  <div className="flex items-start justify-between">
-                    <Badge className={`${getDifficultyColor(currentCard.difficulty)} text-white text-xs`}>
+                <CardContent className="h-full flex flex-col justify-between p-4 sm:p-6">
+                  <div className="flex items-start justify-between mb-2">
+                    <Badge className={`${getDifficultyColor(currentCard.difficulty)} text-white text-xs px-2 py-1 font-medium`}>
                       {currentCard.difficulty}
                     </Badge>
-                    <Button variant="ghost" size="sm">
-                      <Star className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                      <Star className="h-4 w-4 text-gray-400" />
                     </Button>
                   </div>
                   
-                  <div className="flex-1 flex items-center justify-center text-center">
-                    <p className="text-lg sm:text-xl font-medium leading-relaxed">
+                  <div className="flex-1 flex items-center justify-center text-center px-2">
+                    <p className="text-base sm:text-lg lg:text-xl font-medium leading-relaxed text-gray-800">
                       {currentCard.front}
                     </p>
                   </div>
                   
-                  <div className="text-center text-sm text-gray-500">
-                    Tap to reveal answer
+                  <div className="text-center text-xs sm:text-sm text-gray-500 mt-2 flex items-center justify-center gap-2">
+                    <div className="w-8 h-1 bg-gray-300 rounded-full animate-pulse"></div>
+                    <span>Tap to reveal answer</span>
+                    <div className="w-8 h-1 bg-gray-300 rounded-full animate-pulse"></div>
                   </div>
                 </CardContent>
               </div>
 
               {/* Back of card */}
               <div className="absolute inset-0 backface-hidden rotate-y-180">
-                <CardContent className="h-full flex flex-col justify-between p-6 bg-blue-50">
-                  <div className="flex items-start justify-between">
-                    <Badge className={`${getDifficultyColor(currentCard.difficulty)} text-white text-xs`}>
+                <CardContent className="h-full flex flex-col justify-between p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+                  <div className="flex items-start justify-between mb-2">
+                    <Badge className={`${getDifficultyColor(currentCard.difficulty)} text-white text-xs px-2 py-1 font-medium`}>
                       {currentCard.difficulty}
                     </Badge>
-                    <Button variant="ghost" size="sm">
-                      <Volume2 className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-blue-100">
+                      <Volume2 className="h-4 w-4 text-gray-500" />
                     </Button>
                   </div>
                   
-                  <div className="flex-1 flex items-center justify-center text-center">
-                    <p className="text-base sm:text-lg leading-relaxed">
+                  <div className="flex-1 flex items-center justify-center text-center px-2">
+                    <p className="text-sm sm:text-base lg:text-lg leading-relaxed text-gray-700">
                       {currentCard.back}
                     </p>
                   </div>
                   
-                  <div className="text-center text-sm text-gray-500">
+                  <div className="text-center text-xs sm:text-sm text-gray-600 mt-2 font-medium">
                     How well did you know this?
                   </div>
                 </CardContent>
@@ -467,38 +471,77 @@ export const FlashCardDeck: React.FC<FlashCardDeckProps> = ({ category, onExit }
           </div>
 
           {/* Controls */}
-          <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="mt-4 sm:mt-6 px-2">
             {!isFlipped ? (
-              <div className="flex gap-4 justify-center">
-                <Button variant="outline" onClick={handlePrevious}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Previous
-                </Button>
-                <Button onClick={handleFlip} className="px-8">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="flex gap-2 sm:gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={handlePrevious}
+                    className="flex-1 h-11 sm:h-10 text-sm font-medium border-gray-300 hover:border-gray-400"
+                  >
+                    <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
+                    <span className="hidden xs:inline">Previous</span>
+                    <span className="xs:hidden">Prev</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleNext}
+                    className="flex-1 h-11 sm:h-10 text-sm font-medium border-gray-300 hover:border-gray-400"
+                  >
+                    <span className="hidden xs:inline">Next</span>
+                    <span className="xs:hidden">Next</span>
+                    <ArrowRight className="ml-1 sm:ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+                <Button 
+                  onClick={handleFlip} 
+                  className="h-11 sm:h-10 px-6 sm:px-8 text-sm font-medium bg-blue-600 hover:bg-blue-700 shadow-sm"
+                >
                   Reveal Answer
-                </Button>
-                <Button variant="outline" onClick={handleNext}>
-                  Next
-                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-4 justify-center">
-                <Button variant="outline" onClick={handleIncorrect} className="text-red-600 border-red-200 hover:bg-red-50">
-                  <X className="mr-2 h-4 w-4" />
-                  Didn't Know It
+              <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-4 sm:justify-center">
+                <Button 
+                  variant="outline" 
+                  onClick={handleIncorrect} 
+                  className="h-11 sm:h-10 text-sm font-medium text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                >
+                  <X className="mr-1 sm:mr-2 h-4 w-4" />
+                  <span className="hidden xs:inline">Didn't Know It</span>
+                  <span className="xs:hidden">Wrong</span>
                 </Button>
-                <Button onClick={handleCorrect} className="bg-green-600 hover:bg-green-700 text-white">
-                  <Check className="mr-2 h-4 w-4" />
-                  Got It Right
+                <Button 
+                  onClick={handleCorrect} 
+                  className="h-11 sm:h-10 text-sm font-medium bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                >
+                  <Check className="mr-1 sm:mr-2 h-4 w-4" />
+                  <span className="hidden xs:inline">Got It Right</span>
+                  <span className="xs:hidden">Correct</span>
                 </Button>
               </div>
             )}
           </div>
 
           {/* Study Stats */}
-          <div className="mt-6 text-center text-sm text-gray-500">
-            <p>Correct: {correctCards.size} | Studied: {studiedCards.size} | Remaining: {cards.length - studiedCards.size}</p>
+          <div className="mt-4 sm:mt-6 text-center">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 mx-2">
+              <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                <div className="text-center">
+                  <div className="font-semibold text-green-600">{correctCards.size}</div>
+                  <div className="text-gray-500">Correct</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold text-blue-600">{studiedCards.size}</div>
+                  <div className="text-gray-500">Studied</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold text-gray-600">{cards.length - studiedCards.size}</div>
+                  <div className="text-gray-500">Remaining</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

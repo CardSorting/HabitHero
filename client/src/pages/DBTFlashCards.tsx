@@ -83,54 +83,56 @@ const DBTFlashCards: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="container mx-auto py-4 sm:py-6 px-3 sm:px-4 min-h-screen">
+      <div className="container mx-auto py-3 sm:py-6 px-2 sm:px-4 min-h-screen">
         {/* Header Section */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-full">
-              <BookOpen className="h-8 w-8 text-white" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex justify-center mb-3 sm:mb-4">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-2 sm:p-3 rounded-full">
+              <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 px-2">
             DBT Flash Cards Library
           </h1>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-600 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto px-2">
             Master DBT skills with interactive flash cards. Practice, review, and strengthen your emotional regulation toolkit.
           </p>
         </div>
 
         {/* Search and Quick Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        <div className="flex flex-col gap-3 sm:gap-4 mb-6 sm:mb-8 px-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search flash cards..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-11 text-base rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1 sm:flex-initial">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+            <Button variant="outline" className="h-11 text-sm font-medium border-gray-200 hover:border-blue-300 hover:bg-blue-50">
               <Shuffle className="mr-2 h-4 w-4" />
-              Random Study
+              <span className="hidden xs:inline">Random Study</span>
+              <span className="xs:hidden">Random</span>
             </Button>
-            <Button variant="outline" className="flex-1 sm:flex-initial">
+            <Button variant="outline" className="h-11 text-sm font-medium border-gray-200 hover:border-blue-300 hover:bg-blue-50">
               <RotateCcw className="mr-2 h-4 w-4" />
-              Review Missed
+              <span className="hidden xs:inline">Review Missed</span>
+              <span className="xs:hidden">Review</span>
             </Button>
           </div>
         </div>
 
         <Tabs defaultValue="categories" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="progress">Progress</TabsTrigger>
-            <TabsTrigger value="favorites">Favorites</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 h-12 rounded-lg bg-gray-100 p-1">
+            <TabsTrigger value="categories" className="text-sm font-medium rounded-md">Categories</TabsTrigger>
+            <TabsTrigger value="progress" className="text-sm font-medium rounded-md">Progress</TabsTrigger>
+            <TabsTrigger value="favorites" className="text-sm font-medium rounded-md">Favorites</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="categories" className="mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <TabsContent value="categories" className="mt-4 sm:mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 px-1">
               {categories.map((category) => (
                 <FlashCardCategory
                   key={category.id}

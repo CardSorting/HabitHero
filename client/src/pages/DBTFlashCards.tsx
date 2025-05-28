@@ -289,26 +289,7 @@ export default function DBTFlashCards() {
               </Button>
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-6">
-              <Button
-                variant={difficultyFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDifficultyFilter('all')}
-              >
-                All Skills ({flashCards.length})
-              </Button>
-              {Object.entries(difficultyConfig).map(([level, config]) => (
-                <Button
-                  key={level}
-                  variant={difficultyFilter === level ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setDifficultyFilter(level)}
-                  className={`${difficultyFilter === level ? config.color : ''}`}
-                >
-                  {config.icon} {config.label} ({skillsByDifficulty[level as keyof typeof skillsByDifficulty].length})
-                </Button>
-              ))}
-            </div>
+
           </div>
 
           {/* Progressive Learning Path - Mobile Optimized Single Stage */}
@@ -478,13 +459,13 @@ export default function DBTFlashCards() {
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <span className={`${isMobile ? 'text-sm' : 'text-base'} font-medium text-gray-700`}>
-                Card {currentCardIndex + 1} of {filteredCards.length}
+                Card {currentCardIndex + 1} of {currentStageCards.length}
               </span>
               <Badge className={difficultyConfig[currentCard.difficulty_level as keyof typeof difficultyConfig].color}>
                 {difficultyConfig[currentCard.difficulty_level as keyof typeof difficultyConfig].label}
               </Badge>
             </div>
-            <Progress value={(currentCardIndex + 1) / filteredCards.length * 100} className="h-2" />
+            <Progress value={(currentCardIndex + 1) / currentStageCards.length * 100} className="h-2" />
           </div>
 
           <Card className={`${isMobile ? 'min-h-[400px]' : 'min-h-[500px]'} relative overflow-hidden mb-6`}>
@@ -560,7 +541,7 @@ export default function DBTFlashCards() {
                 <Button
                   variant="outline"
                   onClick={prevCard}
-                  disabled={filteredCards.length <= 1}
+                  disabled={currentStageCards.length <= 1}
                   className={isMobile ? 'px-4 py-3' : ''}
                 >
                   <ChevronLeft className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} ${isMobile ? '' : 'mr-1'}`} />
@@ -581,7 +562,7 @@ export default function DBTFlashCards() {
                 <Button
                   variant="outline"
                   onClick={nextCard}
-                  disabled={filteredCards.length <= 1}
+                  disabled={currentStageCards.length <= 1}
                   className={isMobile ? 'px-4 py-3' : ''}
                 >
                   {!isMobile && 'Next'}

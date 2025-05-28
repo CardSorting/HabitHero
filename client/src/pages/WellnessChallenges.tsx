@@ -117,13 +117,14 @@ export default function WellnessChallenges() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const { data: challenges = [], isLoading } = useQuery<WellnessChallenge[]>({
-    queryKey: ['/api/wellness-challenges/status/active'],
-  });
-
-  const { data: allChallenges = [] } = useQuery<WellnessChallenge[]>({
+  const { data: allChallenges = [], isLoading } = useQuery<WellnessChallenge[]>({
     queryKey: ['/api/wellness-challenges'],
   });
+
+  // Filter challenges by status from the single data source
+  const challenges = React.useMemo(() => {
+    return allChallenges.filter(challenge => challenge.status === 'active');
+  }, [allChallenges]);
 
   // Group challenges by category
   const challengesByCategory = React.useMemo(() => {

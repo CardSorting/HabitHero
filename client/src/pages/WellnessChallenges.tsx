@@ -214,9 +214,11 @@ export default function WellnessChallenges() {
             </CardContent>
           </Card>
 
-          {/* Category Cards */}
+          {/* Category Cards - Only show categories with challenges */}
           <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-6'}`}>
-            {Object.entries(categoryConfig).map(([key, config]) => {
+            {Object.entries(categoryConfig)
+              .filter(([key]) => challengesByCategory[key] && challengesByCategory[key].length > 0)
+              .map(([key, config]) => {
               const stats = getCategoryStats(key);
               const IconComponent = config.icon;
               

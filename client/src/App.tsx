@@ -16,6 +16,7 @@ import EmotionTimeAnalysis from "@/pages/EmotionTimeAnalysis";
 import WellnessChallenges from "@/pages/WellnessChallenges";
 import WellnessChallengeDetails from "@/pages/WellnessChallengeDetails";
 import WellnessChallengeCategory from "@/pages/WellnessChallengeCategory";
+import DBTFlashCards from "@/pages/DBTFlashCards";
 import ClientAuthPage from "@/pages/auth-page";
 import TherapistAuthPage from "@/pages/therapist-auth-page";
 import OnboardingPage from "@/pages/onboarding-page";
@@ -59,6 +60,7 @@ function Router() {
           <ProtectedRoute path="/wellness-challenges" component={WellnessChallenges} />
           <ProtectedRoute path="/wellness-challenges/categories/:category" component={WellnessChallengeCategory} />
           <ProtectedRoute path="/wellness-challenges/:id" component={WellnessChallengeDetails} />
+          <Route path="/dbt-flashcards" component={DBTFlashCards} />
           <ProtectedRoute path="/settings" component={Settings} />
           <Route path="/auth" component={ClientAuthPage} />
           <Route path="/therapist-auth" component={TherapistAuthPage} />

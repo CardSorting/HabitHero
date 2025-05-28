@@ -1,6 +1,6 @@
 import React from 'react';
-import { useWellnessChallengeOperation } from '../context/WellnessChallengeContext';
-import { ChallengeType, WellnessChallenge } from '../../domain/models';
+import { useWellnessChallenge } from '../context/WellnessChallengeContext';
+import { ChallengeCategory } from '../../domain/models';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,14 +20,38 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
 export const WellnessChallengesList: React.FC = () => {
-  const { data: challenges, loading, error, execute: refreshChallenges } = 
-    useWellnessChallengeOperation(
-      (service) => service.getMyChallenges(),
-      []
-    );
+  const [challenges, setChallenges] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/wellness-challenges', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setChallenges(data);
+        setError(null);
+      } catch (err) {
+        setError('Failed to load challenges');
+        console.error('Error loading challenges:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChallenges();
+  }, []);
 
   // Function to get type icon
-  const getTypeIcon = (type: ChallengeType) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case 'emotions':
         return <Smile className="h-4 w-4 mr-1" />;
@@ -69,18 +93,20 @@ export const WellnessChallengesList: React.FC = () => {
   if (error) {
     return (
       <div className="w-full py-8 px-4">
-        <Card className="border-red-300 bg-red-50">
+        <Card className="border-blue-300 bg-blue-50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-red-700">Error Loading Challenges</CardTitle>
+            <CardTitle className="text-blue-700">Sign In Required</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-red-600">{error}</p>
+            <p className="text-blue-600 mb-4">
+              Please sign in to view your DBT skills challenges. Your challenges are ready and waiting for you!
+            </p>
             <Button 
-              variant="outline" 
-              className="mt-4 border-red-300 text-red-600" 
-              onClick={() => refreshChallenges()}
+              variant="default" 
+              className="bg-blue-600 hover:bg-blue-700" 
+              onClick={() => window.location.href = '/auth'}
             >
-              Try Again
+              Sign In to View Challenges
             </Button>
           </CardContent>
         </Card>

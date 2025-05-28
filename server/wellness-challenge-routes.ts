@@ -36,6 +36,8 @@ export function registerWellnessChallengeRoutes(app: Express) {
    */
   app.get('/api/wellness-challenges', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
+      console.log('🔥 NEW ROUTE HANDLER: Getting challenges from shared template library');
+      
       // Get all challenge templates from shared library
       const result = await pool.query(`
         SELECT 
@@ -55,6 +57,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
         ORDER BY type, title
       `);
       
+      console.log(`🔥 Found ${result.rows.length} challenges from template library`);
       res.json(result.rows);
     } catch (error) {
       console.error('Error getting challenges:', error);

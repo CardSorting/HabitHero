@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Brain, Heart, Shield, Users, ChevronLeft, ChevronRight, RotateCcw, ArrowLeft, BookOpen, Play, List, Filter, Star } from 'lucide-react';
+import { Brain, Heart, Shield, Users, ChevronLeft, ChevronRight, RotateCcw, ArrowLeft, BookOpen, Play } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DBTFlashCard {
@@ -31,36 +31,24 @@ const categoryConfig = {
     title: 'Mindfulness',
     icon: Brain,
     color: 'from-blue-500 to-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    textColor: 'text-blue-800',
     description: 'Being present and aware in the moment'
   },
   distress_tolerance: {
     title: 'Distress Tolerance',
     icon: Shield,
     color: 'from-green-500 to-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
-    textColor: 'text-green-800',
     description: 'Skills for surviving crisis situations'
   },
   emotion_regulation: {
     title: 'Emotion Regulation',
     icon: Heart,
     color: 'from-purple-500 to-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
-    textColor: 'text-purple-800',
     description: 'Managing and changing unwanted emotions'
   },
   interpersonal_effectiveness: {
     title: 'Interpersonal Effectiveness',
     icon: Users,
     color: 'from-orange-500 to-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
-    textColor: 'text-orange-800',
     description: 'Building healthy relationships and communication'
   }
 };
@@ -81,6 +69,7 @@ export default function DBTFlashCards() {
   const [showAnswer, setShowAnswer] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
 
+  // All hooks called at the top level
   const { data: flashCards = [], isLoading: cardsLoading } = useQuery<DBTFlashCard[]>({
     queryKey: ['/api/dbt-flashcards', selectedCategory],
     queryFn: () => selectedCategory ? 
@@ -93,11 +82,19 @@ export default function DBTFlashCards() {
     queryKey: ['/api/dbt-flashcards/progress'],
   });
 
-  // Filter cards by difficulty
+  // All computations at top level
   const filteredCards = useMemo(() => {
     if (difficultyFilter === 'all') return flashCards;
     return flashCards.filter(card => card.difficulty_level === difficultyFilter);
   }, [flashCards, difficultyFilter]);
+
+  const skillsByDifficulty = useMemo(() => {
+    return {
+      easy: flashCards.filter(card => card.difficulty_level === 'easy'),
+      medium: flashCards.filter(card => card.difficulty_level === 'medium'),
+      advanced: flashCards.filter(card => card.difficulty_level === 'advanced')
+    };
+  }, [flashCards]);
 
   const currentCard = filteredCards[currentCardIndex];
   const categoryInfo = selectedCategory ? categoryConfig[selectedCategory as keyof typeof categoryConfig] : null;
@@ -136,14 +133,11 @@ export default function DBTFlashCards() {
     setShowAnswer(false);
   };
 
-  const categoryProgress = progress.find(p => p.category === selectedCategory);
-
-  // Category Selection View
+  // Render different views based on mode
   if (viewMode === 'categories') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className={`max-w-4xl mx-auto ${isMobile ? 'p-4' : 'p-8'}`}>
-          {/* Header */}
           <div className="text-center mb-8">
             <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold text-gray-900 mb-4`}>
               DBT Skills Library
@@ -153,7 +147,6 @@ export default function DBTFlashCards() {
             </p>
           </div>
 
-          {/* Category Cards */}
           <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-6'}`}>
             {Object.entries(categoryConfig).map(([key, config]) => {
               const categoryProgress = progress.find(p => p.category === key);
@@ -162,7 +155,7 @@ export default function DBTFlashCards() {
               return (
                 <Card 
                   key={key}
-                  className={`cursor-pointer hover:shadow-lg transition-all duration-200 ${config.borderColor} border-2 hover:scale-105`}
+                  className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:scale-105"
                   onClick={() => {
                     setSelectedCategory(key);
                     setViewMode('skills-list');
@@ -189,7 +182,7 @@ export default function DBTFlashCards() {
                           <span className={`${isMobile ? 'text-sm' : 'text-base'} font-medium text-gray-700`}>
                             Progress
                           </span>
-                          <span className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold ${config.textColor}`}>
+                          <span className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold text-blue-600`}>
                             {categoryProgress.studied_cards}/{categoryProgress.total_cards} skills
                           </span>
                         </div>
@@ -201,11 +194,6 @@ export default function DBTFlashCards() {
                           <span>
                             {Math.round((categoryProgress.studied_cards / categoryProgress.total_cards) * 100)}% complete
                           </span>
-                          {categoryProgress.accuracy_percentage && (
-                            <span>
-                              {categoryProgress.accuracy_percentage}% accuracy
-                            </span>
-                          )}
                         </div>
                       </div>
                     ) : (
@@ -225,19 +213,7 @@ export default function DBTFlashCards() {
     );
   }
 
-  // Calculate skills by difficulty - moved outside conditional render to avoid hooks order issues
-  const skillsByDifficulty = useMemo(() => {
-    const grouped = {
-      easy: flashCards.filter(card => card.difficulty_level === 'easy'),
-      medium: flashCards.filter(card => card.difficulty_level === 'medium'),
-      advanced: flashCards.filter(card => card.difficulty_level === 'advanced')
-    };
-    return grouped;
-  }, [flashCards]);
-
-  // Skills List View
   if (viewMode === 'skills-list') {
-
     if (cardsLoading) {
       return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -254,7 +230,6 @@ export default function DBTFlashCards() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className={`max-w-4xl mx-auto ${isMobile ? 'p-4' : 'p-8'}`}>
-          {/* Header */}
           <div className="mb-6">
             <Button
               variant="outline"
@@ -274,7 +249,6 @@ export default function DBTFlashCards() {
               </p>
             </div>
 
-            {/* Study Mode Buttons */}
             <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 gap-4'} mb-6`}>
               <Button
                 onClick={startStudying}
@@ -297,7 +271,6 @@ export default function DBTFlashCards() {
               </Button>
             </div>
 
-            {/* Difficulty Filter */}
             <div className="flex flex-wrap gap-2 mb-6">
               <Button
                 variant={difficultyFilter === 'all' ? 'default' : 'outline'}
@@ -320,7 +293,6 @@ export default function DBTFlashCards() {
             </div>
           </div>
 
-          {/* Skills by Difficulty */}
           <div className="space-y-6">
             {Object.entries(difficultyConfig).map(([level, config]) => {
               const skills = skillsByDifficulty[level as keyof typeof skillsByDifficulty];
@@ -334,7 +306,7 @@ export default function DBTFlashCards() {
                   </h3>
                   
                   <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 gap-4'}`}>
-                    {skills.map((skill, index) => (
+                    {skills.map((skill) => (
                       <Card 
                         key={skill.id}
                         className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-102"
@@ -369,7 +341,6 @@ export default function DBTFlashCards() {
     );
   }
 
-  // Study Mode View
   if (viewMode === 'study-mode') {
     if (cardsLoading || !currentCard) {
       return (
@@ -387,7 +358,6 @@ export default function DBTFlashCards() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className={`max-w-4xl mx-auto ${isMobile ? 'p-4' : 'p-8'}`}>
-          {/* Header */}
           <div className="mb-6">
             <Button
               variant="outline"
@@ -408,7 +378,6 @@ export default function DBTFlashCards() {
             </div>
           </div>
 
-          {/* Progress Indicator */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <span className={`${isMobile ? 'text-sm' : 'text-base'} font-medium text-gray-700`}>
@@ -421,7 +390,6 @@ export default function DBTFlashCards() {
             <Progress value={(currentCardIndex + 1) / filteredCards.length * 100} className="h-2" />
           </div>
 
-          {/* Flash Card */}
           <Card className={`${isMobile ? 'min-h-[400px]' : 'min-h-[500px]'} relative overflow-hidden mb-6`}>
             <CardHeader className={`bg-gradient-to-r ${categoryInfo?.color} text-white`}>
               <CardTitle className={`${isMobile ? 'text-lg' : 'text-2xl'} mb-2`}>
@@ -490,7 +458,6 @@ export default function DBTFlashCards() {
               </div>
             </CardContent>
 
-            {/* Navigation Controls */}
             <div className={`border-t bg-gray-50 ${isMobile ? 'p-4' : 'p-6'}`}>
               <div className="flex justify-between items-center">
                 <Button

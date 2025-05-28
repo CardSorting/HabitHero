@@ -66,18 +66,18 @@ export const ChallengesListPage: React.FC = () => {
 
   return (
     <WellnessChallengeProvider userId={activeUser || undefined}>
-      <div className="container mx-auto py-6 px-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Wellness Challenges</h1>
-            <p className="text-gray-500 mt-1">
+      <div className="container mx-auto py-4 sm:py-6 px-3 sm:px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold">Wellness Challenges</h1>
+            <p className="text-gray-500 mt-1 text-sm sm:text-base">
               Track your wellness goals and build healthy habits
             </p>
           </div>
           
           <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
             <DialogTrigger asChild>
-              <Button className="mt-4 md:mt-0">
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 New Challenge
               </Button>
@@ -99,54 +99,57 @@ export const ChallengesListPage: React.FC = () => {
         
         <div className="mb-6">
           <Tabs defaultValue="all" className="w-full">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-              <TabsList>
-                <TabsTrigger value="all">All Challenges</TabsTrigger>
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
+            <div className="flex flex-col gap-4 mb-4">
+              <TabsList className="w-full sm:w-auto">
+                <TabsTrigger value="all" className="flex-1 sm:flex-initial">All Challenges</TabsTrigger>
+                <TabsTrigger value="active" className="flex-1 sm:flex-initial">Active</TabsTrigger>
+                <TabsTrigger value="completed" className="flex-1 sm:flex-initial">Completed</TabsTrigger>
               </TabsList>
               
-              <div className="flex mt-4 sm:mt-0 w-full sm:w-auto">
-                <div className="relative w-full sm:w-auto mr-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1 sm:flex-initial sm:min-w-[200px]">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                  <Input placeholder="Search challenges" className="pl-8" />
+                  <Input placeholder="Search challenges" className="pl-8 w-full" />
                 </div>
                 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[200px]">
-                    <DropdownMenuLabel>Filter By</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs font-normal text-gray-500">Challenge Type</DropdownMenuLabel>
-                    <DropdownMenuCheckboxItem checked>All Types</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Emotions</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Meditation</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Journaling</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Activity</DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs font-normal text-gray-500">Frequency</DropdownMenuLabel>
-                    <DropdownMenuCheckboxItem checked>All Frequencies</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Daily</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Weekly</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Monthly</DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                
-                <Select defaultValue="newest">
-                  <SelectTrigger className="w-[130px] ml-2">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="progress">Most Progress</SelectItem>
-                    <SelectItem value="streak">Highest Streak</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="flex-1 sm:flex-initial">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <span className="sm:hidden">Filter</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[200px]">
+                      <DropdownMenuLabel>Filter By</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs font-normal text-gray-500">Challenge Type</DropdownMenuLabel>
+                      <DropdownMenuCheckboxItem checked>All Types</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>Emotions</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>Meditation</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>Journaling</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>Activity</DropdownMenuCheckboxItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs font-normal text-gray-500">Frequency</DropdownMenuLabel>
+                      <DropdownMenuCheckboxItem checked>All Frequencies</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>Daily</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>Weekly</DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem>Monthly</DropdownMenuCheckboxItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Select defaultValue="newest">
+                    <SelectTrigger className="flex-1 sm:w-[130px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                      <SelectItem value="oldest">Oldest First</SelectItem>
+                      <SelectItem value="progress">Most Progress</SelectItem>
+                      <SelectItem value="streak">Highest Streak</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             
@@ -166,7 +169,7 @@ export const ChallengesListPage: React.FC = () => {
           </Tabs>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-8">
           {/* Insights Card */}
           <Card>
             <CardHeader className="pb-3">

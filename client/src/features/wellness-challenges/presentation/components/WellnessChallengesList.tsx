@@ -105,15 +105,15 @@ export const WellnessChallengesList: React.FC = () => {
   }
 
   return (
-    <div className="w-full space-y-4 py-4">
-      <div className="flex justify-between items-center px-4">
-        <h2 className="text-xl font-semibold">Your Wellness Challenges</h2>
-        <Button size="sm">
+    <div className="w-full space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h2 className="text-lg sm:text-xl font-semibold">Your Wellness Challenges</h2>
+        <Button size="sm" className="w-full sm:w-auto">
           New Challenge
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
         {challenges.map((challenge) => (
           <ChallengeCard key={challenge.id} challenge={challenge} />
         ))}
@@ -139,30 +139,30 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge }) => {
   const progressColor = getProgressColor(completionPercentage);
 
   return (
-    <Card className="overflow-hidden border-gray-200 hover:shadow-md transition-shadow">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{challenge.title}</CardTitle>
+    <Card className="overflow-hidden border-gray-200 hover:shadow-md transition-shadow h-full">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+          <CardTitle className="text-base sm:text-lg flex-1 leading-tight">{challenge.title}</CardTitle>
           {getStatusBadge(challenge.status)}
         </div>
-        <CardDescription className="flex items-center text-sm">
+        <CardDescription className="flex flex-wrap items-center text-xs sm:text-sm gap-1">
           {getTypeIcon(challenge.type)}
-          {challenge.type.charAt(0).toUpperCase() + challenge.type.slice(1)}
-          <span className="mx-2">•</span>
-          <CalendarDays className="h-3 w-3 mr-1" />
-          {challenge.frequency.charAt(0).toUpperCase() + challenge.frequency.slice(1)}
+          <span className="capitalize">{challenge.type}</span>
+          <span className="mx-1">•</span>
+          <CalendarDays className="h-3 w-3" />
+          <span className="capitalize">{challenge.frequency}</span>
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="pb-2">
+      <CardContent className="pb-3 space-y-3">
         {challenge.description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{challenge.description}</p>
+          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{challenge.description}</p>
         )}
         
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-xs sm:text-sm">
             <span className="flex items-center">
-              <PieChart className="h-4 w-4 mr-1 text-gray-500" />
+              <PieChart className="h-3 w-3 mr-1 text-gray-500" />
               Progress
             </span>
             <span className="font-medium">{completionPercentage}%</span>
@@ -173,22 +173,22 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge }) => {
             indicatorClassName={progressColor}
           />
           
-          <div className="flex justify-between text-sm pt-1">
+          <div className="flex flex-col sm:flex-row justify-between gap-2 text-xs">
             <div className="flex items-center">
-              <Hourglass className="h-4 w-4 mr-1 text-gray-500" />
+              <Hourglass className="h-3 w-3 mr-1 text-gray-500" />
               <span>{challenge.daysRemaining} days left</span>
             </div>
             
             <div className="flex items-center">
               {challenge.streak > 0 ? (
                 <>
-                  <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
                   <span className="text-green-600 font-medium">{challenge.streak} day streak</span>
                 </>
               ) : (
                 <>
-                  <CircleX className="h-4 w-4 mr-1 text-gray-400" />
-                  <span className="text-gray-500">No current streak</span>
+                  <CircleX className="h-3 w-3 mr-1 text-gray-400" />
+                  <span className="text-gray-500">No streak</span>
                 </>
               )}
             </div>
@@ -198,8 +198,8 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge }) => {
       
       <CardFooter className="pt-0">
         <Button variant="outline" className="w-full" size="sm">
-          <ArrowRightCircle className="mr-2 h-4 w-4" />
-          View Details
+          <ArrowRightCircle className="mr-2 h-3 w-3" />
+          <span className="text-xs sm:text-sm">View Details</span>
         </Button>
       </CardFooter>
     </Card>

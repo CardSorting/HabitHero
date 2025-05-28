@@ -13,7 +13,8 @@ import {
   Target,
   Award,
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  Brain
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,6 +40,7 @@ const BottomNav: React.FC = () => {
     { icon: SmilePlus, label: "Emotions", path: "/emotions", priority: 90 },
     { icon: HeartHandshake, label: "Skills Coach", path: "/therapy", priority: 88 },
     { icon: AlertCircle, label: "Crisis Tracker", path: "/crisis-tracker", priority: 87 },
+    { icon: Brain, label: "DBT Cards", path: "/dbt-flashcards", priority: 86 },
     { icon: Calendar, label: "Calendar", path: "/calendar", priority: 85 },
     { icon: Target, label: "Challenges", path: "/wellness-challenges", priority: 80 },
     { icon: BarChart2, label: "Progress", path: "/progress", priority: 60 },

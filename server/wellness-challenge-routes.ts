@@ -3,7 +3,7 @@
  */
 import { Express, Request, Response, NextFunction } from 'express';
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
-import { db } from './db';
+import { db, pool } from './db';
 import { storage } from './storage';
 import { 
   wellnessChallenges, 
@@ -43,7 +43,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
       }
       
       // Get all challenge templates with user enrollment info
-      const challenges = await db.query(`
+      const result = await pool.query(`
         SELECT 
           t.id,
           t.title,
@@ -62,7 +62,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
         ORDER BY t.type, t.title
       `, [userId]);
       
-      res.json(challenges.rows);
+      res.json(result.rows);
     } catch (error) {
       console.error('Error getting challenges:', error);
       res.status(500).json({ message: 'Internal server error' });

@@ -225,16 +225,18 @@ export default function DBTFlashCards() {
     );
   }
 
+  // Calculate skills by difficulty - moved outside conditional render to avoid hooks order issues
+  const skillsByDifficulty = useMemo(() => {
+    const grouped = {
+      easy: flashCards.filter(card => card.difficulty_level === 'easy'),
+      medium: flashCards.filter(card => card.difficulty_level === 'medium'),
+      advanced: flashCards.filter(card => card.difficulty_level === 'advanced')
+    };
+    return grouped;
+  }, [flashCards]);
+
   // Skills List View
   if (viewMode === 'skills-list') {
-    const skillsByDifficulty = useMemo(() => {
-      const grouped = {
-        easy: flashCards.filter(card => card.difficulty_level === 'easy'),
-        medium: flashCards.filter(card => card.difficulty_level === 'medium'),
-        advanced: flashCards.filter(card => card.difficulty_level === 'advanced')
-      };
-      return grouped;
-    }, [flashCards]);
 
     if (cardsLoading) {
       return (

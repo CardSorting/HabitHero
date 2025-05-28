@@ -226,7 +226,7 @@ export default function WellnessChallenges() {
                 <Card 
                   key={key}
                   className={`cursor-pointer hover:shadow-lg transition-all duration-200 ${config.borderColor} border-2 hover:scale-105`}
-                  onClick={() => setSelectedCategory(key)}
+                  onClick={() => navigate(`/wellness-challenges/categories/${key}`)}
                 >
                   <CardHeader className={`bg-gradient-to-r ${config.color} text-white ${isMobile ? 'p-4' : 'p-6'}`}>
                     <div className="flex items-center gap-3">

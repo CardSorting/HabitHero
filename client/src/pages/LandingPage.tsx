@@ -134,60 +134,60 @@ export default function LandingPage() {
               onValueChange={(value) => setSelectedTab(value as "client" | "therapist")}
               className="w-full max-w-3xl mx-auto"
             >
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8 p-1 bg-muted/30 border border-border rounded-xl">
+              <TabsList className="grid w-full max-w-lg mx-auto grid-cols-2 mb-8 p-1 bg-muted/30 border border-border rounded-xl h-auto">
                 <TabsTrigger 
                   value="client" 
-                  className="flex items-center justify-center gap-2 py-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-200"
+                  className="flex items-center justify-center py-3 px-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-200 min-h-[60px]"
                 >
-                  <div className="flex flex-col items-center sm:flex-row sm:items-center sm:gap-2">
-                    <div className="bg-primary/10 p-2 rounded-full mb-1 sm:mb-0">
-                      <UserPlus className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-2">
+                    <div className="bg-primary/10 p-1.5 rounded-full flex-shrink-0">
+                      <UserPlus className="h-4 w-4 text-primary" />
                     </div>
-                    <span className="font-medium">I am a Client</span>
+                    <span className="font-medium text-sm text-center">I am a Client</span>
                   </div>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="therapist" 
-                  className="flex items-center justify-center gap-2 py-4 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-200"
+                  className="flex items-center justify-center py-3 px-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-200 min-h-[60px]"
                 >
-                  <div className="flex flex-col items-center sm:flex-row sm:items-center sm:gap-2">
-                    <div className="bg-primary/10 p-2 rounded-full mb-1 sm:mb-0">
-                      <Brain className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-2">
+                    <div className="bg-primary/10 p-1.5 rounded-full flex-shrink-0">
+                      <Brain className="h-4 w-4 text-primary" />
                     </div>
-                    <span className="font-medium">I am a Therapist</span>
+                    <span className="font-medium text-sm text-center">I am a Therapist</span>
                   </div>
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="client" className="mt-0 px-2">
+              <TabsContent value="client" className="mt-0 px-2 sm:px-4">
                 <Card className="border-2 hover:border-primary/50 transition-all overflow-hidden shadow-sm hover:shadow-md">
                   <CardContent className="p-0">
-                    <div className="bg-gradient-to-r from-primary/5 to-secondary/5 p-8 border-b border-border">
+                    <div className="bg-gradient-to-r from-primary/5 to-secondary/5 p-4 sm:p-6 md:p-8 border-b border-border">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-primary/10 p-2 rounded-full">
+                        <div className="bg-primary/10 p-2 rounded-full flex-shrink-0">
                           <UserPlus className="h-5 w-5 text-primary" />
                         </div>
-                        <h3 className="text-xl font-semibold">Client Path</h3>
+                        <h3 className="text-lg sm:text-xl font-semibold">Client Path</h3>
                       </div>
-                      <ul className="space-y-2 mb-6">
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-500" />
-                          <span>Track emotions and mood patterns</span>
+                      <ul className="space-y-3 mb-6">
+                        <li className="flex items-start gap-3">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm sm:text-base">Track emotions and mood patterns</span>
                         </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-500" />
-                          <span>Build positive habits with streak tracking</span>
+                        <li className="flex items-start gap-3">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm sm:text-base">Build positive habits with streak tracking</span>
                         </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-500" />
-                          <span>Gain insights from detailed analytics</span>
+                        <li className="flex items-start gap-3">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm sm:text-base">Gain insights from detailed analytics</span>
                         </li>
                       </ul>
-                      <p className="text-muted-foreground text-lg mb-6">
+                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg mb-6 leading-relaxed">
                         Track emotions, build positive habits, and gain valuable insights to improve your mental health journey.
                       </p>
                       <div className="flex justify-center">
-                        <Button size="lg" onClick={handleGetStarted} className="rounded-full px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all">
+                        <Button size="lg" onClick={handleGetStarted} className="rounded-full px-6 sm:px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all w-full sm:w-auto">
                           Get Started
                           <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
@@ -197,35 +197,35 @@ export default function LandingPage() {
                 </Card>
               </TabsContent>
               
-              <TabsContent value="therapist" className="mt-0 px-2">
+              <TabsContent value="therapist" className="mt-0 px-2 sm:px-4">
                 <Card className="border-2 hover:border-primary/50 transition-all overflow-hidden shadow-sm hover:shadow-md">
                   <CardContent className="p-0">
-                    <div className="bg-gradient-to-r from-secondary/5 to-primary/5 p-8 border-b border-border">
+                    <div className="bg-gradient-to-r from-secondary/5 to-primary/5 p-4 sm:p-6 md:p-8 border-b border-border">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-primary/10 p-2 rounded-full">
+                        <div className="bg-primary/10 p-2 rounded-full flex-shrink-0">
                           <Brain className="h-5 w-5 text-primary" />
                         </div>
-                        <h3 className="text-xl font-semibold">Therapist Path</h3>
+                        <h3 className="text-lg sm:text-xl font-semibold">Therapist Path</h3>
                       </div>
-                      <ul className="space-y-2 mb-6">
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-500" />
-                          <span>Monitor client progress with ease</span>
+                      <ul className="space-y-3 mb-6">
+                        <li className="flex items-start gap-3">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm sm:text-base">Monitor client progress with ease</span>
                         </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-500" />
-                          <span>Analyze emotion patterns and triggers</span>
+                        <li className="flex items-start gap-3">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm sm:text-base">Analyze emotion patterns and triggers</span>
                         </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-500" />
-                          <span>Create and track personalized treatment plans</span>
+                        <li className="flex items-start gap-3">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm sm:text-base">Create and track personalized treatment plans</span>
                         </li>
                       </ul>
-                      <p className="text-muted-foreground text-lg mb-6">
+                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg mb-6 leading-relaxed">
                         Monitor client progress, analyze emotion patterns, and deliver more effective treatment with detailed analytics.
                       </p>
                       <div className="flex justify-center">
-                        <Button size="lg" onClick={handleGetStarted} className="rounded-full px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all">
+                        <Button size="lg" onClick={handleGetStarted} className="rounded-full px-6 sm:px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md hover:shadow-lg transition-all w-full sm:w-auto">
                           Get Started
                           <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
@@ -293,9 +293,9 @@ export default function LandingPage() {
               onValueChange={(value) => setSelectedTab(value as "client" | "therapist")}
               className="mt-4 mb-6 max-w-md mx-auto"
             >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="client">For Clients</TabsTrigger>
-                <TabsTrigger value="therapist">For Therapists</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-auto">
+                <TabsTrigger value="client" className="py-3 text-sm">For Clients</TabsTrigger>
+                <TabsTrigger value="therapist" className="py-3 text-sm">For Therapists</TabsTrigger>
               </TabsList>
               
               <TabsContent value="client" className="mt-4 px-2">

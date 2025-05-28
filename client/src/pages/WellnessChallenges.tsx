@@ -113,7 +113,7 @@ const categoryConfig = {
 
 export default function WellnessChallenges() {
   const isMobile = useIsMobile();
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { user } = useAuth();
 

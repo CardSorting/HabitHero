@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Brain, Heart, Shield, Users, ChevronLeft, ChevronRight, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Brain, Heart, Shield, Users, ChevronLeft, ChevronRight, RotateCcw, ArrowLeft, MoreHorizontal } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DBTFlashCard {
@@ -65,11 +65,14 @@ const categoryConfig = {
   }
 };
 
+const CARDS_PER_PAGE = 10;
+
 export default function DBTFlashCards() {
   const isMobile = useIsMobile();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: flashCards = [], isLoading: cardsLoading } = useQuery<DBTFlashCard[]>({
     queryKey: ['/api/dbt-flashcards', selectedCategory],
@@ -83,16 +86,40 @@ export default function DBTFlashCards() {
     queryKey: ['/api/dbt-flashcards/progress'],
   });
 
-  const currentCard = flashCards[currentCardIndex];
+  // Pagination logic
+  const paginatedCards = useMemo(() => {
+    const startIndex = (currentPage - 1) * CARDS_PER_PAGE;
+    const endIndex = startIndex + CARDS_PER_PAGE;
+    return flashCards.slice(startIndex, endIndex);
+  }, [flashCards, currentPage]);
+
+  const totalPages = Math.ceil(flashCards.length / CARDS_PER_PAGE);
+  const currentCard = paginatedCards[currentCardIndex];
   const categoryInfo = selectedCategory ? categoryConfig[selectedCategory as keyof typeof categoryConfig] : null;
 
   const nextCard = () => {
-    setCurrentCardIndex((prev) => (prev + 1) % flashCards.length);
+    if (currentCardIndex < paginatedCards.length - 1) {
+      setCurrentCardIndex((prev) => prev + 1);
+    } else if (currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+      setCurrentCardIndex(0);
+    } else {
+      setCurrentCardIndex(0);
+      setCurrentPage(1);
+    }
     setShowAnswer(false);
   };
 
   const prevCard = () => {
-    setCurrentCardIndex((prev) => (prev - 1 + flashCards.length) % flashCards.length);
+    if (currentCardIndex > 0) {
+      setCurrentCardIndex((prev) => prev - 1);
+    } else if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+      setCurrentCardIndex(CARDS_PER_PAGE - 1);
+    } else {
+      setCurrentPage(totalPages);
+      setCurrentCardIndex(Math.min(CARDS_PER_PAGE - 1, flashCards.length % CARDS_PER_PAGE - 1) || CARDS_PER_PAGE - 1);
+    }
     setShowAnswer(false);
   };
 
@@ -102,6 +129,13 @@ export default function DBTFlashCards() {
 
   const goBackToCategories = () => {
     setSelectedCategory(null);
+    setCurrentCardIndex(0);
+    setCurrentPage(1);
+    setShowAnswer(false);
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
     setCurrentCardIndex(0);
     setShowAnswer(false);
   };

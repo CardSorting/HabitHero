@@ -52,7 +52,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
   });
   
   /**
-   * Get challenges by status
+   * Get challenges by status for current user
    */
   app.get('/api/wellness-challenges/status/:status', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
@@ -63,7 +63,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const challenges = await storage.getWellnessChallengesByStatus(status);
+      const challenges = await storage.getWellnessChallengesByStatus(status, userId);
       
       res.json(challenges);
     } catch (error) {
@@ -73,28 +73,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
   });
   
   /**
-   * Get challenges by status
-   */
-  app.get('/api/wellness-challenges/status/:status', isAuthenticated, async (req: AuthRequest, res: Response) => {
-    try {
-      const userId = req.user?.id;
-      const { status } = req.params;
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      const challenges = await storage.getWellnessChallengesByStatus(status);
-      
-      res.json(challenges);
-    } catch (error) {
-      console.error('Error getting challenges by status:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-  
-  /**
-   * Get challenges by type
+   * Get challenges by type for current user
    */
   app.get('/api/wellness-challenges/type/:type', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
@@ -105,72 +84,53 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      let challenges;
-      // Handle the new DBT categories
-      if (['mindfulness', 'distress_tolerance', 'emotion_regulation', 'interpersonal_effectiveness'].includes(type.toLowerCase())) {
-        // For DBT categories, get all challenges and filter by title prefix
-        // Since we stored them with prefixes like "[Mindfulness] ..."
-        const allChallenges = await storage.getWellnessChallenges(userId);
-        const categoryPrefix = type.toLowerCase() === 'mindfulness' ? 'Mindfulness'
-                             : type.toLowerCase() === 'distress_tolerance' ? 'Distress Tolerance'
-                             : type.toLowerCase() === 'emotion_regulation' ? 'Emotion Regulation'
-                             : 'Interpersonal Effectiveness';
-                             
-        challenges = allChallenges.filter(challenge => 
-          challenge.title.startsWith(`[${categoryPrefix}]`));
-      } else {
-        // For regular categories, use the normal type filtering
-        challenges = await storage.getWellnessChallengesByType(type);
-      }
+      // Filter by user when getting by type
+      const allChallenges = await storage.getWellnessChallengesByType(type);
+      const userChallenges = allChallenges.filter(challenge => challenge.userId === userId);
       
-      res.json(challenges);
+      res.json(userChallenges);
     } catch (error) {
       console.error('Error getting challenges by type:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   /**
-   * Get a challenge by ID with its goals and progress
+   * Get a specific challenge by ID (with user authorization check)
    */
   app.get('/api/wellness-challenges/:id', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.id;
-      const { id } = req.params;
+      const challengeId = parseInt(req.params.id);
       
       if (!userId) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const challengeId = parseInt(id, 10);
       if (isNaN(challengeId)) {
         return res.status(400).json({ message: 'Invalid challenge ID' });
       }
       
-      // Get the challenge with goals and progress
       const challenge = await storage.getWellnessChallenge(challengeId);
       
       if (!challenge) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Verify that the challenge belongs to the user
+      // Ensure user can only access their own challenges
       if (challenge.userId !== userId) {
-        return res.status(403).json({ message: 'Not authorized to access this challenge' });
+        return res.status(403).json({ message: 'Access denied' });
       }
       
-      // Use the challenge as the response
-      const response = challenge;
-      
-      res.json(response);
+      res.json(challenge);
     } catch (error) {
-      console.error('Error getting challenge details:', error);
+      console.error('Error getting challenge:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   /**
-   * Create a new challenge
+   * Create a new challenge for the current user
    */
   app.post('/api/wellness-challenges', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
@@ -180,105 +140,93 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      // Validate request body using zod schema
-      const parsedBody = insertWellnessChallengeSchema.safeParse({
+      // Validate request body
+      const challengeData = insertWellnessChallengeSchema.parse({
         ...req.body,
-        userId,
+        userId // Ensure userId is set to current user
       });
       
-      if (!parsedBody.success) {
-        return res.status(400).json({ 
-          message: 'Invalid challenge data', 
-          errors: parsedBody.error.errors 
-        });
-      }
-      
-      // Create the challenge using the storage interface
-      const challenge = await storage.createWellnessChallenge(parsedBody.data);
+      const challenge = await storage.createWellnessChallenge(challengeData);
       
       res.status(201).json(challenge);
     } catch (error) {
       console.error('Error creating challenge:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: 'Invalid challenge data', errors: error.errors });
+      }
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   /**
-   * Update a challenge
+   * Update a challenge (with user authorization check)
    */
   app.put('/api/wellness-challenges/:id', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.id;
-      const { id } = req.params;
+      const challengeId = parseInt(req.params.id);
       
       if (!userId) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const challengeId = parseInt(id, 10);
       if (isNaN(challengeId)) {
         return res.status(400).json({ message: 'Invalid challenge ID' });
       }
       
-      // Check if challenge exists and belongs to the user
-      const existingChallenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, challengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
-      
+      // Check if challenge exists and belongs to user
+      const existingChallenge = await storage.getWellnessChallenge(challengeId);
       if (!existingChallenge) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Update the challenge using the storage interface
-      const updatedChallenge = await storage.updateWellnessChallenge(challengeId, {
-        ...req.body,
-        updatedAt: new Date(),
-      });
+      if (existingChallenge.userId !== userId) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
       
-      res.json(updatedChallenge);
+      // Don't allow changing userId
+      const updateData = { ...req.body };
+      delete updateData.userId;
+      
+      const challenge = await storage.updateWellnessChallenge(challengeId, updateData);
+      
+      res.json(challenge);
     } catch (error) {
       console.error('Error updating challenge:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   /**
-   * Delete a challenge
+   * Delete a challenge (with user authorization check)
    */
   app.delete('/api/wellness-challenges/:id', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.id;
-      const { id } = req.params;
+      const challengeId = parseInt(req.params.id);
       
       if (!userId) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const challengeId = parseInt(id, 10);
       if (isNaN(challengeId)) {
         return res.status(400).json({ message: 'Invalid challenge ID' });
       }
       
-      // Check if challenge exists and belongs to the user
-      const existingChallenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, challengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
-      
+      // Check if challenge exists and belongs to user
+      const existingChallenge = await storage.getWellnessChallenge(challengeId);
       if (!existingChallenge) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Delete the challenge and all associated data
+      if (existingChallenge.userId !== userId) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
       const success = await storage.deleteWellnessChallenge(challengeId);
       
       if (success) {
-        res.json({ success: true });
+        res.json({ message: 'Challenge deleted successfully' });
       } else {
         res.status(500).json({ message: 'Failed to delete challenge' });
       }
@@ -287,345 +235,142 @@ export function registerWellnessChallengeRoutes(app: Express) {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   /**
-   * Update challenge status
+   * Update challenge status (with user authorization check)
    */
   app.patch('/api/wellness-challenges/:id/status', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.id;
-      const { id } = req.params;
+      const challengeId = parseInt(req.params.id);
       const { status } = req.body;
       
       if (!userId) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      if (!status) {
-        return res.status(400).json({ message: 'Status is required' });
-      }
-      
-      const challengeId = parseInt(id, 10);
       if (isNaN(challengeId)) {
         return res.status(400).json({ message: 'Invalid challenge ID' });
       }
       
-      // Check if challenge exists and belongs to the user
-      const existingChallenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, challengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
+      if (!status || !['active', 'completed', 'paused', 'cancelled'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status' });
+      }
       
+      // Check if challenge exists and belongs to user
+      const existingChallenge = await storage.getWellnessChallenge(challengeId);
       if (!existingChallenge) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Update the challenge status using the storage interface
-      const updatedChallenge = await storage.updateWellnessChallengeStatus(challengeId, status);
+      if (existingChallenge.userId !== userId) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
       
-      res.json(updatedChallenge);
+      const challenge = await storage.updateWellnessChallengeStatus(challengeId, status);
+      
+      res.json(challenge);
     } catch (error) {
       console.error('Error updating challenge status:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-  
+
   /**
-   * Create a new goal for a challenge
+   * Get challenge goals for a specific challenge (with user authorization check)
    */
-  app.post('/api/wellness-challenges/goals', isAuthenticated, async (req: AuthRequest, res: Response) => {
+  app.get('/api/wellness-challenges/:id/goals', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.id;
+      const challengeId = parseInt(req.params.id);
       
       if (!userId) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const { challengeId } = req.body;
-      if (!challengeId) {
-        return res.status(400).json({ message: 'Challenge ID is required' });
-      }
-      
-      // Check if challenge exists and belongs to the user
-      const existingChallenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, challengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
-      
-      if (!existingChallenge) {
-        return res.status(404).json({ message: 'Challenge not found' });
-      }
-      
-      // Validate request body using zod schema
-      const parsedBody = insertWellnessChallengeGoalSchema.safeParse(req.body);
-      
-      if (!parsedBody.success) {
-        return res.status(400).json({ 
-          message: 'Invalid goal data', 
-          errors: parsedBody.error.errors 
-        });
-      }
-      
-      // Create the goal using the storage interface
-      const goal = await storage.createWellnessChallengeGoal(parsedBody.data);
-      
-      res.status(201).json(goal);
-    } catch (error) {
-      console.error('Error creating goal:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-  
-  /**
-   * Get goals for a challenge
-   */
-  app.get('/api/wellness-challenges/:challengeId/goals', isAuthenticated, async (req: AuthRequest, res: Response) => {
-    try {
-      const userId = req.user?.id;
-      const { challengeId } = req.params;
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      const parsedChallengeId = parseInt(challengeId, 10);
-      if (isNaN(parsedChallengeId)) {
-        return res.status(400).json({ message: 'Invalid challenge ID' });
-      }
-      
-      // Check if challenge exists and belongs to the user
-      const existingChallenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, parsedChallengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
-      
-      if (!existingChallenge) {
-        return res.status(404).json({ message: 'Challenge not found' });
-      }
-      
-      // Get the goals using the storage interface
-      const goals = await storage.getWellnessChallengeGoals(parsedChallengeId);
-      
-      res.json(goals);
-    } catch (error) {
-      console.error('Error getting goals:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-  
-  /**
-   * Record progress for a challenge
-   */
-  app.post('/api/wellness-challenges/progress', isAuthenticated, async (req: AuthRequest, res: Response) => {
-    try {
-      const userId = req.user?.id;
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      const { challengeId } = req.body;
-      if (!challengeId) {
-        return res.status(400).json({ message: 'Challenge ID is required' });
-      }
-      
-      // Check if challenge exists and belongs to the user
-      const existingChallenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, challengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
-      
-      if (!existingChallenge) {
-        return res.status(404).json({ message: 'Challenge not found' });
-      }
-      
-      // Validate request body using zod schema
-      const parsedBody = insertWellnessChallengeProgressSchema.safeParse(req.body);
-      
-      if (!parsedBody.success) {
-        return res.status(400).json({ 
-          message: 'Invalid progress data', 
-          errors: parsedBody.error.errors 
-        });
-      }
-      
-      // Use the storage interface to record progress
-      // This will handle checking if progress exists and either updating or creating it
-      const progress = await storage.recordWellnessChallengeProgress(parsedBody.data);
-      
-      res.status(201).json(progress);
-    } catch (error) {
-      console.error('Error recording progress:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-  
-  /**
-   * Get progress entries for a challenge
-   */
-  app.get('/api/wellness-challenges/:challengeId/progress', isAuthenticated, async (req: AuthRequest, res: Response) => {
-    try {
-      const userId = req.user?.id;
-      const { challengeId } = req.params;
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      const parsedChallengeId = parseInt(challengeId, 10);
-      if (isNaN(parsedChallengeId)) {
-        return res.status(400).json({ message: 'Invalid challenge ID' });
-      }
-      
-      // Check if challenge exists and belongs to the user
-      const existingChallenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, parsedChallengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
-      
-      if (!existingChallenge) {
-        return res.status(404).json({ message: 'Challenge not found' });
-      }
-      
-      // Get the progress entries using the storage interface
-      const progress = await storage.getWellnessChallengeProgress(parsedChallengeId);
-      
-      res.json(progress);
-    } catch (error) {
-      console.error('Error getting progress:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-  
-  /**
-   * Get progress entries for a specific date range
-   */
-  app.get('/api/wellness-challenges/:challengeId/progress/range', isAuthenticated, async (req: AuthRequest, res: Response) => {
-    try {
-      const userId = req.user?.id;
-      const { challengeId } = req.params;
-      const { from, to } = req.query;
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      const parsedChallengeId = parseInt(challengeId, 10);
-      if (isNaN(parsedChallengeId)) {
-        return res.status(400).json({ message: 'Invalid challenge ID' });
-      }
-      
-      if (!from || !to) {
-        return res.status(400).json({ message: 'From and to dates are required' });
-      }
-      
-      // Check if challenge exists and belongs to the user
-      const existingChallenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, parsedChallengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
-      
-      if (!existingChallenge) {
-        return res.status(404).json({ message: 'Challenge not found' });
-      }
-      
-      // Get the progress entries for a specific date
-      // Note: The storage interface doesn't have a specific method for date ranges yet,
-      // but we can use the getWellnessChallengeProgressForDate method and filter in-memory
-      // or extend the storage interface in the future
-      const progress = await storage.getWellnessChallengeProgress(parsedChallengeId);
-      
-      // Filter by date range client-side (until we add a dedicated method to the storage interface)
-      const filteredProgress = progress.filter(entry => {
-        return entry.date >= (from as string) && entry.date <= (to as string);
-      });
-      
-      res.json(filteredProgress);
-    } catch (error) {
-      console.error('Error getting progress for date range:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-  
-  /**
-   * Get challenge summary statistics
-   */
-  app.get('/api/wellness-challenges/summary/:userId', isAuthenticated, async (req: AuthRequest, res: Response) => {
-    try {
-      const currentUserId = req.user?.id;
-      const { userId } = req.params;
-      
-      if (!currentUserId) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      const parsedUserId = parseInt(userId, 10);
-      if (isNaN(parsedUserId)) {
-        return res.status(400).json({ message: 'Invalid user ID' });
-      }
-      
-      // Only allow users to see their own summary
-      if (currentUserId !== parsedUserId) {
-        return res.status(403).json({ message: 'Not authorized' });
-      }
-      
-      // Get challenge summary using the storage interface
-      const summary = await storage.getChallengeSummary(parsedUserId);
-      
-      res.json(summary);
-    } catch (error) {
-      console.error('Error getting challenge summary:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-  
-  /**
-   * Get streak information for a challenge
-   */
-  app.get('/api/wellness-challenges/:id/streak', isAuthenticated, async (req: AuthRequest, res: Response) => {
-    try {
-      const userId = req.user?.id;
-      const { id } = req.params;
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      const challengeId = parseInt(id, 10);
       if (isNaN(challengeId)) {
         return res.status(400).json({ message: 'Invalid challenge ID' });
       }
       
-      // Check if challenge exists and belongs to the user
-      const existingChallenge = await db.query.wellnessChallenges.findFirst({
-        where: and(
-          eq(wellnessChallenges.id, challengeId),
-          eq(wellnessChallenges.userId, userId)
-        ),
-      });
-      
+      // Check if challenge exists and belongs to user
+      const existingChallenge = await storage.getWellnessChallenge(challengeId);
       if (!existingChallenge) {
         return res.status(404).json({ message: 'Challenge not found' });
       }
       
-      // Get streak information using the storage interface
-      const streak = await storage.getChallengeStreak(challengeId);
+      if (existingChallenge.userId !== userId) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
       
-      res.json(streak);
+      const goals = await storage.getWellnessChallengeGoals(challengeId);
+      
+      res.json(goals);
     } catch (error) {
-      console.error('Error getting streak information:', error);
+      console.error('Error getting challenge goals:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  /**
+   * Record progress for a challenge (with user authorization check)
+   */
+  app.post('/api/wellness-challenges/:id/progress', isAuthenticated, async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      const challengeId = parseInt(req.params.id);
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      if (isNaN(challengeId)) {
+        return res.status(400).json({ message: 'Invalid challenge ID' });
+      }
+      
+      // Check if challenge exists and belongs to user
+      const existingChallenge = await storage.getWellnessChallenge(challengeId);
+      if (!existingChallenge) {
+        return res.status(404).json({ message: 'Challenge not found' });
+      }
+      
+      if (existingChallenge.userId !== userId) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Validate progress data
+      const progressData = insertWellnessChallengeProgressSchema.parse({
+        ...req.body,
+        challengeId
+      });
+      
+      const progress = await storage.recordWellnessChallengeProgress(progressData);
+      
+      res.status(201).json(progress);
+    } catch (error) {
+      console.error('Error recording progress:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: 'Invalid progress data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  /**
+   * Get challenge summary for the current user
+   */
+  app.get('/api/wellness-challenges/summary', isAuthenticated, async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      const summary = await storage.getChallengeSummary(userId);
+      
+      res.json(summary);
+    } catch (error) {
+      console.error('Error getting challenge summary:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

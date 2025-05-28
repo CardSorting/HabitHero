@@ -293,48 +293,150 @@ export default function DBTFlashCards() {
             </div>
           </div>
 
+          {/* Progressive Learning Path */}
           <div className="space-y-6">
-            {Object.entries(difficultyConfig).map(([level, config]) => {
-              const skills = skillsByDifficulty[level as keyof typeof skillsByDifficulty];
-              if (skills.length === 0) return null;
-
-              return (
-                <div key={level} className="space-y-3">
-                  <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-gray-900 flex items-center gap-2`}>
-                    <span className="text-lg">{config.icon}</span>
-                    {config.label} Skills ({skills.length})
-                  </h3>
+            {/* Current Level Display */}
+            <div className="text-center mb-6">
+              <div className="flex justify-center items-center gap-4 mb-4">
+                {Object.entries(difficultyConfig).map(([level, config], index) => {
+                  const isActive = difficultyFilter === level || difficultyFilter === 'all';
+                  const isCompleted = false; // TODO: Add completion tracking
+                  const skillCount = skillsByDifficulty[level as keyof typeof skillsByDifficulty].length;
                   
-                  <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 gap-4'}`}>
-                    {skills.map((skill) => (
-                      <Card 
-                        key={skill.id}
-                        className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-102"
-                        onClick={() => {
-                          const skillIndex = filteredCards.findIndex(card => card.id === skill.id);
-                          setCurrentCardIndex(skillIndex);
-                          startStudying();
-                        }}
+                  return (
+                    <div key={level} className="flex items-center">
+                      <div 
+                        className={`
+                          w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold
+                          ${isActive ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}
+                          ${isCompleted ? 'bg-green-500 text-white' : ''}
+                        `}
                       >
-                        <CardContent className={`${isMobile ? 'p-4' : 'p-5'}`}>
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold text-gray-900`}>
+                        {config.icon}
+                      </div>
+                      <div className={`ml-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                        <div className="font-semibold">{config.label}</div>
+                        <div className="text-gray-500">{skillCount} skills</div>
+                      </div>
+                      {index < Object.entries(difficultyConfig).length - 1 && (
+                        <div className="w-8 h-1 bg-gray-300 mx-4"></div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Show skills for selected difficulty or current level */}
+            {difficultyFilter === 'all' ? (
+              // Show beginner level first when "all" is selected
+              <div className="space-y-4">
+                <div className="text-center mb-6">
+                  <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900 mb-2`}>
+                    Start with Beginner Skills
+                  </h3>
+                  <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600`}>
+                    Master these foundational skills before moving to intermediate level
+                  </p>
+                </div>
+                
+                <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 gap-4'} max-w-3xl mx-auto`}>
+                  {skillsByDifficulty.easy.slice(0, 5).map((skill, index) => (
+                    <Card 
+                      key={skill.id}
+                      className="cursor-pointer hover:shadow-md transition-all duration-200"
+                      onClick={() => {
+                        setDifficultyFilter('easy');
+                        const skillIndex = flashCards.findIndex(card => card.id === skill.id);
+                        setCurrentCardIndex(skillIndex);
+                        startStudying();
+                      }}
+                    >
+                      <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-green-100 text-green-800 rounded-full flex items-center justify-center font-bold">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-gray-900 mb-1`}>
                               {skill.skill_name}
                             </h4>
-                            <Badge className={`${config.color} text-xs`}>
-                              {config.label}
-                            </Badge>
+                            <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600`}>
+                              {skill.skill_description}
+                            </p>
                           </div>
-                          <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600 line-clamp-2`}>
-                            {skill.skill_description}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          <Badge className="bg-green-100 text-green-800 text-xs">
+                            Beginner
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              );
-            })}
+                
+                {skillsByDifficulty.easy.length > 5 && (
+                  <div className="text-center mt-6">
+                    <Button
+                      onClick={() => setDifficultyFilter('easy')}
+                      variant="outline"
+                      className={`${isMobile ? 'px-6 py-3' : 'px-8 py-4'}`}
+                    >
+                      View All {skillsByDifficulty.easy.length} Beginner Skills
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Show skills for specific difficulty level
+              <div className="space-y-4">
+                <div className="text-center mb-6">
+                  <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900 mb-2`}>
+                    {difficultyConfig[difficultyFilter as keyof typeof difficultyConfig]?.label} Skills
+                  </h3>
+                  <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600`}>
+                    Master these skills one by one
+                  </p>
+                </div>
+                
+                <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 gap-4'} max-w-3xl mx-auto`}>
+                  {skillsByDifficulty[difficultyFilter as keyof typeof skillsByDifficulty]?.map((skill, index) => (
+                    <Card 
+                      key={skill.id}
+                      className="cursor-pointer hover:shadow-md transition-all duration-200"
+                      onClick={() => {
+                        const skillIndex = flashCards.findIndex(card => card.id === skill.id);
+                        setCurrentCardIndex(skillIndex);
+                        startStudying();
+                      }}
+                    >
+                      <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+                        <div className="flex items-center gap-4">
+                          <div className={`
+                            w-10 h-10 rounded-full flex items-center justify-center font-bold
+                            ${difficultyFilter === 'easy' ? 'bg-green-100 text-green-800' : ''}
+                            ${difficultyFilter === 'medium' ? 'bg-yellow-100 text-yellow-800' : ''}
+                            ${difficultyFilter === 'advanced' ? 'bg-red-100 text-red-800' : ''}
+                          `}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-gray-900 mb-1`}>
+                              {skill.skill_name}
+                            </h4>
+                            <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600`}>
+                              {skill.skill_description}
+                            </p>
+                          </div>
+                          <Badge className={difficultyConfig[skill.difficulty_level as keyof typeof difficultyConfig]?.color}>
+                            {difficultyConfig[skill.difficulty_level as keyof typeof difficultyConfig]?.label}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -32,7 +32,7 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 
 export function registerWellnessChallengeRoutes(app: Express) {
   /**
-   * Get all challenges for the current user
+   * Get all available challenge templates with user enrollment status
    */
   app.get('/api/wellness-challenges', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
@@ -42,9 +42,27 @@ export function registerWellnessChallengeRoutes(app: Express) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const challenges = await storage.getWellnessChallenges(userId);
+      // Get all challenge templates with user enrollment info
+      const challenges = await db.query(`
+        SELECT 
+          t.id,
+          t.title,
+          t.description,
+          t.type,
+          t.frequency,
+          t.target_value,
+          t.difficulty_level,
+          COALESCE(e.status, 'available') as status,
+          e.start_date,
+          e.end_date,
+          e.created_at,
+          e.updated_at
+        FROM challenge_templates t
+        LEFT JOIN user_challenge_enrollments e ON t.id = e.template_id AND e.user_id = $1
+        ORDER BY t.type, t.title
+      `, [userId]);
       
-      res.json(challenges);
+      res.json(challenges.rows);
     } catch (error) {
       console.error('Error getting challenges:', error);
       res.status(500).json({ message: 'Internal server error' });

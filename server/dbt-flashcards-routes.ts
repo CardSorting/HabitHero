@@ -3,7 +3,7 @@
  * Serves authentic DBT educational content from the database
  */
 import { Express, Request, Response, NextFunction } from 'express';
-import { db } from './db';
+import { pool } from './db';
 
 type AuthRequest = Request & {
   user?: {
@@ -40,7 +40,7 @@ export function registerDBTFlashCardsRoutes(app: Express) {
       
       query += ' ORDER BY category, skill_name';
       
-      const result = await db.query(query, params);
+      const result = await pool.query(query, params);
       res.json(result.rows);
     } catch (error) {
       console.error('Error fetching DBT flash cards:', error);
@@ -55,7 +55,7 @@ export function registerDBTFlashCardsRoutes(app: Express) {
     try {
       const { category } = req.params;
       
-      const result = await db.query(
+      const result = await pool.query(
         'SELECT * FROM dbt_flash_cards WHERE category = $1 ORDER BY skill_name',
         [category]
       );
@@ -72,7 +72,7 @@ export function registerDBTFlashCardsRoutes(app: Express) {
    */
   app.get('/api/dbt-flashcards/categories', isAuthenticated, async (req: AuthRequest, res: Response) => {
     try {
-      const result = await db.query(
+      const result = await pool.query(
         'SELECT category, COUNT(*) as card_count FROM dbt_flash_cards GROUP BY category ORDER BY category'
       );
       
@@ -90,7 +90,7 @@ export function registerDBTFlashCardsRoutes(app: Express) {
     try {
       const { id } = req.params;
       
-      const result = await db.query(
+      const result = await pool.query(
         'SELECT * FROM dbt_flash_cards WHERE id = $1',
         [id]
       );
@@ -120,7 +120,7 @@ export function registerDBTFlashCardsRoutes(app: Express) {
       }
       
       // Create or update study record
-      await db.query(`
+      await pool.query(`
         INSERT INTO dbt_study_progress (user_id, flash_card_id, studied_at, correct, difficulty_rating)
         VALUES ($1, $2, NOW(), $3, $4)
         ON CONFLICT (user_id, flash_card_id) 
@@ -149,7 +149,7 @@ export function registerDBTFlashCardsRoutes(app: Express) {
         return res.status(401).json({ message: 'User not found' });
       }
       
-      const result = await db.query(`
+      const result = await pool.query(`
         SELECT 
           dfc.category,
           COUNT(*) as total_cards,

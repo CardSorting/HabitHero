@@ -316,7 +316,7 @@ export default function DBTFlashCards() {
                   variant="outline" 
                   className={`bg-white/20 text-white border-white/30 ${isMobile ? 'text-xs' : ''}`}
                 >
-                  {currentCardIndex + 1} of {flashCards.length}
+                  {(currentPage - 1) * CARDS_PER_PAGE + currentCardIndex + 1} of {flashCards.length}
                 </Badge>
               </div>
             </CardHeader>
@@ -378,6 +378,81 @@ export default function DBTFlashCards() {
                 )}
               </div>
             </CardContent>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className={`border-t bg-gray-100 ${isMobile ? 'p-3' : 'p-4'}`}>
+                <div className="flex items-center justify-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1'}
+                  >
+                    <ChevronLeft className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                  </Button>
+                  
+                  {/* Page numbers */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(totalPages, isMobile ? 3 : 5) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= (isMobile ? 3 : 5)) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= (isMobile ? 2 : 3)) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - (isMobile ? 1 : 2)) {
+                        pageNum = totalPages - (isMobile ? 2 : 4) + i;
+                      } else {
+                        pageNum = currentPage - (isMobile ? 1 : 2) + i;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => goToPage(pageNum)}
+                          className={`${isMobile ? 'px-2 py-1 text-xs min-w-[28px]' : 'px-3 py-1 min-w-[32px]'} ${
+                            currentPage === pageNum ? `bg-gradient-to-r ${categoryInfo?.color}` : ''
+                          }`}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                    
+                    {totalPages > (isMobile ? 3 : 5) && currentPage < totalPages - (isMobile ? 1 : 2) && (
+                      <>
+                        <MoreHorizontal className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} text-gray-400`} />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => goToPage(totalPages)}
+                          className={isMobile ? 'px-2 py-1 text-xs min-w-[28px]' : 'px-3 py-1 min-w-[32px]'}
+                        >
+                          {totalPages}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1'}
+                  >
+                    <ChevronRight className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                  </Button>
+                </div>
+                
+                <div className={`text-center mt-2 ${isMobile ? 'text-xs' : 'text-sm'} text-gray-600`}>
+                  Page {currentPage} of {totalPages} • {flashCards.length} total cards
+                </div>
+              </div>
+            )}
 
             {/* Navigation Controls */}
             <div className={`border-t bg-gray-50 ${isMobile ? 'p-4' : 'p-6'}`}>

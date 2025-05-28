@@ -84,6 +84,36 @@ export function registerDBTFlashCardsRoutes(app: Express) {
   });
 
   /**
+   * Get user's study progress for DBT flash cards
+   */
+  app.get('/api/dbt-flashcards/progress', isAuthenticated, async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      const result = await pool.query(`
+        SELECT 
+          dfc.category,
+          COUNT(*) as total_cards,
+          COUNT(dsp.flash_card_id) as studied_cards,
+          ROUND(AVG(CASE WHEN dsp.correct THEN 1 ELSE 0 END) * 100, 2) as accuracy_percentage
+        FROM dbt_flash_cards dfc
+        LEFT JOIN dbt_study_progress dsp ON dfc.id = dsp.flash_card_id AND dsp.user_id = $1
+        GROUP BY dfc.category
+        ORDER BY dfc.category
+      `, [userId]);
+      
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching study progress:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  /**
    * Get a specific flash card by ID
    */
   app.get('/api/dbt-flashcards/:id', isAuthenticated, async (req: AuthRequest, res: Response) => {

@@ -52,7 +52,7 @@ export function registerWellnessChallengeRoutes(app: Express) {
           t.frequency,
           t.target_value,
           t.difficulty_level,
-          COALESCE(e.status, 'available') as status,
+          COALESCE(e.status, 'active') as status,
           e.start_date,
           e.end_date,
           e.created_at,

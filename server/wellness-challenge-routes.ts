@@ -48,11 +48,14 @@ export function registerWellnessChallengeRoutes(app: Express) {
           t.id,
           t.title,
           t.description,
-          t.type,
-          t.frequency,
+          t.type::text,
+          t.frequency::text,
           t.target_value,
           t.difficulty_level,
-          COALESCE(e.status, 'active') as status,
+          CASE 
+            WHEN e.status IS NULL THEN 'active'
+            ELSE e.status::text
+          END as status,
           e.start_date,
           e.end_date,
           e.created_at,

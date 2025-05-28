@@ -284,27 +284,68 @@ const WellnessChallengeCategory: React.FC = () => {
         </div>
         
         {/* Pagination controls */}
-        {!isLoadingChallenges && !challengesError && allChallenges.length > 0 && (
-          <div className="flex justify-center mt-6 space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <div className="flex items-center px-3 text-sm">
+        {!isLoadingChallenges && !challengesError && allChallenges.length > 0 && totalPages > 1 && (
+          <div className="mt-8">
+            {/* Results info */}
+            <div className="text-center text-sm text-gray-600 mb-4">
+              Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, allChallenges.length)} of {allChallenges.length} challenges
+            </div>
+            
+            {/* Pagination buttons */}
+            <div className="flex justify-center items-center space-x-1">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3"
+              >
+                Previous
+              </Button>
+              
+              {/* Page numbers */}
+              <div className="flex space-x-1 mx-2">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="w-8 h-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3"
+              >
+                Next
+              </Button>
+            </div>
+            
+            {/* Mobile-friendly page info */}
+            <div className="text-center text-xs text-gray-500 mt-2 sm:hidden">
               Page {currentPage} of {totalPages}
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
           </div>
         )}
       </div>

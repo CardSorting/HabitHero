@@ -602,11 +602,22 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getWellnessChallengesByStatus(status: string): Promise<WellnessChallenge[]> {
-    return await db
+  async getWellnessChallengesByStatus(status: string, userId?: number): Promise<WellnessChallenge[]> {
+    let query = db
       .select()
       .from(wellnessChallenges)
       .where(eq(wellnessChallenges.status, status));
+    
+    if (userId) {
+      query = query.where(
+        and(
+          eq(wellnessChallenges.status, status),
+          eq(wellnessChallenges.userId, userId)
+        )
+      );
+    }
+    
+    return await query;
   }
 
   async getWellnessChallengesByType(type: string): Promise<WellnessChallenge[]> {

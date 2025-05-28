@@ -185,34 +185,139 @@ export const FlashCardDeck: React.FC<FlashCardDeckProps> = ({ category, onExit }
         ],
         emotion_regulation: [
           {
-            id: '11',
+            id: '21',
             front: 'What does PLEASE stand for in emotion regulation?',
-            back: 'PL: Treat Physical illness, E: Balance Eating, A: Avoid mood-Altering substances, S: Balance Sleep, E: Get Exercise',
+            back: 'PL: Treat Physical illness, E: Balance Eating, A: Avoid mood-Altering substances, S: Balance Sleep, E: Get Exercise. This helps reduce vulnerability to intense emotions.',
             category: 'emotion_regulation',
             difficulty: 'hard'
           },
           {
-            id: '12',
+            id: '22',
             front: 'What is opposite action?',
-            back: 'Act opposite to your emotion\'s action urge when the emotion doesn\'t fit the facts or is unhelpful.',
+            back: 'Act opposite to your emotion\'s action urge when the emotion doesn\'t fit the facts or is unhelpful. If you feel like isolating when sad, reach out to others instead.',
+            category: 'emotion_regulation',
+            difficulty: 'medium'
+          },
+          {
+            id: '23',
+            front: 'What are the functions of emotions?',
+            back: 'Emotions communicate to others, motivate behavior, give us information about situations, and can influence/control others\' behavior.',
+            category: 'emotion_regulation',
+            difficulty: 'medium'
+          },
+          {
+            id: '24',
+            front: 'What is emotion surfing?',
+            back: 'Riding out an emotional wave without acting on it. Emotions naturally rise, peak, and fall - like waves in the ocean.',
+            category: 'emotion_regulation',
+            difficulty: 'easy'
+          },
+          {
+            id: '25',
+            front: 'What does TIPP stand for when managing intense emotions?',
+            back: 'Temperature, Intense exercise, Paced breathing, Paired muscle relaxation. These quickly change your body chemistry to reduce emotional intensity.',
+            category: 'emotion_regulation',
+            difficulty: 'medium'
+          },
+          {
+            id: '26',
+            front: 'What is emotional validation?',
+            back: 'Acknowledging and accepting emotions as valid responses, even if you don\'t like them. "It makes sense that I feel this way given the situation."',
+            category: 'emotion_regulation',
+            difficulty: 'easy'
+          },
+          {
+            id: '27',
+            front: 'When should you use opposite action?',
+            back: 'When the emotion doesn\'t fit the facts, when acting on the emotion would be ineffective, or when the intensity is too high for the situation.',
+            category: 'emotion_regulation',
+            difficulty: 'hard'
+          },
+          {
+            id: '28',
+            front: 'What is the goal of emotion regulation?',
+            back: 'Not to eliminate emotions, but to reduce emotional suffering and increase emotional choices. You want to be able to experience emotions without being controlled by them.',
             category: 'emotion_regulation',
             difficulty: 'medium'
           }
         ],
         interpersonal_effectiveness: [
           {
-            id: '13',
+            id: '29',
             front: 'What does DEAR MAN help with?',
-            back: 'Getting what you want from others - asking for something or saying no effectively.',
+            back: 'Getting what you want from others - asking for something or saying no effectively while maintaining relationships and self-respect.',
             category: 'interpersonal_effectiveness',
             difficulty: 'medium'
           },
           {
-            id: '14',
+            id: '30',
             front: 'What does the D in DEAR MAN stand for?',
-            back: 'Describe - Describe the situation using facts, not interpretations.',
+            back: 'Describe - Describe the situation using facts, not interpretations. Stick to what happened without adding your opinions.',
             category: 'interpersonal_effectiveness',
             difficulty: 'easy'
+          },
+          {
+            id: '31',
+            front: 'What does the E in DEAR MAN stand for?',
+            back: 'Express - Express your feelings and opinions about the situation. Use "I" statements.',
+            category: 'interpersonal_effectiveness',
+            difficulty: 'easy'
+          },
+          {
+            id: '32',
+            front: 'What does the A in DEAR MAN stand for?',
+            back: 'Assert - Ask for what you want or say no clearly. Don\'t assume others know what you want.',
+            category: 'interpersonal_effectiveness',
+            difficulty: 'medium'
+          },
+          {
+            id: '33',
+            front: 'What does the R in DEAR MAN stand for?',
+            back: 'Reinforce - Explain the positive consequences of getting what you want or the negative consequences of not getting it.',
+            category: 'interpersonal_effectiveness',
+            difficulty: 'medium'
+          },
+          {
+            id: '34',
+            front: 'What does GIVE stand for?',
+            back: 'Gentle, Interested, Validate, Easy manner. These help maintain relationships while being assertive.',
+            category: 'interpersonal_effectiveness',
+            difficulty: 'hard'
+          },
+          {
+            id: '35',
+            front: 'What does FAST stand for?',
+            back: 'Fair, no Apologies, Stick to values, Truthful. These help maintain self-respect in interactions.',
+            category: 'interpersonal_effectiveness',
+            difficulty: 'hard'
+          },
+          {
+            id: '36',
+            front: 'What are the three goals of interpersonal effectiveness?',
+            back: '1. Get what you want (objective effectiveness), 2. Maintain the relationship, 3. Maintain self-respect.',
+            category: 'interpersonal_effectiveness',
+            difficulty: 'medium'
+          },
+          {
+            id: '37',
+            front: 'What does "Mindful" mean in DEAR MAN?',
+            back: 'Stay focused on your goal. Don\'t get distracted by attacks, threats, or attempts to change the subject.',
+            category: 'interpersonal_effectiveness',
+            difficulty: 'medium'
+          },
+          {
+            id: '38',
+            front: 'What does "Appear confident" mean in DEAR MAN?',
+            back: 'Use confident body language, eye contact, and tone of voice. Act as if you expect to get what you\'re asking for.',
+            category: 'interpersonal_effectiveness',
+            difficulty: 'easy'
+          },
+          {
+            id: '39',
+            front: 'What does "Negotiate" mean in DEAR MAN?',
+            back: 'Be willing to give to get. Offer alternative solutions and ask what would work for the other person.',
+            category: 'interpersonal_effectiveness',
+            difficulty: 'medium'
           }
         ]
       };
